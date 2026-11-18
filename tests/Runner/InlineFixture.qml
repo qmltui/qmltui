@@ -11,7 +11,9 @@ Terminal {
     mode: Terminal.Inline
     focus: true
 
-    ListModel { id: rows }
+    ListModel {
+        id: rows
+    }
 
     Scrollback {
         id: history
@@ -26,9 +28,14 @@ Terminal {
     }
 
     Column {
-        Text { text: "INLINE FIXTURE"; color: "#7ee0ff" }
+        Text {
+            text: "INLINE FIXTURE"
+            color: "#7ee0ff"
+        }
         Row {
-            Text { text: "> " }
+            Text {
+                text: "> "
+            }
             TextInput {
                 id: prompt
                 width: 40
@@ -46,13 +53,21 @@ Terminal {
 
     Keys.onPressed: event => {
         if (event.key === Qt.Key_F1) {
-            rows.append({ display: "MODEL ROW " + rows.count, tone: "#ffffff" });
+            rows.append({
+                display: "MODEL ROW " + rows.count,
+                tone: "#ffffff"
+            });
         } else if (event.key === Qt.Key_F2) {
-            rows.append({ display: "wide 世界 row", tone: "#ffffff" });
+            rows.append({
+                display: "wide 世界 row",
+                tone: "#ffffff"
+            });
         } else if (event.key === Qt.Key_F3) {
-            rows.append({ display: "STYLED ROW", tone: "#ffcc00" });
-        } else if (event.key === Qt.Key_Escape
-                   || (event.key === Qt.Key_Q && (event.modifiers & Qt.ControlModifier))) {
+            rows.append({
+                display: "STYLED ROW",
+                tone: "#ffcc00"
+            });
+        } else if (event.key === Qt.Key_Escape || (event.key === Qt.Key_Q && (event.modifiers & Qt.ControlModifier))) {
             Qt.quit();
         } else {
             return;

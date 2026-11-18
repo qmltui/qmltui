@@ -2,7 +2,6 @@ qt_add_executable(qmltui_status_badge_demo main.cpp)
 
 qt_add_qml_module(qmltui_status_badge_demo
     URI StatusBadgeDemo
-    VERSION 1.0
     QML_FILES
         StatusBadge.qml
         Main.qml

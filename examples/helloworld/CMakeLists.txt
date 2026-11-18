@@ -20,7 +20,7 @@ if(NOT TARGET qmltui::core)
     FetchContent_Declare(
         QmlTui
         GIT_REPOSITORY https://github.com/qmltui/qmltui.git
-        GIT_TAG        main # Pin a release tag (e.g. v0.5.0) once published
+        GIT_TAG        main # Pin a release tag (e.g. v0.6.0) once published
     )
     FetchContent_MakeAvailable(QmlTui)
 
@@ -30,7 +30,7 @@ if(NOT TARGET qmltui::core)
     # If QmlTui is installed (`cmake --install build --prefix /your/prefix`),
     # replace the FetchContent block above with:
     #
-    #   find_package(QmlTui 0.5 REQUIRED)
+    #   find_package(QmlTui 0.6 REQUIRED)
 endif()
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
@@ -48,7 +48,6 @@ unset(_qmltui_imported)
 qt_add_executable(hello_qmltui main.cpp)
 qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
-    VERSION 1.0
     QML_FILES Main.qml
     ${_hello_qml_dependencies}
 )

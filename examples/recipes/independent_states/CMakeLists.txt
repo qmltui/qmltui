@@ -2,7 +2,6 @@ qt_add_executable(qmltui_independent_states_demo main.cpp)
 
 qt_add_qml_module(qmltui_independent_states_demo
     URI IndependentStatesDemo
-    VERSION 1.0
     QML_FILES
         Main.qml
     DEPENDENCIES TARGET

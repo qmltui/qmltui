@@ -19,7 +19,6 @@ Link `qmltui::pty_view` (aliased as `QmlTui::PtyView`) in CMake and import `QmlT
 ```cmake
 qt_add_qml_module(my_app
     URI MyApp
-    VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES
         TARGET qmltui::core

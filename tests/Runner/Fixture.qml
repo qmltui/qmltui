@@ -16,16 +16,16 @@ Terminal {
     Connections {
         target: Clipboard
         function onCopyRequested(text: string): void {
-            root.fixtureStatus = "COPY REQUESTED: " + text
+            root.fixtureStatus = "COPY REQUESTED: " + text;
         }
     }
 
     function requestClipboard(): void {
-        Clipboard.requestText().then(function(text) {
-            root.fixtureStatus = "CLIPBOARD: " + text
-        }, function(error) {
-            root.fixtureStatus = "CLIPBOARD: " + error.code
-        })
+        Clipboard.requestText().then(function (text) {
+            root.fixtureStatus = "CLIPBOARD: " + text;
+        }, function (error) {
+            root.fixtureStatus = "CLIPBOARD: " + error.code;
+        });
     }
 
     // Virtual-clock probes: a repeating QML Timer counter and a QmlTui
@@ -141,10 +141,11 @@ Terminal {
         width: 12
         height: 3
         hoverEnabled: root.hoverProbe
-        onPressed: (event) => root.mouseLog = "DOWN " + mouseX + "," + mouseY
-        onReleased: (event) => root.mouseLog = "UP " + mouseX + "," + mouseY
+        onPressed: event => root.mouseLog = "DOWN " + mouseX + "," + mouseY
+        onReleased: event => root.mouseLog = "UP " + mouseX + "," + mouseY
         onEntered: root.mouseLog = "ENTER"
-        onMouseXChanged: if (pressed) root.dragTicks = root.dragTicks + 1
+        onMouseXChanged: if (pressed)
+            root.dragTicks = root.dragTicks + 1
     }
 
     Text {
@@ -193,38 +194,38 @@ Terminal {
         color: "#ffffff"
     }
 
-    Keys.onPressed: (event) => {
+    Keys.onPressed: event => {
         if (event.key === Qt.Key_Q || event.key === Qt.Key_Escape) {
-            Qt.quit()
-            event.accepted = true
-            return
+            Qt.quit();
+            event.accepted = true;
+            return;
         }
         if (event.key === Qt.Key_K) {
-            root.fixtureStatus = "KEY K"
-            event.accepted = true
+            root.fixtureStatus = "KEY K";
+            event.accepted = true;
         }
         if (event.key === Qt.Key_H) {
-            root.hoverProbe = true
-            root.fixtureStatus = "HOVER ARMED"
-            event.accepted = true
+            root.hoverProbe = true;
+            root.fixtureStatus = "HOVER ARMED";
+            event.accepted = true;
         }
         if (event.key === Qt.Key_T) {
-            root.ticking = !root.ticking
-            event.accepted = true
+            root.ticking = !root.ticking;
+            event.accepted = true;
         }
         if (event.key === Qt.Key_A) {
-            grow.start()
-            event.accepted = true
+            grow.start();
+            event.accepted = true;
         }
         // Reached through typeText(): scripted typing must carry the same key
         // codes as real typing, including a digit and a symbol.
         if (event.key === Qt.Key_2 && event.text === "2") {
-            root.fixtureStatus = "KEY 2"
-            event.accepted = true
+            root.fixtureStatus = "KEY 2";
+            event.accepted = true;
         }
         if (event.key === Qt.Key_Plus && event.text === "+") {
-            root.fixtureStatus = "KEY PLUS"
-            event.accepted = true
+            root.fixtureStatus = "KEY PLUS";
+            event.accepted = true;
         }
     }
 }

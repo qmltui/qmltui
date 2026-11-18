@@ -32,8 +32,7 @@ class Child {
 public:
     ~Child() { kill(); }
 
-    bool start()
-    {
+    bool start() {
         winsize size{};
         size.ws_col = 80;
         size.ws_row = 24;
@@ -41,9 +40,10 @@ public:
         if (pid < 0) return false;
         if (pid == 0) {
             ::setenv("TERM", "xterm-256color", 1);
-            ::setenv("QMLTUI_QUERY_TIMEOUT_MS", "5000", 1);   // the test answers by hand
-            for (const char* name : {"QMLTUI_RUNNER_SCRIPT", "QMLTUI_RUNNER_EVAL", "QMLTUI_RUNNER_CAPTURE_AFTER_MS",
-                                     "QMLTUI_RUNNER_EMBEDDED_SCENARIO", "QMLTUI_RUNNER_LIVE"})
+            ::setenv("QMLTUI_QUERY_TIMEOUT_MS", "5000", 1); // the test answers by hand
+            for (const char* name :
+                 {"QMLTUI_RUNNER_SCRIPT", "QMLTUI_RUNNER_EVAL", "QMLTUI_RUNNER_CAPTURE_AFTER_MS",
+                  "QMLTUI_RUNNER_EMBEDDED_SCENARIO", "QMLTUI_RUNNER_LIVE"})
                 ::unsetenv(name);
             ::execl(QMLTUI_SIGNAL_FIXTURE, QMLTUI_SIGNAL_FIXTURE, nullptr);
             ::_exit(127);
@@ -52,8 +52,7 @@ public:
     }
 
     // Reads until `needle` appears in the bytes read since the last clear().
-    bool readUntil(const char* needle, int timeoutMs)
-    {
+    bool readUntil(const char* needle, int timeoutMs) {
         QElapsedTimer timer;
         timer.start();
         while (output.find(needle) == std::string::npos) {
@@ -72,14 +71,12 @@ public:
     }
 
     // Types bytes on the child's terminal, as a terminal replying to a query would.
-    bool type(const char* bytes)
-    {
+    bool type(const char* bytes) {
         const size_t size = std::strlen(bytes);
         return ::write(master, bytes, size) == static_cast<ssize_t>(size);
     }
 
-    void drain(int settleMs)
-    {
+    void drain(int settleMs) {
         QElapsedTimer timer;
         timer.start();
         while (timer.elapsed() < settleMs) {
@@ -95,8 +92,7 @@ public:
     // Echo state of the tty the child runs on. Linux exposes the slave's
     // termios through the master; elsewhere the answer is "unknown".
     enum class Echo { On, Off, Unknown };
-    Echo echo() const
-    {
+    Echo echo() const {
 #if defined(__linux__)
         termios modes{};
         if (::tcgetattr(master, &modes) != 0) return Echo::Unknown;
@@ -106,8 +102,7 @@ public:
 #endif
     }
 
-    void kill()
-    {
+    void kill() {
         if (pid > 0) {
             ::kill(pid, SIGKILL);
             int status = 0;
@@ -130,8 +125,7 @@ public:
 class TestSignalSafety : public QObject {
     Q_OBJECT
 private slots:
-    void suspendResumeAndTerminate()
-    {
+    void suspendResumeAndTerminate() {
         // forkpty() makes the child a session leader, so its process group is
         // orphaned and the *default* action of a stop signal is discarded: the
         // child does not actually stop. That does not matter here. What is
@@ -141,29 +135,35 @@ private slots:
         // not on WIFSTOPPED, which an orphaned group can never reach.
         Child child;
         QVERIFY2(child.start(), "forkpty failed");
-        QVERIFY2(child.readUntil(kAltScreenOn, 5000), "the fixture never entered the alternate screen");
+        QVERIFY2(child.readUntil(kAltScreenOn, 5000),
+                 "the fixture never entered the alternate screen");
         // Answer the kitty keyboard query like a capable terminal; the engine
         // then pushes the disambiguate flag on the alternate screen.
-        QVERIFY2(child.readUntil(kKeyboardQuery, 5000), "the fixture never queried the keyboard protocol");
+        QVERIFY2(child.readUntil(kKeyboardQuery, 5000),
+                 "the fixture never queried the keyboard protocol");
         QVERIFY(child.type("\033[?0u\033[?1c"));
-        QVERIFY2(child.readUntil(kKeyboardPush, 5000), "the keyboard mode was not pushed after the reply");
+        QVERIFY2(child.readUntil(kKeyboardPush, 5000),
+                 "the keyboard mode was not pushed after the reply");
         child.drain(100);
         if (child.echo() != Child::Echo::Unknown)
-            QCOMPARE(int(child.echo()), int(Child::Echo::Off));   // raw mode is on
+            QCOMPARE(int(child.echo()), int(Child::Echo::Off)); // raw mode is on
 
         // Ctrl+Z: the handler pops the keyboard mode on the screen it was
         // pushed on, then restores the terminal before yielding.
         child.output.clear();
         QCOMPARE(::kill(child.pid, SIGTSTP), 0);
         child.drain(200);
-        QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos, "normal screen not restored on stop");
+        QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos,
+                 "normal screen not restored on stop");
         QVERIFY2(child.output.find(kCursorShow) != std::string::npos, "cursor not shown on stop");
-        QVERIFY2(child.output.find(kKeyboardPop) != std::string::npos, "keyboard mode not popped on stop");
+        QVERIFY2(child.output.find(kKeyboardPop) != std::string::npos,
+                 "keyboard mode not popped on stop");
         QVERIFY2(child.output.find(kKeyboardPop) < child.output.find(kAltScreenOff),
                  "keyboard mode popped after leaving the alternate screen");
-        QCOMPARE(child.output.find(kKeyboardPop, child.output.find(kKeyboardPop) + 1), std::string::npos);
+        QCOMPARE(child.output.find(kKeyboardPop, child.output.find(kKeyboardPop) + 1),
+                 std::string::npos);
         if (child.echo() != Child::Echo::Unknown)
-            QCOMPARE(int(child.echo()), int(Child::Echo::On));    // cooked again for the shell
+            QCOMPARE(int(child.echo()), int(Child::Echo::On)); // cooked again for the shell
 
         // fg: SIGCONT takes raw mode back and repaints the alternate screen.
         child.output.clear();
@@ -182,15 +182,16 @@ private slots:
         int status = 0;
         QCOMPARE(::waitpid(child.pid, &status, 0), child.pid);
         QVERIFY2(WIFSIGNALED(status), "the process did not die of the signal");
-        QCOMPARE(WTERMSIG(status), SIGTERM);                       // re-raised, not swallowed
+        QCOMPARE(WTERMSIG(status), SIGTERM); // re-raised, not swallowed
         child.pid = -1;
         child.drain(100);
-        QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos, "normal screen not restored on SIGTERM");
+        QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos,
+                 "normal screen not restored on SIGTERM");
         QVERIFY2(child.output.find(kKeyboardPop) < child.output.find(kAltScreenOff),
                  "keyboard mode not popped before the normal screen on SIGTERM");
-        QVERIFY2(child.output.find(kCursorShow) != std::string::npos, "cursor not shown on SIGTERM");
-        if (child.echo() != Child::Echo::Unknown)
-            QCOMPARE(int(child.echo()), int(Child::Echo::On));
+        QVERIFY2(child.output.find(kCursorShow) != std::string::npos,
+                 "cursor not shown on SIGTERM");
+        if (child.echo() != Child::Echo::Unknown) QCOMPARE(int(child.echo()), int(Child::Echo::On));
     }
 };
 

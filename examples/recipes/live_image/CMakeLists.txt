@@ -6,7 +6,6 @@ set(live_image_sources frameprovider.h frameprovider.cpp)
 qt_add_executable(qmltui_live_image_demo main.cpp)
 qt_add_qml_module(qmltui_live_image_demo
     URI LiveImageDemo
-    VERSION 1.0
     SOURCES ${live_image_sources}
     QML_FILES Main.qml
     DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls TARGET qmltui::image

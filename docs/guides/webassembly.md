@@ -30,7 +30,6 @@ Both the QmlTui build tree and `find_package(QmlTui)` automatically include `cma
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
-    VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )

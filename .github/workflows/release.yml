@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify tag & extract release notes
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check REUSE licensing compliance
+        uses: fsfe/reuse-action@v5
+
+      - name: Verify git tag matches CMakeLists.txt version
+        id: meta
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          cmake_ver=$(sed -nE 's/^project\(qmltui[[:space:]]+VERSION[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CMakeLists.txt | head -n1)
+          if [[ -z "$cmake_ver" ]]; then
+            echo "Failed to parse project(qmltui VERSION ...) from CMakeLists.txt" >&2
+            exit 1
+          fi
+          if [[ "$tag" != "v${cmake_ver}" && "$tag" != v${cmake_ver}-* ]]; then
+            echo "Tag '${tag}' does not match CMakeLists.txt version 'v${cmake_ver}'" >&2
+            exit 1
+          fi
+          echo "version=${cmake_ver}" >> "$GITHUB_OUTPUT"
+          cp docs/changes/changelog.md release-notes.md
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          retention-days: 5
+
+  runner-cli:
+    name: qmltui-runner (${{ matrix.platform }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux-x86_64
+            qt_host: linux
+            qt_arch: linux_gcc_64
+          - os: macos-14
+            platform: macos-arm64
+            qt_host: mac
+            qt_arch: clang_64
+          - os: windows-2022
+            platform: windows-x86_64
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: ${{ matrix.qt_host }}
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
+          cache: true
+
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build qmltui-runner
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.install-dir }}" \
+            -DQMLTUI_BUILD_TESTS=OFF \
+            -DQMLTUI_BUILD_EXAMPLES=OFF \
+            -DQMLTUI_BUILD_BENCHMARKS=OFF \
+            -DQMLTUI_ENABLE_PRIVATE_QT=OFF \
+            -DQMLTUI_ENABLE_IMAGE=OFF \
+            -DQMLTUI_ENABLE_PTYVIEW=OFF \
+            -DQMLTUI_ENABLE_RUNNER=ON
+          cmake --build build --target qmltui-runner --parallel
+
+      - name: Package archive (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          pkg="qmltui-runner-${GITHUB_REF_NAME}-${{ matrix.platform }}"
+          mkdir -p "dist/${pkg}"
+          cp build/tools/qmltui-runner/qmltui-runner "dist/${pkg}/"
+          cp LICENSE.md THIRD-PARTY.md "dist/${pkg}/"
+          tar -C dist -czf "dist/${pkg}.tar.gz" "${pkg}"
+
+      - name: Package archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $pkg = "qmltui-runner-$env:GITHUB_REF_NAME-${{ matrix.platform }}"
+          New-Item -ItemType Directory -Force -Path "dist/$pkg" | Out-Null
+          Copy-Item "build/tools/qmltui-runner/qmltui-runner.exe" "dist/$pkg/"
+          Copy-Item "LICENSE.md", "THIRD-PARTY.md" "dist/$pkg/"
+          & "${{ steps.install-qt.outputs.install-dir }}/bin/windeployqt.exe" --release --no-translations --no-compiler-runtime "dist/$pkg/qmltui-runner.exe"
+          Compress-Archive -Path "dist/$pkg" -DestinationPath "dist/$pkg.zip"
+
+      - name: Upload CLI archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.platform }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          retention-days: 5
+
+  publish:
+    name: Publish GitHub Release
+    needs: [verify, runner-cli]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets & checksums
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name '*.tar.gz' -o -name '*.zip' \) -exec cp {} release-assets/ \;
+          (cd release-assets && sha256sum * > SHA256SUMS.txt)
+          cp artifacts/release-notes/release-notes.md release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: QmlTui ${{ github.ref_name }}
+          body_path: release-notes.md
+          prerelease: ${{ startsWith(needs.verify.outputs.version, '0.') || contains(github.ref_name, '-') }}
+          files: release-assets/*
+
+      - name: Trigger website deployment (optional)
+        if: env.WEBSITE_DISPATCH_TOKEN != ''
+        env:
+          WEBSITE_DISPATCH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+        shell: bash
+        run: |
+          curl -fsSL -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${WEBSITE_DISPATCH_TOKEN}" \
+            "https://api.github.com/repos/qmltui/website/dispatches" \
+            -d "{\"event_type\":\"qmltui-updated\",\"client_payload\":{\"ref\":\"${GITHUB_REF_NAME}\"}}"

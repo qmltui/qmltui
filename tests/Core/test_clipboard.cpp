@@ -34,7 +34,8 @@ Terminal {
         if (event.key === Qt.Key_Escape) { Qt.quit(); event.accepted = true }
     }
 }
-)", QUrl());
+)",
+                          QUrl());
         auto object = std::unique_ptr<Terminal>(qobject_cast<Terminal*>(component.create()));
         if (!object) qFatal("%s", qPrintable(component.errorString()));
         return object;
@@ -43,12 +44,13 @@ Terminal {
         return engine.singletonInstance<Clipboard*>("QmlTui", "Clipboard");
     }
     QJSValue watch(QQmlEngine& engine, const QJSValue& promise) {
-        return engine.evaluate(QStringLiteral(
-            "(function(p) { var result = {status: 'pending'};"
-            "p.then(function(text) { result.status = 'resolved'; result.text = text; },"
-            "function(error) { result.status = 'rejected'; result.code = error.code;"
-            "result.isError = error instanceof Error; }); return result; })"
-        )).call({promise});
+        return engine
+            .evaluate(QStringLiteral(
+                "(function(p) { var result = {status: 'pending'};"
+                "p.then(function(text) { result.status = 'resolved'; result.text = text; },"
+                "function(error) { result.status = 'rejected'; result.code = error.code;"
+                "result.isError = error instanceof Error; }); return result; })"))
+            .call({promise});
     }
     QString frame(Terminal* terminal) {
         const auto grid = terminal->engine()->currentFrame();
@@ -89,7 +91,8 @@ private slots:
         backends[0]->clearOutput();
         clip->copy(QStringLiteral("café"));
         QCOMPARE(copied.count(), 1);
-        QVERIFY(backends[0]->output().find(TerminalEngine::osc52Sequence(QStringLiteral("café"))) != std::string::npos);
+        QVERIFY(backends[0]->output().find(TerminalEngine::osc52Sequence(QStringLiteral("café"))) !=
+                std::string::npos);
         first->setClipboardMode(Terminal::ClipboardMode::Disabled);
         backends[0]->clearOutput();
         clip->copy(QStringLiteral("disabled"));
@@ -118,7 +121,8 @@ private slots:
         clip->copy(text); // repeated content still represents another copy
         root->copyToClipboard(text);
         QCOMPARE(requested.count(), 3);
-        for (const auto& args : requested) QCOMPARE(args.first().toString(), text);
+        for (const auto& args : requested)
+            QCOMPARE(args.first().toString(), text);
 
         auto* input = root->findChild<TextInput*>("editor");
         QVERIFY(input);
@@ -221,7 +225,8 @@ private slots:
         QTest::addColumn<QByteArray>("text");
         QTest::addColumn<QByteArray>("terminator");
         QTest::addColumn<int>("chunkSize");
-        QTest::newRow("unicode-bel-bytewise") << QStringLiteral("café 世界\nline\t2").toUtf8() << QByteArray("\a") << 1;
+        QTest::newRow("unicode-bel-bytewise")
+            << QStringLiteral("café 世界\nline\t2").toUtf8() << QByteArray("\a") << 1;
         QTest::newRow("empty-st-bytewise") << QByteArray() << QByteArray("\033\\") << 1;
         QTest::newRow("large-st") << QByteArray(1024 * 1024, 'x') << QByteArray("\033\\") << 4096;
     }
@@ -245,7 +250,8 @@ private slots:
         QTest::newRow("base64") << QByteArray("\033]52;c;!bad!\a");
         QTest::newRow("utf8") << QByteArray("\033]52;c;/w==\a");
         QTest::newRow("missing-field") << QByteArray("\033]52;c\a");
-        QTest::newRow("decoded-limit") << QByteArray("\033]52;c;") + QByteArray(1024 * 1024 + 1, 'x').toBase64() + '\a';
+        QTest::newRow("decoded-limit")
+            << QByteArray("\033]52;c;") + QByteArray(1024 * 1024 + 1, 'x').toBase64() + '\a';
         QTest::newRow("wire-limit") << QByteArray("\033]52;c;") + QByteArray(1500000, 'x') + '\a';
     }
     void invalidResponses() {
@@ -328,10 +334,13 @@ private slots:
         QQmlEngine engine;
         auto root = createTerminal(engine);
         engine.globalObject().setProperty("clipboard", engine.newQObject(clipboard(engine)));
-        engine.evaluate("var secondResult = ''; clipboard.requestText().then(function() {"
-                        "clipboard.requestText().then(function(text) { secondResult = text; }); });");
+        engine.evaluate(
+            "var secondResult = ''; clipboard.requestText().then(function() {"
+            "clipboard.requestText().then(function(text) { secondResult = text; }); });");
         backends[0]->feedInput("\033]52;c;Zmlyc3Q=\a");
-        QTRY_VERIFY(backends[0]->output().find("\033]52;c;?\a", backends[0]->output().find("\033]52;c;?\a") + 1) != std::string::npos);
+        QTRY_VERIFY(backends[0]->output().find("\033]52;c;?\a",
+                                               backends[0]->output().find("\033]52;c;?\a") + 1) !=
+                    std::string::npos);
         backends[0]->feedInput("\033]52;c;c2Vjb25k\a");
         QTRY_COMPARE(engine.globalObject().property("secondResult").toString(), "second");
     }
@@ -355,7 +364,8 @@ private slots:
     void uninitializedOverride() {
         QQmlEngine engine;
         QQmlComponent component(&engine);
-        component.setData("import QmlTui\nTerminal { Terminal { objectName: \"nested\" } }", QUrl());
+        component.setData("import QmlTui\nTerminal { Terminal { objectName: \"nested\" } }",
+                          QUrl());
         std::unique_ptr<QObject> root(component.create());
         QVERIFY2(root, qPrintable(component.errorString()));
         auto* nested = root->findChild<Terminal*>("nested");

@@ -4,7 +4,6 @@
 qt_add_executable(qmltui_custom_cpp_item_demo main.cpp)
 qt_add_qml_module(qmltui_custom_cpp_item_demo
     URI CustomItemDemo
-    VERSION 1.0
     SOURCES progressbar.h progressbar.cpp
     QML_FILES Main.qml
     DEPENDENCIES TARGET qmltui::core

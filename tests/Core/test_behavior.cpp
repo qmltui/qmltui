@@ -13,8 +13,10 @@ private slots:
     void boundProperty_data() {
         QTest::addColumn<QString>("declaration");
         QTest::addColumn<QString>("property");
-        QTest::newRow("qml-int") << "property int animated: root.requested; x: animated" << "animated";
-        QTest::newRow("qml-real") << "property real animated: root.requested; x: animated" << "animated";
+        QTest::newRow("qml-int") << "property int animated: root.requested; x: animated"
+                                 << "animated";
+        QTest::newRow("qml-real") << "property real animated: root.requested; x: animated"
+                                  << "animated";
         QTest::newRow("native-x") << "x: root.requested" << "x";
     }
 
@@ -37,12 +39,15 @@ private slots:
                     Behavior on %2 { NumberAnimation { duration: 100 } }
                 }
             }
-        )").arg(declaration, property).toUtf8(), QUrl());
+        )")
+                              .arg(declaration, property)
+                              .toUtf8(),
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<Item *>(object.get());
+        auto* root = qobject_cast<Item*>(object.get());
         QVERIFY(root);
-        auto *animation = root->findChild<PropertyAnimation *>();
+        auto* animation = root->findChild<PropertyAnimation*>();
         QVERIFY(animation);
         TextGridBuffer buffer;
         QVERIFY(buffer.resize(30, 1));
@@ -80,7 +85,8 @@ private slots:
     void boundColor_data() {
         QTest::addColumn<QString>("declaration");
         QTest::addColumn<QString>("property");
-        QTest::newRow("qml-string") << "property string animated: root.requested; color: animated" << "animated";
+        QTest::newRow("qml-string")
+            << "property string animated: root.requested; color: animated" << "animated";
         QTest::newRow("native-color") << "color: root.requested" << "color";
     }
 
@@ -103,12 +109,15 @@ private slots:
                     Behavior on %2 { ColorAnimation { duration: 100 } }
                 }
             }
-        )").arg(declaration, property, QStringLiteral("#000000")).toUtf8(), QUrl());
+        )")
+                              .arg(declaration, property, QStringLiteral("#000000"))
+                              .toUtf8(),
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<Item *>(object.get());
+        auto* root = qobject_cast<Item*>(object.get());
         QVERIFY(root);
-        auto *animation = root->findChild<PropertyAnimation *>();
+        auto* animation = root->findChild<PropertyAnimation*>();
         QVERIFY(animation);
         animation->tick(0);
         animation->tick(100);
@@ -120,7 +129,7 @@ private slots:
             return buffer.cellAt(0, 0).bgColor;
         };
         QCOMPARE(background(), 0xff000000u);
-        for (const QString &target : {"#ffffff", "#000000"}) {
+        for (const QString& target : {"#ffffff", "#000000"}) {
             QVERIFY(root->setProperty("requested", target));
             QVERIFY(animation->running());
             animation->tick(0);
@@ -145,10 +154,11 @@ private slots:
                 text: String(animated)
                 Behavior on animated {}
             }
-        )", QUrl());
+        )",
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<Item *>(object.get());
+        auto* root = qobject_cast<Item*>(object.get());
         QVERIFY(root);
         TextGridBuffer buffer;
         QVERIFY(buffer.resize(1, 1));

@@ -105,7 +105,7 @@ Terminal {
                             text: " "
                         },
                         {
-                            text: " v0.5 ",
+                            text: " v0.6 ",
                             color: "black",
                             backgroundColor: "green",
                             bold: true

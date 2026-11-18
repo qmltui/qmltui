@@ -307,7 +307,7 @@ interface Runner {
     findText(text: string): QmlTuiTextMatch[];
     /** Rectangle in cells of the first visible item with the objectName. */
     itemRect(objectName: string): QmlTuiRect;
-    /** {columns, rows} of the current committed frame. */
+    /** {columns, rows} of the current test viewport. */
     size(): QmlTuiSize;
     /** A locator scoped to the rectangle. */
     region(x: number, y: number, width: number, height: number): Region;
@@ -318,7 +318,7 @@ interface Runner {
     captureText(relativePath: string): void;
     /** Writes the next committed frame as styled text. */
     captureStyled(relativePath: string): void;
-    /** Resizes the test viewport and waits for a frame at the new size. */
+    /** Resizes the test viewport and waits for a frame at the new size (in Terminal.Inline, frame height remains content-sized up to rows - 1). */
     resize(columns: number, rows: number): void;
 
     /** Fails the scenario immediately. */

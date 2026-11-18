@@ -18,16 +18,14 @@ private slots:
     void reportsNextDeadline();
 };
 
-void TestClockVirtual::virtualTimeIsFrozen()
-{
+void TestClockVirtual::virtualTimeIsFrozen() {
     QVERIFY(Clock::isVirtual());
     const qint64 before = Clock::instance()->elapsed();
     QTest::qWait(25);
     QCOMPARE(Clock::instance()->elapsed(), before);
 }
 
-void TestClockVirtual::firesInDeadlineOrder()
-{
+void TestClockVirtual::firesInDeadlineOrder() {
     Clock* clock = Clock::instance();
     QStringList order;
     ClockTimer late;
@@ -44,8 +42,7 @@ void TestClockVirtual::firesInDeadlineOrder()
     QCOMPARE(order, (QStringList{QStringLiteral("early"), QStringLiteral("late")}));
 }
 
-void TestClockVirtual::singleShotVersusRepeating()
-{
+void TestClockVirtual::singleShotVersusRepeating() {
     Clock* clock = Clock::instance();
     int repeats = 0;
     ClockTimer repeating;
@@ -59,23 +56,21 @@ void TestClockVirtual::singleShotVersusRepeating()
     repeating.start();
     once.start(10);
     clock->advanceTo(clock->elapsed() + 35);
-    QCOMPARE(repeats, 3);   // 10, 20, 30
+    QCOMPARE(repeats, 3); // 10, 20, 30
     QCOMPARE(onceCount, 1);
     QVERIFY(repeating.isActive());
     QVERIFY(!once.isActive());
     repeating.stop();
 }
 
-void TestClockVirtual::restartDuringDelivery()
-{
+void TestClockVirtual::restartDuringDelivery() {
     Clock* clock = Clock::instance();
     int fired = 0;
     ClockTimer timer;
     timer.setSingleShot(true);
     timer.setInterval(10);
     connect(&timer, &ClockTimer::timeout, this, [&fired, &timer] {
-        if (++fired == 1)
-            timer.start();  // rearm inside the same advance window
+        if (++fired == 1) timer.start(); // rearm inside the same advance window
     });
     timer.start();
     clock->advanceTo(clock->elapsed() + 25);
@@ -83,15 +78,14 @@ void TestClockVirtual::restartDuringDelivery()
     QVERIFY(!timer.isActive());
 }
 
-void TestClockVirtual::stopDuringDelivery()
-{
+void TestClockVirtual::stopDuringDelivery() {
     Clock* clock = Clock::instance();
     int fired = 0;
     ClockTimer timer;
     timer.setInterval(10);
     connect(&timer, &ClockTimer::timeout, this, [&fired, &timer] {
         ++fired;
-        timer.stop();  // a handler's stop must beat the automatic repetition
+        timer.stop(); // a handler's stop must beat the automatic repetition
     });
     timer.start();
     clock->advanceTo(clock->elapsed() + 50);
@@ -99,8 +93,7 @@ void TestClockVirtual::stopDuringDelivery()
     QVERIFY(!timer.isActive());
 }
 
-void TestClockVirtual::reportsNextDeadline()
-{
+void TestClockVirtual::reportsNextDeadline() {
     Clock* clock = Clock::instance();
     QCOMPARE(clock->nextTimerDeadline(), -1);
     ClockTimer far;
@@ -116,8 +109,7 @@ void TestClockVirtual::reportsNextDeadline()
     QCOMPARE(clock->nextTimerDeadline(), -1);
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     // Selected before the QCoreApplication exists, exactly as the Runner's
     // startup hook does it.
     qputenv("QMLTUI_RUNNER_CLOCK", "virtual");

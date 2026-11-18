@@ -1,7 +1,6 @@
 qt_add_executable(qmltui_inline_repl_demo main.cpp)
 qt_add_qml_module(qmltui_inline_repl_demo
     URI InlineRepl
-    VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )

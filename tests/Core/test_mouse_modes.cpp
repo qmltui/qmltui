@@ -30,10 +30,12 @@ std::unique_ptr<QObject> load(QQmlEngine& qml, const char* source, Terminal** te
 }
 size_t count(const std::string& haystack, const char* needle) {
     size_t n = 0;
-    for (size_t pos = haystack.find(needle); pos != std::string::npos; pos = haystack.find(needle, pos + 1)) ++n;
+    for (size_t pos = haystack.find(needle); pos != std::string::npos;
+         pos = haystack.find(needle, pos + 1))
+        ++n;
     return n;
 }
-}
+} // namespace
 
 class TestMouseModes : public QObject {
     Q_OBJECT
@@ -61,7 +63,10 @@ private slots:
     void inlineDefaultsToNoMouse() {
         QQmlEngine qml;
         Terminal* terminal = nullptr;
-        auto object = load(qml, "Terminal { mode: Terminal.Inline; MouseArea { width: 4; height: 1; hoverEnabled: true } }", &terminal);
+        auto object = load(qml,
+                           "Terminal { mode: Terminal.Inline; MouseArea { width: 4; height: 1; "
+                           "hoverEnabled: true } }",
+                           &terminal);
         QVERIFY(terminal);
         QVERIFY(!terminal->mouseReporting());
         QVERIFY(terminal->hasMouseMotionRequests());
@@ -79,7 +84,8 @@ Terminal {
     mouseReporting: false
     MouseArea { objectName: "area"; width: 4; height: 1 }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* area = terminal->findChild<Item*>("area");
         const auto& out = backend->output();
@@ -110,7 +116,7 @@ Terminal {
         backend->clearOutput();
         area->setProperty("hoverEnabled", true);
         area->setProperty("hoverEnabled", false);
-        QCOMPARE(count(out, "h"), size_t(0));   // no mode enabled at all
+        QCOMPARE(count(out, "h"), size_t(0)); // no mode enabled at all
     }
 
     // A Repeater parents its finished delegate after creation, so the area's
@@ -133,7 +139,8 @@ Terminal {
         }
     }
 }
-)", &terminal);
+)",
+                           &terminal);
         QVERIFY(terminal);
         auto* area = terminal->findChild<Item*>("area");
         QVERIFY(area);
@@ -157,9 +164,8 @@ Terminal {
         QQmlEngine qml;
         Terminal* terminal = nullptr;
         QQmlComponent component(&qml);
-        component.setData(QByteArray(
-            "import QtQml\nimport QmlTui\nimport QmlTui.Controls\n"
-            R"(
+        component.setData(QByteArray("import QtQml\nimport QmlTui\nimport QmlTui.Controls\n"
+                                     R"(
 Terminal {
     Row {
         Repeater {
@@ -172,7 +178,8 @@ Terminal {
         }
     }
 }
-)"), QUrl());
+)"),
+                          QUrl());
         std::unique_ptr<QObject> object(component.create());
         if (!object) qWarning() << component.errorString();
         terminal = qobject_cast<Terminal*>(object.get());

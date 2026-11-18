@@ -213,6 +213,7 @@
       "collapsed": true,
       "items": [
         { "text": "Changelog", "link": "/changes/changelog" },
+        { "text": "QmlTui 0.5", "link": "/changes/0.5" },
         { "text": "QmlTui 0.4", "link": "/changes/0.4" },
         { "text": "QmlTui 0.3", "link": "/changes/0.3" },
         { "text": "QmlTui 0.1", "link": "/changes/0.1" }

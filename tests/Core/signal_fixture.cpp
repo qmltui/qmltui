@@ -4,8 +4,7 @@
 #include <QCoreApplication>
 #include <QmlTui/Core/Items/Terminal.h>
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication app(argc, argv);
     qmltui::Terminal terminal;
     terminal.setTitle(QStringLiteral("signal fixture"));

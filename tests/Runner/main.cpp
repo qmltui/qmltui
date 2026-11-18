@@ -22,16 +22,14 @@
 // setUpdateSnapshots() wins over QMLTUI_RUNNER_UPDATE_SNAPSHOTS. --scenario=<path>
 // selects another filesystem or resource scenario for that path.
 namespace {
-int environmentInteger(const char* name, int fallback)
-{
+int environmentInteger(const char* name, int fallback) {
     bool ok = false;
     const int value = qEnvironmentVariableIntValue(name, &ok);
     return (ok && value > 0) ? value : fallback;
 }
-}
+} // namespace
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     bool embedded = false;
     bool live = false;
     bool liveAfterConstruction = false;
@@ -79,8 +77,7 @@ int main(int argc, char* argv[])
     QCoreApplication app(argc, argv);
     QQmlApplicationEngine engine;
     engine.load(QUrl::fromLocalFile(fixtureQml));
-    if (engine.rootObjects().isEmpty())
-        return 2;
+    if (engine.rootObjects().isEmpty()) return 2;
 
     auto* terminal = qobject_cast<qmltui::Terminal*>(engine.rootObjects().constFirst());
     if (!terminal) {
@@ -101,17 +98,12 @@ int main(int argc, char* argv[])
         artifacts = QDir::temp().filePath(QStringLiteral("qmltui-runner-fixture-artifacts"));
     const QSize viewport(environmentInteger("QMLTUI_RUNNER_COLUMNS", 80),
                          environmentInteger("QMLTUI_RUNNER_ROWS", 24));
-    auto* runner = new qmltui::Runner(
-        &engine, terminal,
-        script,
-        artifacts, viewport,
-        environmentInteger("QMLTUI_RUNNER_OPERATION_TIMEOUT_MS", 2000),
-        environmentInteger("QMLTUI_RUNNER_TIMEOUT_MS", 30000),
-        QString());
-    if (liveAfterConstruction)
-        runner->setLiveOutput(true);
-    if (updateSnapshots.has_value())
-        runner->setUpdateSnapshots(*updateSnapshots);
+    auto* runner =
+        new qmltui::Runner(&engine, terminal, script, artifacts, viewport,
+                           environmentInteger("QMLTUI_RUNNER_OPERATION_TIMEOUT_MS", 2000),
+                           environmentInteger("QMLTUI_RUNNER_TIMEOUT_MS", 30000), QString());
+    if (liveAfterConstruction) runner->setLiveOutput(true);
+    if (updateSnapshots.has_value()) runner->setUpdateSnapshots(*updateSnapshots);
     QTimer::singleShot(0, runner, &qmltui::Runner::start);
     return app.exec();
 }

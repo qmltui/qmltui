@@ -11,7 +11,6 @@ set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/StatusBadge.qml"
 
 qt_add_qml_module(qmltui_calendar_demo
     URI CalendarDemo
-    VERSION 1.0
     QML_FILES
         Calendar.qml
         "${CMAKE_CURRENT_BINARY_DIR}/StatusBadge.qml"

@@ -12,7 +12,6 @@ endif()
 qt_add_executable(qmltui_standard_item_delegate_demo main.cpp)
 qt_add_qml_module(qmltui_standard_item_delegate_demo
     URI StandardItemDelegateDemo
-    VERSION 1.0
     QML_FILES
         Main.qml
         StandardItemDelegate.qml

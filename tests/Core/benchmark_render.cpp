@@ -38,21 +38,18 @@ namespace {
 
 class CountModel final : public QAbstractListModel {
 public:
-    explicit CountModel(int count, QObject *parent = nullptr)
+    explicit CountModel(int count, QObject* parent = nullptr)
         : QAbstractListModel(parent), m_count(count) {}
 
-    int rowCount(const QModelIndex &parent = {}) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
         return parent.isValid() ? 0 : m_count;
     }
 
-    QVariant data(const QModelIndex &index, int role) const override {
-        return index.isValid() && role == Qt::DisplayRole
-            ? QVariant(index.row()) : QVariant();
+    QVariant data(const QModelIndex& index, int role) const override {
+        return index.isValid() && role == Qt::DisplayRole ? QVariant(index.row()) : QVariant();
     }
 
-    QHash<int, QByteArray> roleNames() const override {
-        return {{Qt::DisplayRole, "display"}};
-    }
+    QHash<int, QByteArray> roleNames() const override { return {{Qt::DisplayRole, "display"}}; }
 
 private:
     int m_count;
@@ -80,27 +77,24 @@ struct Result {
     qint64 updatePaintMedianUs = 0;
 };
 
-using Mutation = std::function<void(qmltui::Item *, int frame)>;
+using Mutation = std::function<void(qmltui::Item*, int frame)>;
 
 constexpr int WarmUpFrames = 5;
 int measuredFrames = 200;
 
-qint64 percentile(std::vector<qint64> values, double fraction)
-{
-    if (values.empty())
-        return 0;
+qint64 percentile(std::vector<qint64> values, double fraction) {
+    if (values.empty()) return 0;
     std::sort(values.begin(), values.end());
     const auto index = static_cast<size_t>(
         std::clamp<double>(std::ceil(values.size() * fraction) - 1, 0, values.size() - 1));
     return values[index];
 }
 
-Result summarize(const QString &scenario, int width, int height, bool idle,
-                 const std::vector<Sample> &samples)
-{
+Result summarize(const QString& scenario, int width, int height, bool idle,
+                 const std::vector<Sample>& samples) {
     std::vector<qint64> paint, diff, bytes, update, updatePaint;
     qint64 maxBytes = 0;
-    for (const Sample &sample : samples) {
+    for (const Sample& sample : samples) {
         paint.push_back(sample.paintNs / 1000);
         diff.push_back(sample.diffNs / 1000);
         bytes.push_back(sample.bytes);
@@ -126,9 +120,7 @@ Result summarize(const QString &scenario, int width, int height, bool idle,
 
 // Measure setters separately as well: cached text parsing can run from setText,
 // so paint alone does not describe the cost of changing text.
-std::vector<Sample> measureItem(qmltui::Item *item, int width, int height,
-                                const Mutation &mutate)
-{
+std::vector<Sample> measureItem(qmltui::Item* item, int width, int height, const Mutation& mutate) {
     qmltui::TextGridBuffer previous;
     qmltui::TextGridBuffer next;
     previous.resize(width, height);
@@ -139,8 +131,7 @@ std::vector<Sample> measureItem(qmltui::Item *item, int width, int height,
     QElapsedTimer timer;
     for (int frame = 0; frame < WarmUpFrames + measuredFrames; ++frame) {
         timer.start();
-        if (mutate)
-            mutate(item, frame);
+        if (mutate) mutate(item, frame);
         const qint64 updateNs = mutate ? timer.nsecsElapsed() : 0;
         next.clear();
         timer.start();
@@ -149,16 +140,16 @@ std::vector<Sample> measureItem(qmltui::Item *item, int width, int height,
         const std::string ansi = previous.diff(next);
         const qint64 diffedNs = timer.nsecsElapsed();
         if (frame >= WarmUpFrames)
-            samples.push_back({paintedNs, diffedNs - paintedNs, static_cast<qint64>(ansi.size()), updateNs});
+            samples.push_back(
+                {paintedNs, diffedNs - paintedNs, static_cast<qint64>(ansi.size()), updateNs});
         previous.swap(next);
     }
     return samples;
 }
 
-bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
-                    int width, int height, const Mutation &mutate,
-                    std::vector<Result> &results, const QString &expectedText = {})
-{
+bool runQmlScenario(QQmlEngine& engine, const QString& name, const QString& qml, int width,
+                    int height, const Mutation& mutate, std::vector<Result>& results,
+                    const QString& expectedText = {}) {
     QQmlComponent component(&engine);
     component.setData(qml.toUtf8(), QUrl());
     if (!component.isReady()) {
@@ -166,15 +157,14 @@ bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
         return false;
     }
     std::unique_ptr<QObject> object(component.create());
-    auto *item = qobject_cast<qmltui::Item *>(object.get());
+    auto* item = qobject_cast<qmltui::Item*>(object.get());
     if (!item) {
         qCritical().noquote() << name << "root is not a qmltui::Item";
         return false;
     }
     item->setWidth(width);
     item->setHeight(height);
-    if (mutate)
-        mutate(item, 0);   // give the idle run a populated scene
+    if (mutate) mutate(item, 0); // give the idle run a populated scene
 
     if (!expectedText.isEmpty()) {
         qmltui::TextGridBuffer frame;
@@ -192,16 +182,15 @@ bool runQmlScenario(QQmlEngine &engine, const QString &name, const QString &qml,
         }
     }
 
-    results.push_back(summarize(name, width, height, true,
-                                measureItem(item, width, height, nullptr)));
-    results.push_back(summarize(name, width, height, false,
-                                measureItem(item, width, height, mutate)));
+    results.push_back(
+        summarize(name, width, height, true, measureItem(item, width, height, nullptr)));
+    results.push_back(
+        summarize(name, width, height, false, measureItem(item, width, height, mutate)));
     return true;
 }
 
 // Raw buffer cost without any items: clear + full fillRect + diff.
-void runBufferFill(int width, int height, std::vector<Result> &results)
-{
+void runBufferFill(int width, int height, std::vector<Result>& results) {
     for (bool idle : {true, false}) {
         qmltui::TextGridBuffer previous;
         qmltui::TextGridBuffer next;
@@ -218,46 +207,46 @@ void runBufferFill(int width, int height, std::vector<Result> &results)
             const std::string ansi = previous.diff(next);
             const qint64 diffedNs = timer.nsecsElapsed();
             if (frame >= WarmUpFrames)
-                samples.push_back({paintedNs, diffedNs - paintedNs, static_cast<qint64>(ansi.size())});
+                samples.push_back(
+                    {paintedNs, diffedNs - paintedNs, static_cast<qint64>(ansi.size())});
             previous.swap(next);
         }
         results.push_back(summarize(QStringLiteral("buffer_fill"), width, height, idle, samples));
     }
 }
 
-QString textRowsQml()
-{
+QString textRowsQml() {
     QString qml = QStringLiteral("import QmlTui\nColumn {\n");
     for (int row = 0; row < 50; ++row) {
-        qml += QStringLiteral(
-            "    Text { objectName: \"row%1\"; text: \"<b>Row %1</b> \\u001b[32mOK\\u001b[0m "
-            "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor "
-            "incididunt ut labore et dolore magna aliqua\" }\n").arg(row);
+        qml +=
+            QStringLiteral(
+                "    Text { objectName: \"row%1\"; text: \"<b>Row %1</b> \\u001b[32mOK\\u001b[0m "
+                "lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor "
+                "incididunt ut labore et dolore magna aliqua\" }\n")
+                .arg(row);
     }
     qml += QStringLiteral("}\n");
     return qml;
 }
 
-QVariantList compositeHistory(int frame)
-{
+QVariantList compositeHistory(int frame) {
     QVariantList history;
     for (int i = 0; i < 40; ++i)
         history.append(50.0 + 40.0 * std::sin((frame + i) * 0.35));
     return history;
 }
 
-QVariantList compositeRows(int frame)
-{
+QVariantList compositeRows(int frame) {
     QVariantList rows;
     for (int row = 0; row < 40; ++row) {
-        rows.append(QVariant::fromValue(QVariantList{1000 + row,
-                                 QStringLiteral("process-%1").arg(row),
-                                 QStringLiteral("%1%").arg((row * 7 + frame) % 100)}));
+        rows.append(
+            QVariant::fromValue(QVariantList{1000 + row, QStringLiteral("process-%1").arg(row),
+                                             QStringLiteral("%1%").arg((row * 7 + frame) % 100)}));
     }
     return rows;
 }
 
-const char *compositeQml = R"(
+const char* compositeQml = R"(
 import QmlTui
 import QmlTui.Controls
 
@@ -307,7 +296,7 @@ Item {
 }
 )";
 
-const char *rectangleQml = R"(
+const char* rectangleQml = R"(
 import QmlTui
 Rectangle {
     color: "#102030"
@@ -316,7 +305,7 @@ Rectangle {
 }
 )";
 
-const char *listViewQml = R"(
+const char* listViewQml = R"(
 import QmlTui
 ListView {
     model: benchmarkModel
@@ -330,43 +319,39 @@ ListView {
 }
 )";
 
-void printResults(const std::vector<Result> &results)
-{
-    qInfo("%-14s %9s %-8s %10s %10s %10s %10s %10s %10s",
-          "scenario", "size", "mode", "paint_med", "paint_p95", "diff_med", "diff_p95",
-          "bytes_med", "idle_max");
-    for (const Result &result : results) {
+void printResults(const std::vector<Result>& results) {
+    qInfo("%-14s %9s %-8s %10s %10s %10s %10s %10s %10s", "scenario", "size", "mode", "paint_med",
+          "paint_p95", "diff_med", "diff_p95", "bytes_med", "idle_max");
+    for (const Result& result : results) {
         qInfo("%-14s %4dx%-4d %-8s %8lldus %8lldus %8lldus %8lldus %10lld %10lld",
               qPrintable(result.scenario), result.width, result.height,
-              result.idle ? "idle" : "mutating",
-              static_cast<long long>(result.paintMedianUs),
+              result.idle ? "idle" : "mutating", static_cast<long long>(result.paintMedianUs),
               static_cast<long long>(result.paintP95Us),
-              static_cast<long long>(result.diffMedianUs),
-              static_cast<long long>(result.diffP95Us),
+              static_cast<long long>(result.diffMedianUs), static_cast<long long>(result.diffP95Us),
               static_cast<long long>(result.bytesMedian),
               static_cast<long long>(result.idleBytesMax));
     }
 }
 
-bool writeJson(const QString &path, const std::vector<Result> &results)
-{
+bool writeJson(const QString& path, const std::vector<Result>& results) {
     QJsonArray array;
-    for (const Result &result : results) {
-        array.append(QJsonObject{{QStringLiteral("scenario"), result.scenario},
-                                 {QStringLiteral("width"), result.width},
-                                 {QStringLiteral("height"), result.height},
-                                 {QStringLiteral("mode"), result.idle
-                                      ? QStringLiteral("idle") : QStringLiteral("mutating")},
-                                 {QStringLiteral("paintMedianUs"), result.paintMedianUs},
-                                 {QStringLiteral("paintP95Us"), result.paintP95Us},
-                                 {QStringLiteral("diffMedianUs"), result.diffMedianUs},
-                                 {QStringLiteral("diffP95Us"), result.diffP95Us},
-                                 {QStringLiteral("bytesMedian"), result.bytesMedian},
-                                 {QStringLiteral("idleBytesMax"), result.idleBytesMax},
-                                 {QStringLiteral("updateMedianUs"), result.updateMedianUs},
-                                 {QStringLiteral("updatePaintMedianUs"), result.updatePaintMedianUs},
-                                 {QStringLiteral("measuredFrames"), measuredFrames},
-                                 {QStringLiteral("warmUpFrames"), WarmUpFrames}});
+    for (const Result& result : results) {
+        array.append(
+            QJsonObject{{QStringLiteral("scenario"), result.scenario},
+                        {QStringLiteral("width"), result.width},
+                        {QStringLiteral("height"), result.height},
+                        {QStringLiteral("mode"),
+                         result.idle ? QStringLiteral("idle") : QStringLiteral("mutating")},
+                        {QStringLiteral("paintMedianUs"), result.paintMedianUs},
+                        {QStringLiteral("paintP95Us"), result.paintP95Us},
+                        {QStringLiteral("diffMedianUs"), result.diffMedianUs},
+                        {QStringLiteral("diffP95Us"), result.diffP95Us},
+                        {QStringLiteral("bytesMedian"), result.bytesMedian},
+                        {QStringLiteral("idleBytesMax"), result.idleBytesMax},
+                        {QStringLiteral("updateMedianUs"), result.updateMedianUs},
+                        {QStringLiteral("updatePaintMedianUs"), result.updatePaintMedianUs},
+                        {QStringLiteral("measuredFrames"), measuredFrames},
+                        {QStringLiteral("warmUpFrames"), WarmUpFrames}});
     }
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
@@ -379,8 +364,7 @@ bool writeJson(const QString &path, const std::vector<Result> &results)
 
 } // namespace
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     QCoreApplication application(argc, argv);
     qmltui::ListView ensureListViewLinked;
     qmltui::TableView ensureTableViewLinked;
@@ -415,22 +399,23 @@ int main(int argc, char **argv)
     CountModel listModel(1000);
     engine.rootContext()->setContextProperty("benchmarkModel", &listModel);
 
-    const Mutation toggleColor = [](qmltui::Item *item, int frame) {
-        item->setProperty("color", QVariant::fromValue(
-            qmltui::Color((frame % 2) ? "#302010" : "#102030")));
+    const Mutation toggleColor = [](qmltui::Item* item, int frame) {
+        item->setProperty("color",
+                          QVariant::fromValue(qmltui::Color((frame % 2) ? "#302010" : "#102030")));
     };
-    const Mutation editOneRow = [](qmltui::Item *item, int frame) {
-        if (QObject *row = item->findChild<QObject *>(QStringLiteral("row%1").arg(frame % 50)))
+    const Mutation editOneRow = [](qmltui::Item* item, int frame) {
+        if (QObject* row = item->findChild<QObject*>(QStringLiteral("row%1").arg(frame % 50)))
             row->setProperty("text", QStringLiteral("<b>Row %1</b> [33mBUSY[0m frame %2 "
                                                     "lorem ipsum dolor sit amet, consectetur")
-                                         .arg(frame % 50).arg(frame));
+                                         .arg(frame % 50)
+                                         .arg(frame));
     };
-    const Mutation advanceComposite = [](qmltui::Item *item, int frame) {
+    const Mutation advanceComposite = [](qmltui::Item* item, int frame) {
         item->setProperty("frame", frame);
         item->setProperty("history", compositeHistory(frame));
         item->setProperty("rows", compositeRows(frame));
     };
-    const Mutation scrollList = [](qmltui::Item *item, int frame) {
+    const Mutation scrollList = [](qmltui::Item* item, int frame) {
         item->setProperty("contentY", (frame * 3) % 900);
     };
 
@@ -440,8 +425,8 @@ int main(int argc, char **argv)
         runBufferFill(size.width(), size.height(), results);
         ok &= runQmlScenario(engine, QStringLiteral("rectangle"), QString::fromUtf8(rectangleQml),
                              size.width(), size.height(), toggleColor, results);
-        ok &= runQmlScenario(engine, QStringLiteral("text_rows"), textRowsQml(),
-                             size.width(), size.height(), editOneRow, results);
+        ok &= runQmlScenario(engine, QStringLiteral("text_rows"), textRowsQml(), size.width(),
+                             size.height(), editOneRow, results);
         ok &= runQmlScenario(engine, QStringLiteral("composite"), QString::fromUtf8(compositeQml),
                              size.width(), size.height(), advanceComposite, results,
                              QStringLiteral("process-0"));
@@ -451,18 +436,15 @@ int main(int argc, char **argv)
 
     printResults(results);
     bool idleClean = true;
-    for (const Result &result : results) {
+    for (const Result& result : results) {
         if (result.idle && result.idleBytesMax > 0) {
             idleClean = false;
-            qWarning().noquote() << "idle frame produced output:" << result.scenario
-                                 << result.width << "x" << result.height
-                                 << result.idleBytesMax << "bytes";
+            qWarning().noquote() << "idle frame produced output:" << result.scenario << result.width
+                                 << "x" << result.height << result.idleBytesMax << "bytes";
         }
     }
-    if (!jsonPath.isEmpty())
-        ok &= writeJson(jsonPath, results);
+    if (!jsonPath.isEmpty()) ok &= writeJson(jsonPath, results);
 
-    if (!ok)
-        return 1;
+    if (!ok) return 1;
     return (strict && !idleClean) ? 2 : 0;
 }

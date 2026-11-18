@@ -1,43 +1,30 @@
-# Changes in 0.5.0
+# Changes in 0.6.0
 
-The framework and QML modules use the QmlTui name. Environment settings use
-`QMLTUI_*`, including Runner's `QMLTUI_RUNNER_*` variables. Frame logging uses
-`qmltui.frames`.
+QmlTui 0.6.0 is the first public release of QmlTui for Qt 6.8+ and C++17 across
+Linux, macOS, Windows Terminal, and WebAssembly (`xterm.js`).
 
-## Migrating from 0.4 to 0.5
+## Engine, Controls, and Platform Support
 
-| 0.4 API / Option | 0.5 Replacement |
-| :--- | :--- |
-| `TestRunner` (`qmltui::test_runner`, `QMLTUI_TEST_*`) | [`Runner`](../cpp-classes/runner.md) (`qmltui::runner`, `qmltui-runner`, `QMLTUI_RUNNER_*`) |
-| `-DQMLTUI_ENABLE_BEHAVIOR=ON/OFF` | `-DQMLTUI_ENABLE_PRIVATE_QT=ON/OFF` (controls `Behavior` and private-Qt `PropertyChanges` binding restoration) |
-| `TerminalHost` / `TerminalView` (`import QmlTui.TerminalView`) | [`PtyView`](../qml-types/ptyview.md) (`import QmlTui.PtyView`, `textColor`, `backgroundColor`, `scrollBarVisible`) |
-| `Terminal.FullScreen` | `Terminal.AltScreen` (with `Terminal.Inline` for normal-buffer CLI tools) |
-| `Scrollback.write(text)` | [`Scrollback.print(text)`](../qml-types/scrollback.md) and `Scrollback.append(...)` |
-| `Shortcut.sequence` integer bitmask only | [`Shortcut.sequence`](../qml-types/shortcut.md) accepts both key-chord strings (`"Ctrl+Q"`, `"F5"`) and Qt bitmasks |
-| `Animation` finite loop counts only | [`Animation.Infinite`](../qml-types/animation.md) (`-1`) for continuous animations |
-| `Palette`, `Switch`, `Toast` in `QmlTui.Controls` | Per-item color properties (`color`, `textColor`, `borderColor`) and recipes under `examples/recipes/` |
+- **Core spine encapsulation and partial-damage rendering**: `Item`, `Terminal`, `Popup`, and `FocusScope` now encapsulate internal state behind `d_ptr` (`ItemPrivate`, etc.), and consecutive `TextGridBuffer` frames track dirty bounds to reduce per-frame diff scanning and ANSI emission overhead.
+- **Normalized QML APIs and `Bound` controls**: Built-in `QmlTui.Controls` components use `pragma ComponentBehavior: Bound` with consistent explicit color override behavior across focus and disabled states, hardened `State` / `PropertyChanges` lifetimes, and bounded glyph interning.
+- **`Terminal.Inline` dynamic viewport resizing**: `InlineRenderer` and `Runner::resize(columns, rows)` now reflow `Terminal.Inline` sessions cleanly, keeping frame height content-sized up to `rows - 1`.
+- **WebAssembly shell (`qmltui_wasm_app()`)**: Generates a standalone `xterm.js` terminal host page (`<target>.html`) with `@xterm/addon-unicode-graphemes` (`15-graphemes`), OSC 4/10/11 color query replies, and OSC 52 clipboard bridging.
+- **Python (`PySide6`) integration**: Added [`examples/recipes/pyside6/`](../../examples/recipes/pyside6/) demonstrating hosting QmlTui QML modules from Python `QAbstractListModel` backends.
 
-## Highlights
+## Headless Testing (`Runner`) and Agentic Tooling
 
-The gallery now lives under `examples/gallery`; standalone recipes and guide
-examples live under `examples/recipes`. Example targets consistently use
-`qmltui_<directory>_demo`. Full applications moved to the separate qmltui-apps
-project.
+- **Multi-viewport probes and frame inspection in `qmltui-runner`**: Added `--sweep` (`60x18,80x24,120x36`), `--sizes <WxH,...>`, `--idle-ms <ms>` idle-repaint budget verification, `--ruler` 0-based `(x, y)` coordinate rulers, `--print`, `--styled`, `--scrollback`, and `--clean-artifacts`. See the [Runner API](../cpp-classes/runner.md) and [Agentic Development Guide](../guides/agentic-development.md).
+- **Bundled portable coding-agent skills**: Added [`qmltui-qml`](../../.agents/skills/qmltui-qml/SKILL.md) and [`qmltui-dev-loop`](../../.agents/skills/qmltui-dev-loop/SKILL.md) (`npx skills add qmltui/qmltui`) for QML conventions and closed-loop frame verification.
 
-`find_package(QmlTui)` now populates `QT_QML_IMPORT_PATH` automatically for
-`qt_add_qml_module()` consumers, and applications can stream `console.log()` /
-`qDebug()` output live during `AltScreen` sessions via `QMLTUI_LOG_FILE=<path>`
-or `2> debug.log`.
+## CMake Packaging and Diagnostics
 
-Documentation now has Getting Started, Guides, QML Types, C++ Classes,
-Examples, and Changes entry points. Reference documentation no longer lives
-beside implementation files.
+- **Automatic QML import paths and exported CLI**: `find_package(QmlTui 0.6)` configures `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically, sets relative `$ORIGIN` / `@loader_path` `INSTALL_RPATH` entries on installed libraries and plugins, and exports `qmltui::qmltui-runner`.
+- **Live `AltScreen` logging**: Stream `console.log()`, `qDebug()`, and QML warnings unbuffered during alternate-screen sessions with `QMLTUI_LOG_FILE=<path>` or `2> debug.log`.
+- **Documentation portal and showcase**: Interactive VitePress documentation and browser playground live in [`qmltui/website`](https://github.com/qmltui/website), alongside 12 full-scale applications in [`qmltui/apps`](https://github.com/qmltui/apps).
 
-Runner supports committed-scrollback assertions, deterministic virtual time,
-extended `expectStyle()` attribute checks (`blink`, `conceal`, `strikethrough`,
-with unknown-key rejection), and asciicast v2 recording with `RECORD`,
-`startRecording()`, `stopRecording()`, and `marker()`. See the [Runner API](../cpp-classes/runner.md).
+## Earlier Releases
 
-- [Porting from 0.1](0.1.md)
-- [Porting from 0.3](0.3.md)
+- [Porting from 0.4 to 0.5](0.5.md)
 - [Porting from 0.4](0.4.md)
+- [Porting from 0.3](0.3.md)
+- [Porting from 0.1](0.1.md)

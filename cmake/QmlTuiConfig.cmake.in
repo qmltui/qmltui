@@ -22,9 +22,11 @@ endif()
 # Scenario API declarations for editor completion; consumed by
 # qmltui_scenario_editor_support(). Resolved here for the same
 # PACKAGE_PREFIX_DIR reason as the QML import path above.
-set(QMLTUI_RUNNER_DECLARATIONS
-    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/QmlTui/Runner/qmltui-runner.d.ts"
-    CACHE INTERNAL "Installed location of the Runner scenario API declarations" FORCE)
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+    set(QMLTUI_RUNNER_DECLARATIONS
+        "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/QmlTui/Runner/qmltui-runner.d.ts"
+        CACHE INTERNAL "Installed location of the Runner scenario API declarations" FORCE)
+endif()
 
 include(CMakeFindDependencyMacro)
 find_dependency(Qt6 6.8 COMPONENTS Core Qml)
@@ -58,7 +60,9 @@ if("@QMLTUI_STATIC_QML_MODULE@" STREQUAL "STATIC")
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiTargets.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+endif()
 if(EMSCRIPTEN)
     include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiWasm.cmake")
 endif()

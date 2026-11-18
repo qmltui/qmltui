@@ -2,35 +2,30 @@
 
 namespace qmltui::demo {
 
-JsonHighlighter::JsonHighlighter(QObject *parent)
-    : QObject(parent)
-{
-}
+JsonHighlighter::JsonHighlighter(QObject* parent) : QObject(parent) {}
 
-JsonHighlighter::~JsonHighlighter()
-{
+JsonHighlighter::~JsonHighlighter() {
     detachTarget();
 }
 
-void JsonHighlighter::detachTarget()
-{
+void JsonHighlighter::detachTarget() {
     if (m_target) {
-        disconnect(m_target.data(), &TextArea::textChanged, this, &JsonHighlighter::onTargetTextChanged);
+        disconnect(m_target.data(), &TextArea::textChanged, this,
+                   &JsonHighlighter::onTargetTextChanged);
         m_target->clearHighlightLayer(QStringLiteral("syntax"));
         m_target->clearHighlightLayer(QStringLiteral("search"));
     }
 }
 
-void JsonHighlighter::setTarget(TextArea *target)
-{
-    if (m_target == target)
-        return;
+void JsonHighlighter::setTarget(TextArea* target) {
+    if (m_target == target) return;
 
     detachTarget();
     m_target = target;
 
     if (m_target) {
-        connect(m_target.data(), &TextArea::textChanged, this, &JsonHighlighter::onTargetTextChanged);
+        connect(m_target.data(), &TextArea::textChanged, this,
+                &JsonHighlighter::onTargetTextChanged);
         tokenize();
         applySyntaxHighlighting();
         applySearchHighlighting();
@@ -41,75 +36,64 @@ void JsonHighlighter::setTarget(TextArea *target)
     emit targetChanged();
 }
 
-void JsonHighlighter::setSearchTerm(const QString &term)
-{
-    if (m_searchTerm == term)
-        return;
+void JsonHighlighter::setSearchTerm(const QString& term) {
+    if (m_searchTerm == term) return;
 
     m_searchTerm = term;
     emit searchTermChanged();
     applySearchHighlighting();
 }
 
-void JsonHighlighter::setStringColor(Color color)
-{
+void JsonHighlighter::setStringColor(Color color) {
     if (m_stringColor == color) return;
     m_stringColor = color;
     emit stylesChanged();
     applySyntaxHighlighting();
 }
 
-void JsonHighlighter::setNumberColor(Color color)
-{
+void JsonHighlighter::setNumberColor(Color color) {
     if (m_numberColor == color) return;
     m_numberColor = color;
     emit stylesChanged();
     applySyntaxHighlighting();
 }
 
-void JsonHighlighter::setKeywordColor(Color color)
-{
+void JsonHighlighter::setKeywordColor(Color color) {
     if (m_keywordColor == color) return;
     m_keywordColor = color;
     emit stylesChanged();
     applySyntaxHighlighting();
 }
 
-void JsonHighlighter::setCommentColor(Color color)
-{
+void JsonHighlighter::setCommentColor(Color color) {
     if (m_commentColor == color) return;
     m_commentColor = color;
     emit stylesChanged();
     applySyntaxHighlighting();
 }
 
-void JsonHighlighter::setSearchBgColor(Color color)
-{
+void JsonHighlighter::setSearchBgColor(Color color) {
     if (m_searchBgColor == color) return;
     m_searchBgColor = color;
     emit stylesChanged();
     applySearchHighlighting();
 }
 
-void JsonHighlighter::rehighlight()
-{
+void JsonHighlighter::rehighlight() {
     tokenize();
     applySyntaxHighlighting();
     applySearchHighlighting();
 }
 
-void JsonHighlighter::onTargetTextChanged()
-{
+void JsonHighlighter::onTargetTextChanged() {
     tokenize();
     applySyntaxHighlighting();
     applySearchHighlighting();
 }
 
-void JsonHighlighter::tokenize()
-{
+void JsonHighlighter::tokenize() {
     m_cachedTokens.clear();
-    if (!m_target)
-        return;
+    if (!m_target) return;
 
     const QString text = m_target->text();
     const int len = static_cast<int>(text.size());
@@ -171,9 +155,11 @@ void JsonHighlighter::tokenize()
         if (text[i].isDigit() || (text[i] == u'-' && i + 1 < len && text[i + 1].isDigit())) {
             const int start = i;
             if (text[i] == u'-') ++i;
-            while (i < len && (text[i].isDigit() || text[i] == u'.' || text[i] == u'e' || text[i] == u'E' || text[i] == u'+' || text[i] == u'-')) {
+            while (i < len && (text[i].isDigit() || text[i] == u'.' || text[i] == u'e' ||
+                               text[i] == u'E' || text[i] == u'+' || text[i] == u'-')) {
                 // simple number scanner
-                if ((text[i] == u'+' || text[i] == u'-') && i > start && text[i - 1] != u'e' && text[i - 1] != u'E')
+                if ((text[i] == u'+' || text[i] == u'-') && i > start && text[i - 1] != u'e' &&
+                    text[i - 1] != u'E')
                     break;
                 ++i;
             }
@@ -182,17 +168,20 @@ void JsonHighlighter::tokenize()
         }
 
         // Keywords: true, false, null
-        if (text.sliced(i).startsWith(QStringLiteral("true")) && (i + 4 == len || !text[i + 4].isLetterOrNumber())) {
+        if (text.sliced(i).startsWith(QStringLiteral("true")) &&
+            (i + 4 == len || !text[i + 4].isLetterOrNumber())) {
             m_cachedTokens.append(Token{i, 4, Keyword});
             i += 4;
             continue;
         }
-        if (text.sliced(i).startsWith(QStringLiteral("false")) && (i + 5 == len || !text[i + 5].isLetterOrNumber())) {
+        if (text.sliced(i).startsWith(QStringLiteral("false")) &&
+            (i + 5 == len || !text[i + 5].isLetterOrNumber())) {
             m_cachedTokens.append(Token{i, 5, Keyword});
             i += 5;
             continue;
         }
-        if (text.sliced(i).startsWith(QStringLiteral("null")) && (i + 4 == len || !text[i + 4].isLetterOrNumber())) {
+        if (text.sliced(i).startsWith(QStringLiteral("null")) &&
+            (i + 4 == len || !text[i + 4].isLetterOrNumber())) {
             m_cachedTokens.append(Token{i, 4, Keyword});
             i += 4;
             continue;
@@ -203,15 +192,13 @@ void JsonHighlighter::tokenize()
     }
 }
 
-void JsonHighlighter::applySyntaxHighlighting()
-{
-    if (!m_target)
-        return;
+void JsonHighlighter::applySyntaxHighlighting() {
+    if (!m_target) return;
 
     QList<HighlightRange> ranges;
     ranges.reserve(m_cachedTokens.size());
 
-    for (const Token &tok : m_cachedTokens) {
+    for (const Token& tok : m_cachedTokens) {
         HighlightRange r(tok.start, tok.length);
         switch (tok.type) {
         case String:
@@ -235,10 +222,8 @@ void JsonHighlighter::applySyntaxHighlighting()
     m_target->setHighlightLayer(QStringLiteral("syntax"), ranges, m_target->textRevision(), 0);
 }
 
-void JsonHighlighter::applySearchHighlighting()
-{
-    if (!m_target)
-        return;
+void JsonHighlighter::applySearchHighlighting() {
+    if (!m_target) return;
 
     if (m_searchTerm.isEmpty()) {
         m_target->clearHighlightLayer(QStringLiteral("search"));
@@ -256,7 +241,8 @@ void JsonHighlighter::applySearchHighlighting()
         index += static_cast<int>(m_searchTerm.size());
     }
 
-    m_target->setHighlightLayer(QStringLiteral("search"), searchRanges, m_target->textRevision(), 10);
+    m_target->setHighlightLayer(QStringLiteral("search"), searchRanges, m_target->textRevision(),
+                                10);
 }
 
 } // namespace qmltui::demo

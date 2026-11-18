@@ -33,7 +33,6 @@ function(gallery_add_executable target uri main_source)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
-        VERSION 1.0
         RESOURCE_PREFIX "/qt/qml"
         QML_FILES ${gallery_qml_files}
         DEPENDENCIES ${gallery_dependencies}

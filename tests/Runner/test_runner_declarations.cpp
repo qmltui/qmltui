@@ -12,27 +12,25 @@ private slots:
     void everyFacadeMethodIsDeclared();
 };
 
-static QString readAll(const QString& path)
-{
+static QString readAll(const QString& path) {
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return {};
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
     return QString::fromUtf8(file.readAll());
 }
 
-void TestRunnerDeclarations::everyFacadeMethodIsDeclared()
-{
+void TestRunnerDeclarations::everyFacadeMethodIsDeclared() {
     const QString sourceDir = QStringLiteral(QMLTUI_SOURCE_DIR);
-    const QString runnerSource = readAll(sourceDir + QStringLiteral("/src/QmlTui/Runner/Runner.cpp"));
+    const QString runnerSource =
+        readAll(sourceDir + QStringLiteral("/src/QmlTui/Runner/Runner.cpp"));
     QVERIFY(!runnerSource.isEmpty());
-    const QString declarations = readAll(sourceDir + QStringLiteral("/src/QmlTui/Runner/qmltui-runner.d.ts"));
+    const QString declarations =
+        readAll(sourceDir + QStringLiteral("/src/QmlTui/Runner/qmltui-runner.d.ts"));
     QVERIFY(!declarations.isEmpty());
 
     // The facade's methodNames array is the authoritative list of what a
     // scenario can call on the terminal argument.
-    const QRegularExpression listPattern(
-        QStringLiteral("const methodNames = \\[(.*?)\\];"),
-        QRegularExpression::DotMatchesEverythingOption);
+    const QRegularExpression listPattern(QStringLiteral("const methodNames = \\[(.*?)\\];"),
+                                         QRegularExpression::DotMatchesEverythingOption);
     const QRegularExpressionMatch listMatch = listPattern.match(runnerSource);
     QVERIFY2(listMatch.hasMatch(), "methodNames array not found in Runner.cpp");
 
@@ -49,8 +47,7 @@ void TestRunnerDeclarations::everyFacadeMethodIsDeclared()
     for (const QString& name : std::as_const(names)) {
         const QRegularExpression declared(
             QStringLiteral("\\b%1\\s*\\(").arg(QRegularExpression::escape(name)));
-        if (!declarations.contains(declared))
-            missing.append(name);
+        if (!declarations.contains(declared)) missing.append(name);
     }
     QVERIFY2(missing.isEmpty(),
              qPrintable(QStringLiteral("Facade methods missing from qmltui-runner.d.ts: %1")

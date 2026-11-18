@@ -32,9 +32,9 @@ curl -o actions-runner-linux-x64.tar.gz -L \
 tar xzf actions-runner-linux-x64.tar.gz
 ./config.sh --url https://github.com/qmltui/qmltui --token <TOKEN> \
   --name wsl-linux --labels linux --unattended
-echo 'QMLTUI_QT_LINUX=/home/yosri/Qt/6.8.6/gcc_64' >> .env
-echo 'QMLTUI_QT_WASM=/home/yosri/Qt/6.8.6/wasm_singlethread' >> .env
-echo 'EMSDK=/home/yosri/emsdk' >> .env
+echo "QMLTUI_QT_LINUX=$HOME/Qt/6.8.6/gcc_64" >> .env
+echo "QMLTUI_QT_WASM=$HOME/Qt/6.8.6/wasm_singlethread" >> .env
+echo "EMSDK=$HOME/emsdk" >> .env
 ```
 
 Keep the runner active:

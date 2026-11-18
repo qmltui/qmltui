@@ -33,7 +33,7 @@ include(FetchContent)
 FetchContent_Declare(
     QmlTui
     GIT_REPOSITORY https://github.com/qmltui/qmltui.git
-    GIT_TAG        main # Pin a release tag (e.g. v0.5.0) once published
+    GIT_TAG        main # Pin a release tag (e.g. v0.6.0) once published
 )
 FetchContent_MakeAvailable(QmlTui)
 
@@ -42,7 +42,6 @@ set(QT_QML_GENERATE_QMLLS_INI ON)
 qt_add_executable(hello_qmltui main.cpp)
 qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
-    VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES
         TARGET qmltui::core
@@ -56,7 +55,7 @@ target_link_libraries(hello_qmltui PRIVATE
 )
 ```
 
-`QT_QML_GENERATE_QMLLS_INI` writes `.qmlls.ini` for editor autocomplete, and `DEPENDENCIES TARGET` orders QmlTui's `.qmltypes` generation before `qmllint` in `FetchContent` builds. When consuming an installed QmlTui package with `find_package(QmlTui 0.5 REQUIRED)`, omit `DEPENDENCIES TARGET` (installed QML metadata is resolved automatically via `QT_QML_IMPORT_PATH`; see [Build Configuration and Installation](build-configuration.md)).
+`QT_QML_GENERATE_QMLLS_INI` writes `.qmlls.ini` for editor autocomplete, and `DEPENDENCIES TARGET` orders QmlTui's `.qmltypes` generation before `qmllint` in `FetchContent` builds. When consuming an installed QmlTui package with `find_package(QmlTui 0.6 REQUIRED)`, omit `DEPENDENCIES TARGET` (installed QML metadata is resolved automatically via `QT_QML_IMPORT_PATH`; see [Build Configuration and Installation](build-configuration.md)).
 
 ### 2. `main.cpp`
 
@@ -211,7 +210,6 @@ Add `SOURCES AppController.h` to `qt_add_qml_module()`:
 ```cmake
 qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
-    VERSION 1.0
     SOURCES AppController.h
     QML_FILES Main.qml
     DEPENDENCIES

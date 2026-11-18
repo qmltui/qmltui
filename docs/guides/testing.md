@@ -213,7 +213,6 @@ include(CTest) # Enables BUILD_TESTING (and QMLTUI_ENABLE_RUNNER when using Fetc
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
-    VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES
         TARGET qmltui::core

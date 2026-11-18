@@ -14,21 +14,18 @@
 
 class CountModel final : public QAbstractListModel {
 public:
-    explicit CountModel(int count, QObject *parent = nullptr)
+    explicit CountModel(int count, QObject* parent = nullptr)
         : QAbstractListModel(parent), m_count(count) {}
 
-    int rowCount(const QModelIndex &parent = {}) const override {
+    int rowCount(const QModelIndex& parent = {}) const override {
         return parent.isValid() ? 0 : m_count;
     }
 
-    QVariant data(const QModelIndex &index, int role) const override {
-        return index.isValid() && role == Qt::DisplayRole
-            ? QVariant(index.row()) : QVariant();
+    QVariant data(const QModelIndex& index, int role) const override {
+        return index.isValid() && role == Qt::DisplayRole ? QVariant(index.row()) : QVariant();
     }
 
-    QHash<int, QByteArray> roleNames() const override {
-        return {{Qt::DisplayRole, "display"}};
-    }
+    QHash<int, QByteArray> roleNames() const override { return {{Qt::DisplayRole, "display"}}; }
 
     void touch(int row) { emit dataChanged(index(row, 0), index(row, 0), {Qt::DisplayRole}); }
 
@@ -36,8 +33,7 @@ private:
     int m_count;
 };
 
-static qint64 measureCreation(QQmlEngine &engine, int rowCount)
-{
+static qint64 measureCreation(QQmlEngine& engine, int rowCount) {
     CountModel model(rowCount);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
@@ -57,7 +53,8 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
                 required property var modelData
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     if (!component.isReady()) {
         qCritical().noquote() << component.errorString();
         return -1;
@@ -66,7 +63,7 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *tree = qobject_cast<qmltui::TreeView*>(object.get());
+    auto* tree = qobject_cast<qmltui::TreeView*>(object.get());
     if (!tree) return -1;
     qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
@@ -78,8 +75,7 @@ static qint64 measureCreation(QQmlEngine &engine, int rowCount)
     return timer.elapsed();
 }
 
-static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
-{
+static qint64 measureTableViewDelegate(QQmlEngine& engine, int rowCount) {
     CountModel model(rowCount);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
@@ -96,7 +92,8 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
                 text: display
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     if (!component.isReady()) {
         qCritical().noquote() << component.errorString();
         return -1;
@@ -105,7 +102,7 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *table = qobject_cast<qmltui::TableView*>(object.get());
+    auto* table = qobject_cast<qmltui::TableView*>(object.get());
     if (!table) return -1;
     qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
@@ -117,8 +114,7 @@ static qint64 measureTableViewDelegate(QQmlEngine &engine, int rowCount)
     return timer.elapsed();
 }
 
-static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int steps)
-{
+static qint64 measureListViewSelection(QQmlEngine& engine, int rowCount, int steps) {
     CountModel model(rowCount);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
@@ -140,14 +136,15 @@ static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int ste
                 }
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     if (!component.isReady()) {
         qCritical().noquote() << component.errorString();
         return -1;
     }
 
     std::unique_ptr<QObject> object(component.create());
-    auto *listView = qobject_cast<qmltui::ListView*>(object.get());
+    auto* listView = qobject_cast<qmltui::ListView*>(object.get());
     if (!listView) return -1;
     qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
@@ -165,8 +162,7 @@ static qint64 measureListViewSelection(QQmlEngine &engine, int rowCount, int ste
 
 // Plan 07 WP6: dataChanged on a visible node must not re-flatten a 10k node
 // tree or re-create delegates.
-static qint64 measureTreeViewDataChanged(QQmlEngine &engine, int rowCount, int steps)
-{
+static qint64 measureTreeViewDataChanged(QQmlEngine& engine, int rowCount, int steps) {
     CountModel model(rowCount);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
@@ -182,13 +178,14 @@ static qint64 measureTreeViewDataChanged(QQmlEngine &engine, int rowCount, int s
                 text: display
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     if (!component.isReady()) {
         qCritical().noquote() << component.errorString();
         return -1;
     }
     std::unique_ptr<QObject> object(component.create());
-    auto *tree = qobject_cast<qmltui::TreeView*>(object.get());
+    auto* tree = qobject_cast<qmltui::TreeView*>(object.get());
     if (!tree) return -1;
     qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
@@ -209,8 +206,7 @@ static qint64 measureTreeViewDataChanged(QQmlEngine &engine, int rowCount, int s
     return elapsed;
 }
 
-static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
-{
+static qint64 measureGridViewScroll(QQmlEngine& engine, int rowCount, int steps) {
     CountModel model(rowCount);
     engine.rootContext()->setContextProperty("benchmarkModel", &model);
     QQmlComponent component(&engine);
@@ -228,7 +224,8 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
                 text: display
             }
         }
-    )", QUrl());
+    )",
+                      QUrl());
     if (!component.isReady()) {
         qCritical().noquote() << component.errorString();
         return -1;
@@ -237,7 +234,7 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
     QElapsedTimer timer;
     timer.start();
     std::unique_ptr<QObject> object(component.create());
-    auto *grid = qobject_cast<qmltui::GridView*>(object.get());
+    auto* grid = qobject_cast<qmltui::GridView*>(object.get());
     if (!grid) return -1;
     qmltui::TextGridBuffer buffer;
     if (!buffer.resize(80, 24)) return -1;
@@ -254,23 +251,19 @@ static qint64 measureGridViewScroll(QQmlEngine &engine, int rowCount, int steps)
     return timer.elapsed();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     QCoreApplication application(argc, argv);
     qmltui::TreeView ensureModuleIsLinked;
     qmltui::TableView ensureTableViewLinked;
     qmltui::ListView ensureListViewLinked;
     qmltui::GridView ensureGridViewLinked;
     QQmlEngine engine;
-    engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/../QmlTui"));
-    engine.addImportPath(QCoreApplication::applicationDirPath()
-                         + QStringLiteral("/.."));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
+    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/.."));
 
     const qint64 tree1kMs = measureCreation(engine, 1'000);
     const qint64 tree10kMs = measureCreation(engine, 10'000);
-    qInfo() << "TreeView creation: 1k rows" << tree1kMs
-            << "ms; 10k rows" << tree10kMs << "ms";
+    qInfo() << "TreeView creation: 1k rows" << tree1kMs << "ms; 10k rows" << tree10kMs << "ms";
 
     const qint64 table1kMs = measureTableViewDelegate(engine, 1'000);
     const qint64 table10kMs = measureTableViewDelegate(engine, 10'000);
@@ -285,8 +278,11 @@ int main(int argc, char **argv)
     qInfo() << "TreeView 10k nodes: 1,000 dataChanged & render steps:" << treeChangeMs << "ms";
 
     const qint64 gridScrollMs = measureGridViewScroll(engine, 100'000, 1'000);
-    qInfo() << "GridView 100k rows: creation + 1,000 scroll & render steps:" << gridScrollMs << "ms";
+    qInfo() << "GridView 100k rows: creation + 1,000 scroll & render steps:" << gridScrollMs
+            << "ms";
 
-    return (tree1kMs < 0 || tree10kMs < 0 || table1kMs < 0 || table10kMs < 0 || listSelectMs < 0
-            || gridScrollMs < 0 || treeChangeMs < 0) ? 1 : 0;
+    return (tree1kMs < 0 || tree10kMs < 0 || table1kMs < 0 || table10kMs < 0 || listSelectMs < 0 ||
+            gridScrollMs < 0 || treeChangeMs < 0)
+               ? 1
+               : 0;
 }

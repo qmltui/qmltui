@@ -43,7 +43,7 @@ ctest --test-dir build -LE Demo --output-on-failure
 Before opening a pull request, verify formatting, documentation snippets, skill metadata, and licensing:
 
 ```bash
-./scripts/format.py --check src tools
+./scripts/format.py --check src tools examples tests
 python3 ./scripts/check_docs.py --build-dir build
 python3 ./.agents/skills/qmltui-qml/check-skills.py --build-dir build
 reuse lint

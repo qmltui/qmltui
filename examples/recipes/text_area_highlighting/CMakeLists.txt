@@ -2,7 +2,6 @@ qt_add_executable(qmltui_text_area_highlighting_demo main.cpp)
 
 qt_add_qml_module(qmltui_text_area_highlighting_demo
     URI TextAreaHighlightingDemo
-    VERSION 1.0
     SOURCES
         JsonHighlighter.h
         JsonHighlighter.cpp

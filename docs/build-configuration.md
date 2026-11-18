@@ -21,6 +21,7 @@ QmlTui requires **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** (tested a
 
 - **Public Qt builds (`-DQMLTUI_ENABLE_PRIVATE_QT=OFF`)**: Link strictly against public `Qt6::Core` and `Qt6::Qml` headers (omitting `Behavior` and direct-assignment `PropertyChanges`). Shared binaries preserve Qt 6 forward binary compatibility across minor versions (`6.8` through `6.12`).
 - **Private Qt builds (`-DQMLTUI_ENABLE_PRIVATE_QT=ON`, default when `Qt6::QmlPrivate` is installed)**: Link `Qt6::QmlPrivate` inside `QmlPrivateBridge` to enable `Behavior` and binding-aware `PropertyChanges`. Because Qt does not guarantee binary compatibility for `*Private` modules across minor releases, shared `QmlTuiCore` binaries built with `QMLTUI_ENABLE_PRIVATE_QT=ON` must run against the same `Qt 6.x` minor series they were compiled against. Rebuild QmlTui when upgrading Qt minor versions, or pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when distributing shared binaries across multiple system Qt minor versions.
+- **Pre-1.0 versioning (`0.x`)**: During the `0.x` series, `QmlTuiConfigVersion.cmake` enforces `SameMinorVersion` compatibility (`0.6.x` patch releases preserve QML and C++ source compatibility; breaking API refinements or C++ layout changes increment the minor version until `1.0.0`).
 
 ## Using an Installed Build (`find_package(QmlTui)`)
 
@@ -35,7 +36,7 @@ cmake --build build
 cmake --install build --prefix /your/prefix
 ```
 
-Reuse `main.cpp` and `Main.qml` from [Getting Started](getting-started.md) and consume the package with `find_package(QmlTui 0.5 REQUIRED)`:
+Reuse `main.cpp` and `Main.qml` from [Getting Started](getting-started.md) and consume the package with `find_package(QmlTui 0.6 REQUIRED)`:
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -46,14 +47,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
-find_package(QmlTui 0.5 REQUIRED)
+find_package(QmlTui 0.6 REQUIRED)
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
 qt_add_executable(hello_qmltui main.cpp)
 qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
-    VERSION 1.0
     QML_FILES Main.qml
 )
 target_link_libraries(hello_qmltui PRIVATE
@@ -104,7 +104,6 @@ Register additional `.qml` components and singletons on the same `qt_add_qml_mod
   )
   qt_add_qml_module(my_app
       URI MyApp
-      VERSION 1.0
       QML_FILES Main.qml Theme.qml
       DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
   )

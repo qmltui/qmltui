@@ -4,7 +4,6 @@ qt_add_executable(qmltui_big_text_demo main.cpp)
 # own QML module rather than shipped by the library.
 qt_add_qml_module(qmltui_big_text_demo
     URI BigTextDemo
-    VERSION 1.0
     SOURCES
         BigText.h
         BigText.cpp

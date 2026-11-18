@@ -13,6 +13,8 @@ Temporary/
 
 # User settings and logs
 *.log
+*.profraw
+*.profdata
 # Screenshots belong in docs/assets, never in the repository root.
 /*.png
 /*.jpg

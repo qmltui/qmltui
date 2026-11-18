@@ -1,0 +1,35 @@
+name: Bug Report
+description: Report a rendering, input, layout, CMake, or crash issue in QmlTui
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting an issue! Including a minimal QML file or `qmltui-runner` script makes terminal bugs much faster to reproduce.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the expected terminal behavior vs. what actually occurred.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal Reproduction (QML / C++ / Runner script)
+      description: Paste a minimal `Terminal {}` QML snippet, CMake setup, or `qmltui-runner` command.
+      render: qml
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment (OS, Terminal Emulator, Qt Version, QmlTui Version)
+      placeholder: "e.g. Linux (Arch), Kitty 0.39 ($TERM=xterm-kitty), Qt 6.8.3, QmlTui v0.6.0, QMLTUI_ENABLE_PRIVATE_QT=ON"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Frame Capture or Diagnostic Logs (Optional)
+      description: Output from `qmltui-runner --print` / `result.json` or `QMLTUI_LOG_FILE`.

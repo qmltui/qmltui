@@ -1,0 +1,167 @@
+name: CLA
+
+# Path-scoped Contributor License Agreement check matching CLA.md:
+# - Only pull requests modifying LGPL-3.0-only paths (src/, tests/, tools/,
+#   excluding CC-BY-4.0 *.md documentation) require CLA sign-off.
+# - Never checks out untrusted pull request code.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    name: CLA check
+    if: >-
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       (contains(github.event.comment.body, 'I have read the CLA Document and I hereby sign the CLA') ||
+        contains(github.event.comment.body, 'recheck')))
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Verify CLA status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const PHRASE = 'I have read the CLA Document and I hereby sign the CLA';
+            const MARKER = '<!-- qmltui-cla-bot -->';
+            const { owner, repo } = context.repo;
+
+            const prNumber = context.eventName === 'pull_request_target'
+              ? context.payload.pull_request.number
+              : context.payload.issue.number;
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            if (pr.state !== 'open') {
+              core.info(`PR #${prNumber} is ${pr.state}; skipping.`);
+              return;
+            }
+
+            const sha = pr.head.sha;
+            const author = pr.user.login;
+            const isBot = pr.user.type === 'Bot' || author.endsWith('[bot]');
+            const isOwner = pr.author_association === 'OWNER';
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+
+            const requiresCla = files.some(({ filename }) => {
+              if (filename.endsWith('.md') || /(?:^|\/)doc\//.test(filename)) {
+                return false;
+              }
+              return /^(?:src|tests|tools)\//.test(filename);
+            });
+
+            async function setStatus(state, description) {
+              await github.rest.repos.createCommitStatus({
+                owner,
+                repo,
+                sha,
+                state,
+                context: 'cla/qmltui',
+                description: description.slice(0, 140),
+                target_url: `https://github.com/${owner}/${repo}/blob/main/CLA.md`,
+              });
+            }
+
+            if (isBot || isOwner || !requiresCla) {
+              const reason = !requiresCla
+                ? 'Permissive paths only (BSD-3-Clause / CC-BY-4.0) — CLA not required'
+                : 'Exempt maintainer or automation account';
+              await setStatus('success', reason);
+              core.info(reason);
+              return;
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            let signed = comments.some(
+              (c) => c.user && c.user.login.toLowerCase() === author.toLowerCase() && c.body.includes(PHRASE)
+            );
+
+            if (!signed) {
+              const searchRes = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:pr commenter:${author} "${PHRASE}"`,
+                per_page: 20,
+              });
+              for (const item of searchRes.data.items) {
+                if (item.number === prNumber) continue;
+                const priorComments = await github.paginate(github.rest.issues.listComments, {
+                  owner,
+                  repo,
+                  issue_number: item.number,
+                  per_page: 100,
+                });
+                if (
+                  priorComments.some(
+                    (c) => c.user && c.user.login.toLowerCase() === author.toLowerCase() && c.body.includes(PHRASE)
+                  )
+                ) {
+                  signed = true;
+                  break;
+                }
+              }
+            }
+
+            const botComment = comments.find((c) => c.body && c.body.includes(MARKER));
+
+            if (signed) {
+              await setStatus('success', `CLA signed by @${author}`);
+              if (botComment && !botComment.body.includes('has been recorded')) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: botComment.id,
+                  body: `${MARKER}\nThank you @${author} — your [CLA](https://github.com/${owner}/${repo}/blob/main/CLA.md) sign-off has been recorded.`,
+                });
+              }
+              return;
+            }
+
+            await setStatus('failure', `CLA sign-off required from @${author} (see CLA.md)`);
+
+            if (!botComment && context.eventName === 'pull_request_target') {
+              const message = [
+                MARKER,
+                `Thank you for your contribution, @${author}!`,
+                '',
+                `Because this pull request modifies \`LGPL-3.0-only\` paths (\`src/\`, \`tests/\`, or \`tools/\`), please review [\`CLA.md\`](https://github.com/${owner}/${repo}/blob/main/CLA.md) and post a one-time comment on this PR with the exact text below:`,
+                '',
+                '```text',
+                PHRASE,
+                '```',
+                '',
+                'Once posted, this check updates automatically and future pull requests from your account are covered.',
+              ].join('\n');
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: message,
+              });
+            }
+            core.setFailed(`Awaiting CLA sign-off comment from @${author}.`);

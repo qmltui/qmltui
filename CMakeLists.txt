@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(qmltui VERSION 0.5.0 LANGUAGES CXX)
+project(qmltui VERSION 0.6.0 LANGUAGES CXX)
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
@@ -202,8 +202,18 @@ install(EXPORT QmlTuiTargets
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/QmlTuiConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/QmlTuiConfigVersion.cmake"
-    cmake/QmlTuiRunner.cmake
-    cmake/RunQmlTuiScenario.cmake
     cmake/QmlTuiWasm.cmake
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
+)
+if(QMLTUI_ENABLE_RUNNER AND NOT EMSCRIPTEN)
+    install(FILES
+        cmake/QmlTuiRunner.cmake
+        cmake/RunQmlTuiScenario.cmake
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
+    )
+endif()
+install(FILES
+    LICENSE.md
+    THIRD-PARTY.md
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/QmlTui"
 )

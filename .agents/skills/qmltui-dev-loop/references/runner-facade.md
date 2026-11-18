@@ -91,8 +91,8 @@ Snapshot paths resolve relative to the scenario file; mismatches write `snapshot
 | `cell(x, y)` | Returns `{ x, y, character, continuation, foreground, background, attributes }` at `(x, y)`. |
 | `findText(text)` | Returns visible single-row matches in row-major order as `{ x, y, width }[]` in frame coordinates. |
 | `itemRect(objectName)` | Returns `{ x, y, width, height }` in cells for the first visible `Item` with `objectName` (clipped to viewport; fails if missing/hidden/off-screen). |
-| `size()` | Returns `{ columns, rows }` of the current committed frame. |
-| `resize(columns, rows)` | Resizes viewport (`1..1000` each) and waits for a frame committed at the new size. |
+| `size()` | Returns `{ columns, rows }` of the current test viewport. |
+| `resize(columns, rows)` | Resizes viewport (`1..1000` each) and waits for a frame committed at the new size (in `Terminal.Inline`, frame height stays content-sized up to `rows - 1`). |
 | `region(x, y, width, height)` | Returns a scoped `Region` locator for `[x, y, width, height]`. |
 | `item(objectName)` | Returns a scoped `Region` locator for `itemRect(objectName)` (with `objectName` set). |
 | `rootObject()` | Returns the root `Terminal` QObject (use only to read config/model inputs when computing expected frame text). |

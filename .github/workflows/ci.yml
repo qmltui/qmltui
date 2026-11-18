@@ -76,7 +76,7 @@ jobs:
           if [ "${RUNNER_ENVIRONMENT:-}" != "self-hosted" ] && ! command -v clang-format >/dev/null 2>&1; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends clang-format
           fi
-          python3 ./scripts/format.py --check src tools
+          python3 ./scripts/format.py --check src tools examples tests
           python3 ./scripts/check_docs.py --build-dir build
           python3 ./.agents/skills/qmltui-qml/check-skills.py --build-dir build
 
@@ -126,8 +126,6 @@ jobs:
   coverage:
     name: coverage (linux / clang / llvm-cov)
     runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -188,14 +186,29 @@ jobs:
             build-coverage/coverage/lcov.info
           retention-days: 14
 
+  coverage-badge:
+    name: coverage badge (main)
+    needs: coverage
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download coverage summary and badge
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-artifact
+
       - name: Publish coverage badge to badges branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           badge_dir=$(mktemp -d)
-          cp build-coverage/coverage/coverage.svg "$badge_dir/coverage.svg"
-          cp build-coverage/coverage/summary.md "$badge_dir/summary.md"
+          svg_path=$(find coverage-artifact -name coverage.svg -print -quit)
+          md_path=$(find coverage-artifact -name summary.md -print -quit)
+          cp "$svg_path" "$badge_dir/coverage.svg"
+          cp "$md_path" "$badge_dir/summary.md"
           cd "$badge_dir"
           git init -b badges
           git config user.name "github-actions[bot]"

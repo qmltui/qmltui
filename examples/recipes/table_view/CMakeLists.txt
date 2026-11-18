@@ -2,7 +2,6 @@ qt_add_executable(qmltui_table_view_demo main.cpp)
 
 qt_add_qml_module(qmltui_table_view_demo
     URI TableViewDemo
-    VERSION 1.0
     QML_FILES
         Main.qml
     SOURCES ProcessProxy.h ProcessProxy.cpp

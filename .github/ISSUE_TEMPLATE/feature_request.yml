@@ -1,0 +1,22 @@
+name: Feature Request
+description: Propose an engine capability, QML control, or CMake/Runner improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Note: `QmlTui.Controls` admits types that require engine knowledge (cell geometry, Unicode width, virtualization, overlays) or are universal across terminal toolkits; domain-specific widgets live as copyable recipes under `examples/recipes/`.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Use Case
+      description: What terminal UI workflow or limitation are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed QML / C++ API
+      description: Sketch how the property, signal, component, or CMake helper would look in use.
+    validations:
+      required: true

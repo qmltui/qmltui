@@ -14,7 +14,6 @@ set(QT_QML_GENERATE_QMLLS_INI ON)
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
-    VERSION 1.0
     QML_FILES Main.qml
     DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
 )

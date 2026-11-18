@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation & Live WebAssembly Playground
+    url: https://qmltui.github.io/website/
+    about: Read guides, API references, and test QML directly in the browser
+  - name: Report a Security Vulnerability
+    url: https://github.com/qmltui/qmltui/security/advisories/new
+    about: Report security issues privately instead of opening a public issue

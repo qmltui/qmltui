@@ -13,8 +13,8 @@ private slots:
     void sourceOrder_data() {
         QTest::addColumn<QString>("layout");
         QTest::addColumn<QString>("model");
-        for (const QString &layout : {"Row", "Column"})
-            for (const QString &model : {"count", "values", "rows"})
+        for (const QString& layout : {"Row", "Column"})
+            for (const QString& model : {"count", "values", "rows"})
                 QTest::newRow(qPrintable(layout + "-" + model)) << layout << model;
     }
 
@@ -23,9 +23,9 @@ private slots:
         QFETCH(QString, model);
         QQmlEngine engine;
         QQmlComponent component(&engine);
-        const QString delegate = model == "rows"
-            ? "required property string letter; text: letter"
-            : "required property int index; text: String.fromCharCode(66 + index)";
+        const QString delegate =
+            model == "rows" ? "required property string letter; text: letter"
+                            : "required property int index; text: String.fromCharCode(66 + index)";
         component.setData(QString(R"(
             pragma ComponentBehavior: Bound
             import QtQml
@@ -48,10 +48,13 @@ private slots:
                 function removeRow() { rows.remove(1) }
                 function resetRows() { rows.clear(); rows.append({letter: "R"}) }
             }
-        )").arg(layout, model == "rows" ? model : "root." + model, delegate).toUtf8(), QUrl());
+        )")
+                              .arg(layout, model == "rows" ? model : "root." + model, delegate)
+                              .toUtf8(),
+                          QUrl());
         QVERIFY2(component.isReady(), qPrintable(component.errorString()));
         std::unique_ptr<QObject> object(component.create());
-        auto *root = qobject_cast<Item *>(object.get());
+        auto* root = qobject_cast<Item*>(object.get());
         QVERIFY(root);
         TextGridBuffer buffer;
         QVERIFY(buffer.resize(20, 20));
@@ -60,8 +63,8 @@ private slots:
             testing::paintItem(root, buffer, 0, 0);
             QString result;
             for (int i = 0; i < 20; ++i)
-                result += QString::fromUtf8(buffer.cellAt(layout == "Row" ? i : 0,
-                                                         layout == "Row" ? 0 : i).character());
+                result += QString::fromUtf8(
+                    buffer.cellAt(layout == "Row" ? i : 0, layout == "Row" ? 0 : i).character());
             return result.trimmed();
         };
         QCOMPARE(rendered(), QString("ABCZ"));

@@ -17,23 +17,23 @@
 #include <QWidget>
 #include <QHeaderView>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     ReleaseChecklistModel model;
 
     QWidget window;
     window.setWindowTitle(QStringLiteral("Standard item roles: Qt Widgets reference"));
-    auto *layout = new QVBoxLayout(&window);
+    auto* layout = new QVBoxLayout(&window);
 
-    auto *title = new QLabel(QStringLiteral("<b>One QStandardItemModel, three Qt Widgets views</b><br>"
-                                            "Click a check box; the terminal example shows the same roles."));
+    auto* title =
+        new QLabel(QStringLiteral("<b>One QStandardItemModel, three Qt Widgets views</b><br>"
+                                  "Click a check box; the terminal example shows the same roles."));
     layout->addWidget(title);
 
-    auto *row = new QHBoxLayout;
-    auto *list = new QListView;
+    auto* row = new QHBoxLayout;
+    auto* list = new QListView;
     list->setModel(&model);
-    auto *table = new QTableView;
+    auto* table = new QTableView;
     table->setModel(&model);
     table->horizontalHeader()->setStretchLastSection(true);
     table->verticalHeader()->hide();
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     row->addWidget(table, 2);
     layout->addLayout(row);
 
-    auto *tree = new QTreeView;
+    auto* tree = new QTreeView;
     tree->setModel(&model);
     tree->header()->setStretchLastSection(true);
     layout->addWidget(tree);
@@ -52,9 +52,10 @@ int main(int argc, char *argv[])
     tree->setSelectionModel(list->selectionModel());
     list->setCurrentIndex(model.index(0, 0));
 
-    auto *status = new QLabel;
+    auto* status = new QLabel;
     const auto updateStatus = [&] {
-        status->setText(QStringLiteral("%1 of %2 tasks done").arg(model.doneCount()).arg(model.rowCount()));
+        status->setText(
+            QStringLiteral("%1 of %2 tasks done").arg(model.doneCount()).arg(model.rowCount()));
     };
     QObject::connect(&model, &ReleaseChecklistModel::doneCountChanged, status, updateStatus);
     updateStatus();

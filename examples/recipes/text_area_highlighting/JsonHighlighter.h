@@ -11,8 +11,7 @@
 
 namespace qmltui::demo {
 
-class JsonHighlighter : public QObject
-{
+class JsonHighlighter : public QObject {
     Q_OBJECT
     QML_ELEMENT
 
@@ -20,9 +19,12 @@ class JsonHighlighter : public QObject
     Q_PROPERTY(QString searchTerm READ searchTerm WRITE setSearchTerm NOTIFY searchTermChanged)
     Q_PROPERTY(qmltui::Color stringColor READ stringColor WRITE setStringColor NOTIFY stylesChanged)
     Q_PROPERTY(qmltui::Color numberColor READ numberColor WRITE setNumberColor NOTIFY stylesChanged)
-    Q_PROPERTY(qmltui::Color keywordColor READ keywordColor WRITE setKeywordColor NOTIFY stylesChanged)
-    Q_PROPERTY(qmltui::Color commentColor READ commentColor WRITE setCommentColor NOTIFY stylesChanged)
-    Q_PROPERTY(qmltui::Color searchBgColor READ searchBgColor WRITE setSearchBgColor NOTIFY stylesChanged)
+    Q_PROPERTY(
+        qmltui::Color keywordColor READ keywordColor WRITE setKeywordColor NOTIFY stylesChanged)
+    Q_PROPERTY(
+        qmltui::Color commentColor READ commentColor WRITE setCommentColor NOTIFY stylesChanged)
+    Q_PROPERTY(
+        qmltui::Color searchBgColor READ searchBgColor WRITE setSearchBgColor NOTIFY stylesChanged)
 
 public:
     enum TokenType {
@@ -39,14 +41,14 @@ public:
         TokenType type = String;
     };
 
-    explicit JsonHighlighter(QObject *parent = nullptr);
+    explicit JsonHighlighter(QObject* parent = nullptr);
     ~JsonHighlighter() override;
 
-    TextArea *target() const { return m_target; }
-    void setTarget(TextArea *target);
+    TextArea* target() const { return m_target; }
+    void setTarget(TextArea* target);
 
     QString searchTerm() const { return m_searchTerm; }
-    void setSearchTerm(const QString &term);
+    void setSearchTerm(const QString& term);
 
     Color stringColor() const { return m_stringColor; }
     void setStringColor(Color color);

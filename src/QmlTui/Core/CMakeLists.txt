@@ -277,3 +277,8 @@ qmltui_install_headers(QmlTui/Core/Engine FILES
     Engine/QtMessageRouting.h Engine/Shortcut.h
     Engine/State.h Engine/StateGroup.h Engine/Transition.h
 )
+if(NOT QMLTUI_USE_SYSTEM_UTF8PROC)
+    install(FILES "${PROJECT_SOURCE_DIR}/docs/third-party/utf8proc-LICENSE"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/QmlTui/third-party"
+    )
+endif()

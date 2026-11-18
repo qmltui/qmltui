@@ -17,13 +17,11 @@ private slots:
     void elapsedAdvances();
 };
 
-void TestClockReal::realModeIsDefault()
-{
+void TestClockReal::realModeIsDefault() {
     QVERIFY(!Clock::isVirtual());
 }
 
-void TestClockReal::singleShotFiresOnce()
-{
+void TestClockReal::singleShotFiresOnce() {
     ClockTimer timer;
     timer.setSingleShot(true);
     QSignalSpy spy(&timer, &ClockTimer::timeout);
@@ -35,8 +33,7 @@ void TestClockReal::singleShotFiresOnce()
     QCOMPARE(spy.count(), 1);
 }
 
-void TestClockReal::repeatingFiresUntilStopped()
-{
+void TestClockReal::repeatingFiresUntilStopped() {
     ClockTimer timer;
     timer.setInterval(10);
     QSignalSpy spy(&timer, &ClockTimer::timeout);
@@ -46,8 +43,7 @@ void TestClockReal::repeatingFiresUntilStopped()
     QVERIFY(!timer.isActive());
 }
 
-void TestClockReal::elapsedAdvances()
-{
+void TestClockReal::elapsedAdvances() {
     const qint64 before = Clock::instance()->elapsed();
     QTest::qWait(20);
     QVERIFY(Clock::instance()->elapsed() >= before + 15);

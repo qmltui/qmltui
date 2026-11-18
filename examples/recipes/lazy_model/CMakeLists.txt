@@ -4,7 +4,6 @@
 qt_add_executable(qmltui_lazy_model_demo main.cpp)
 qt_add_qml_module(qmltui_lazy_model_demo
     URI LazyModelDemo
-    VERSION 1.0
     QML_FILES Main.qml
     SOURCES LazyDirectoryModel.h LazyDirectoryModel.cpp
     DEPENDENCIES TARGET qmltui::core

@@ -2,6 +2,7 @@
 #include <QDateTime>
 #include <QFile>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QSignalSpy>
 #include <QStringList>
 #include <QTemporaryDir>
@@ -328,8 +329,15 @@ void TestQtMessageRouting::unfilteredWarnings() {
 void TestQtMessageRouting::fatalDeliverySubprocess() {
 #if QT_CONFIG(process)
     QProcess proc;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QString existingAsan = env.value(QStringLiteral("ASAN_OPTIONS"));
+    const QString coredumpOpts = QStringLiteral("disable_coredump=1:unmap_shadow_on_exit=1");
+    env.insert(QStringLiteral("ASAN_OPTIONS"),
+               existingAsan.isEmpty() ? coredumpOpts
+                                      : existingAsan + QLatin1Char(':') + coredumpOpts);
+    proc.setProcessEnvironment(env);
     proc.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--fatal-worker")});
-    QVERIFY(proc.waitForFinished(5000));
+    QVERIFY(proc.waitForFinished(15000));
 
     const QString stdoutOutput = QString::fromUtf8(proc.readAllStandardOutput());
     QVERIFY(stdoutOutput.contains(QStringLiteral("DIAG:intentional-test-fatal")));

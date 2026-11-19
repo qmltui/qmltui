@@ -96,6 +96,7 @@ TerminalEngine::TerminalEngine(Terminal* rootWindow, QObject* parent)
     });
 
     m_queryTimer.setSingleShot(true);
+    m_queryTimer.setTimerType(Qt::PreciseTimer);
     connect(&m_queryTimer, &QTimer::timeout, this, &TerminalEngine::finishQueries);
     m_pixelQueryTimer.setSingleShot(true);
     // A lone ESC that no further byte follows within this window is the

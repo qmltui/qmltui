@@ -348,7 +348,7 @@ Terminal {
         Terminal terminal;
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
-        QTest::qWait(30);
+        QTest::qWait(100);
         backend->feedInput("\033[?0u\033_Gi=31;OK\033\\\033[?1c");
         QVERIFY(!engine->capabilities().kittyKeyboard);
         QVERIFY(!engine->capabilities().kittyGraphics);
@@ -475,7 +475,7 @@ Terminal {
         backend->clearOutput();
         engine->setRenderer(new InlineRenderer); // new output session, new negotiation
         QTRY_VERIFY(backend->output().find("\033[?u") != std::string::npos);
-        QTest::qWait(40); // the terminal never answers this time
+        QTest::qWait(100); // the terminal never answers this time
         QVERIFY(engine->capabilities().kittyGraphics);
         QVERIFY(engine->capabilities().kittyKeyboard);
         QCOMPARE(engine->capabilities().cellPixelSize, QSize(10, 20));
@@ -579,7 +579,7 @@ Terminal { color: "black"; Text { text: "x" } }
         auto* engine = terminal.engine();
         QTRY_VERIFY(engine->frameSequence() > 0);
         if (override.isNull())
-            QTest::qWait(30); // the terminal never answers
+            QTest::qWait(100); // the terminal never answers
         else
             backend->feedInput("\033[?0u\033[?1c"); // it answers, but the user said no
         QVERIFY(!engine->capabilities().kittyKeyboard);

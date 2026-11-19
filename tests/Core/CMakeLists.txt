@@ -26,6 +26,7 @@ if(UNIX AND NOT EMSCRIPTEN)
     add_executable(qmltui_signal_fixture signal_fixture.cpp)
     target_link_libraries(qmltui_signal_fixture PRIVATE Qt6::Core qmltui::core)
     add_qmltui_test(test_signal_safety test_signal_safety.cpp)
+    set_tests_properties(test_signal_safety PROPERTIES TIMEOUT 20)
     target_compile_definitions(test_signal_safety PRIVATE
         QMLTUI_SIGNAL_FIXTURE="$<TARGET_FILE:qmltui_signal_fixture>")
     add_dependencies(test_signal_safety qmltui_signal_fixture)

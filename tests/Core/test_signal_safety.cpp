@@ -8,9 +8,9 @@
 #include <cerrno>
 #include <csignal>
 #include <cstring>
+#include <fcntl.h>
 #include <poll.h>
 #include <string>
-#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
@@ -37,29 +37,10 @@ public:
         winsize size{};
         size.ws_col = 80;
         size.ws_row = 24;
-        // Keep one slave descriptor open in the parent until drain completes:
-        // on BSD/macOS (XNU), closing the last slave fd when the child exits
-        // flushes unread bytes in the PTY output queue before master is read.
-        if (::openpty(&master, &slave, nullptr, nullptr, &size) < 0) return false;
-        pid = ::fork();
-        if (pid < 0) {
-            ::close(master);
-            ::close(slave);
-            master = -1;
-            slave = -1;
-            return false;
-        }
+        slaveName[0] = '\0';
+        pid = ::forkpty(&master, slaveName, nullptr, &size);
+        if (pid < 0) return false;
         if (pid == 0) {
-            ::close(master);
-            ::setsid();
-#ifdef TIOCSCTTY
-            ::ioctl(slave, TIOCSCTTY, 0);
-#endif
-            if (::dup2(slave, STDIN_FILENO) < 0 || ::dup2(slave, STDOUT_FILENO) < 0 ||
-                ::dup2(slave, STDERR_FILENO) < 0) {
-                ::_exit(127);
-            }
-            if (slave > STDERR_FILENO) ::close(slave);
             ::setenv("TERM", "xterm-256color", 1);
             ::setenv("QMLTUI_QUERY_TIMEOUT_MS", "5000", 1); // the test answers by hand
             for (const char* name :
@@ -70,6 +51,36 @@ public:
             ::_exit(127);
         }
         return true;
+    }
+
+    // Opens a secondary non-controlling slave descriptor in the parent after
+    // the child already owns its controlling terminal, preventing BSD/macOS
+    // ptsclose() from flushing unread PTY bytes when the child exits on SIGTERM.
+    void holdSlaveForExit() {
+        if (slave == -1 && slaveName[0] != '\0') {
+            slave = ::open(slaveName, O_RDWR | O_NOCTTY);
+        }
+    }
+
+    bool waitAndDrainExit(int timeoutMs, int& status) {
+        QElapsedTimer timer;
+        timer.start();
+        while (timer.elapsed() < timeoutMs) {
+            pollfd descriptor{master, POLLIN, 0};
+            if (::poll(&descriptor, 1, 20) > 0 && (descriptor.revents & POLLIN)) {
+                char buffer[4096];
+                const ssize_t count = ::read(master, buffer, sizeof buffer);
+                if (count > 0) output.append(buffer, static_cast<size_t>(count));
+            }
+            const pid_t waited = ::waitpid(pid, &status, WNOHANG);
+            if (waited == pid) {
+                pid = -1;
+                drain(100);
+                return true;
+            }
+            if (waited < 0 && errno != EINTR) return false;
+        }
+        return false;
     }
 
     // Reads until `needle` appears in the bytes read since the last clear().
@@ -110,13 +121,19 @@ public:
         }
     }
 
-    // Echo state of the tty the child runs on.
+    // Echo state of the tty the child runs on. Linux exposes the slave's
+    // termios through the master; once slave is opened on BSD/macOS it can be
+    // queried directly there too.
     enum class Echo { On, Off, Unknown };
     Echo echo() const {
-        if (slave < 0) return Echo::Unknown;
         termios modes{};
-        if (::tcgetattr(slave, &modes) != 0) return Echo::Unknown;
-        return (modes.c_lflag & ECHO) ? Echo::On : Echo::Off;
+        if (slave != -1 && ::tcgetattr(slave, &modes) == 0)
+            return (modes.c_lflag & ECHO) ? Echo::On : Echo::Off;
+#if defined(__linux__)
+        if (master != -1 && ::tcgetattr(master, &modes) == 0)
+            return (modes.c_lflag & ECHO) ? Echo::On : Echo::Off;
+#endif
+        return Echo::Unknown;
     }
 
     void kill() {
@@ -139,6 +156,7 @@ public:
     pid_t pid = -1;
     int master = -1;
     int slave = -1;
+    char slaveName[1024]{};
     std::string output;
 };
 
@@ -199,14 +217,13 @@ private slots:
             QCOMPARE(int(child.echo()), int(Child::Echo::Off));
 
         // SIGTERM: restored again, and the process dies of the signal itself.
+        child.holdSlaveForExit();
         child.output.clear();
         QCOMPARE(::kill(child.pid, SIGTERM), 0);
         int status = 0;
-        QCOMPARE(::waitpid(child.pid, &status, 0), child.pid);
+        QVERIFY2(child.waitAndDrainExit(5000, status), "child did not exit after SIGTERM");
         QVERIFY2(WIFSIGNALED(status), "the process did not die of the signal");
         QCOMPARE(WTERMSIG(status), SIGTERM); // re-raised, not swallowed
-        child.pid = -1;
-        child.drain(100);
         QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos,
                  "normal screen not restored on SIGTERM");
         QVERIFY2(child.output.find(kKeyboardPop) < child.output.find(kAltScreenOff),

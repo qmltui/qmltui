@@ -333,7 +333,12 @@ void TestTerminalDevice::testPtyShutdownRestoresRawMode() {
     QVERIFY(device.disableRawMode());
     termios restored;
     QVERIFY(::tcgetattr(pty.writeEnd, &restored) == 0);
-    QCOMPARE(restored.c_lflag, original.c_lflag);
+    tcflag_t transientLflagMask = 0;
+#ifdef PENDIN
+    // BSD/macOS sets PENDIN in c_lflag internally when toggling canonical mode.
+    transientLflagMask |= static_cast<tcflag_t>(PENDIN);
+#endif
+    QCOMPARE(restored.c_lflag & ~transientLflagMask, original.c_lflag & ~transientLflagMask);
     QCOMPARE(restored.c_iflag, original.c_iflag);
     QCOMPARE(restored.c_oflag, original.c_oflag);
     QCOMPARE(restored.c_cflag, original.c_cflag);

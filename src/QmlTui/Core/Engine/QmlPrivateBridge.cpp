@@ -58,7 +58,8 @@ void writePropertyBypassingInterceptor(const QQmlProperty& property, const QVari
 void removeBindingFromProperty(const QQmlProperty& property) {
 #if defined(QMLTUI_ENABLE_PRIVATE_QT)
     if (property.isValid() && property.object()) {
-        QQmlAnyBinding::removeBindingFrom(property);
+        QQmlProperty mutableProperty = property;
+        QQmlAnyBinding::removeBindingFrom(mutableProperty);
     }
 #else
     Q_UNUSED(property);

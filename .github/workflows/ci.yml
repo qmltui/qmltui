@@ -416,8 +416,8 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.*'
-          host: 'linux'
-          target: 'desktop'
+          host: 'all_os'
+          target: 'wasm'
           arch: 'wasm_singlethread'
           cache: true
 

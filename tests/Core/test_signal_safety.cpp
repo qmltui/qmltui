@@ -10,6 +10,7 @@
 #include <cstring>
 #include <poll.h>
 #include <string>
+#include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
@@ -36,9 +37,29 @@ public:
         winsize size{};
         size.ws_col = 80;
         size.ws_row = 24;
-        pid = ::forkpty(&master, nullptr, nullptr, &size);
-        if (pid < 0) return false;
+        // Keep one slave descriptor open in the parent until drain completes:
+        // on BSD/macOS (XNU), closing the last slave fd when the child exits
+        // flushes unread bytes in the PTY output queue before master is read.
+        if (::openpty(&master, &slave, nullptr, nullptr, &size) < 0) return false;
+        pid = ::fork();
+        if (pid < 0) {
+            ::close(master);
+            ::close(slave);
+            master = -1;
+            slave = -1;
+            return false;
+        }
         if (pid == 0) {
+            ::close(master);
+            ::setsid();
+#ifdef TIOCSCTTY
+            ::ioctl(slave, TIOCSCTTY, 0);
+#endif
+            if (::dup2(slave, STDIN_FILENO) < 0 || ::dup2(slave, STDOUT_FILENO) < 0 ||
+                ::dup2(slave, STDERR_FILENO) < 0) {
+                ::_exit(127);
+            }
+            if (slave > STDERR_FILENO) ::close(slave);
             ::setenv("TERM", "xterm-256color", 1);
             ::setenv("QMLTUI_QUERY_TIMEOUT_MS", "5000", 1); // the test answers by hand
             for (const char* name :
@@ -89,17 +110,13 @@ public:
         }
     }
 
-    // Echo state of the tty the child runs on. Linux exposes the slave's
-    // termios through the master; elsewhere the answer is "unknown".
+    // Echo state of the tty the child runs on.
     enum class Echo { On, Off, Unknown };
     Echo echo() const {
-#if defined(__linux__)
+        if (slave < 0) return Echo::Unknown;
         termios modes{};
-        if (::tcgetattr(master, &modes) != 0) return Echo::Unknown;
+        if (::tcgetattr(slave, &modes) != 0) return Echo::Unknown;
         return (modes.c_lflag & ECHO) ? Echo::On : Echo::Off;
-#else
-        return Echo::Unknown;
-#endif
     }
 
     void kill() {
@@ -109,6 +126,10 @@ public:
             ::waitpid(pid, &status, 0);
             pid = -1;
         }
+        if (slave != -1) {
+            ::close(slave);
+            slave = -1;
+        }
         if (master != -1) {
             ::close(master);
             master = -1;
@@ -117,6 +138,7 @@ public:
 
     pid_t pid = -1;
     int master = -1;
+    int slave = -1;
     std::string output;
 };
 

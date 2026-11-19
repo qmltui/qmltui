@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QList>
 #include <QPointer>
 #include <QScopeGuard>
 #include <QSet>
@@ -61,13 +62,57 @@ public:
         if (m_listeners.isEmpty()) uninstall();
     }
 
+    void addInputListener(PosixTerminalBackend* listener) {
+        if (!listener || m_inputListeners.contains(listener)) return;
+        m_inputListeners.append(listener);
+        if (!m_stdinNotifier) {
+            m_stdinNotifier = new QSocketNotifier(STDIN_FILENO, QSocketNotifier::Read, this);
+            connect(m_stdinNotifier, &QSocketNotifier::activated, this, &SignalBridge::readStdin);
+        }
+    }
+
+    void removeInputListener(PosixTerminalBackend* listener) {
+        m_inputListeners.removeOne(listener);
+        if (m_inputListeners.isEmpty() && m_stdinNotifier) {
+            m_stdinNotifier->setEnabled(false);
+            delete m_stdinNotifier;
+            m_stdinNotifier = nullptr;
+        }
+    }
+
 signals:
     void received();  // SIGWINCH
     void continued(); // SIGCONT after a job-control stop
 
 private:
     explicit SignalBridge(QObject* parent) : QObject(parent) {}
-    ~SignalBridge() override { uninstall(); }
+    ~SignalBridge() override {
+        if (m_stdinNotifier) {
+            m_stdinNotifier->setEnabled(false);
+            delete m_stdinNotifier;
+            m_stdinNotifier = nullptr;
+        }
+        uninstall();
+    }
+
+    void readStdin() {
+        char buffer[1024];
+        const ssize_t count = ::read(STDIN_FILENO, buffer, sizeof buffer);
+        if (count == 0) {
+            if (m_stdinNotifier) m_stdinNotifier->setEnabled(false);
+            return;
+        }
+        if (count < 0) {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) return;
+            if (m_stdinNotifier) m_stdinNotifier->setEnabled(false);
+            qWarning("Terminal input failed: %s", std::strerror(errno));
+            return;
+        }
+        if (!m_inputListeners.isEmpty()) {
+            emit m_inputListeners.last()->inputReceived(
+                QByteArray(buffer, static_cast<qsizetype>(count)));
+        }
+    }
 
     void install() {
         if (m_installed) return;
@@ -146,7 +191,9 @@ private:
 
     static std::atomic<int> s_pipe[2];
     QSet<QObject*> m_listeners;
+    QList<PosixTerminalBackend*> m_inputListeners;
     QSocketNotifier* m_notifier = nullptr;
+    QSocketNotifier* m_stdinNotifier = nullptr;
     struct sigaction m_previousAction{};
     bool m_installed = false;
 };
@@ -358,7 +405,10 @@ bool PosixTerminalBackend::leaveRawMode() {
     if (!m_termiosValid) return false;
     m_rawMode = false;
     uninstallEmergencyHandlers(this);
-    return ::tcsetattr(m_inputFd, TCSAFLUSH, &m_originalTermios) == 0;
+    // TerminalDevice::disableRawMode() already ran a deadline-bounded flush;
+    // TCSAFLUSH would block indefinitely in ttywait() on BSD/macOS if the
+    // terminal or PTY master has stopped draining output.
+    return ::tcsetattr(m_inputFd, TCSANOW, &m_originalTermios) == 0;
 }
 
 TerminalBackend::WriteStatus PosixTerminalBackend::writeSome(const char* data, size_t size,
@@ -455,39 +505,22 @@ void PosixTerminalBackend::startInput() {
     if (m_inputStarted) return;
     m_inputStarted = true;
     if (!QCoreApplication::instance() || !isOnApplicationThread()) return;
-    m_readNotifier = std::make_unique<QSocketNotifier>(m_inputFd, QSocketNotifier::Read);
-    connect(m_readNotifier.get(), &QSocketNotifier::activated, this, [this] { readInput(); });
     if (SignalBridge* bridge = SignalBridge::instance()) {
         connect(bridge, &SignalBridge::received, this, &TerminalBackend::resized);
         connect(bridge, &SignalBridge::continued, this, &TerminalBackend::resumed);
         bridge->addListener(this);
+        bridge->addInputListener(this);
     }
 }
 
 void PosixTerminalBackend::stopInput() {
     if (!m_inputStarted) return;
     m_inputStarted = false;
-    m_readNotifier.reset();
     if (SignalBridge* bridge = SignalBridge::instance()) {
         disconnect(bridge, nullptr, this, nullptr);
+        bridge->removeInputListener(this);
         bridge->removeListener(this);
     }
-}
-
-void PosixTerminalBackend::readInput() {
-    char buffer[1024];
-    const ssize_t count = ::read(m_inputFd, buffer, sizeof buffer);
-    if (count == 0) {
-        if (m_readNotifier) m_readNotifier->setEnabled(false);
-        return;
-    }
-    if (count < 0) {
-        if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) return;
-        if (m_readNotifier) m_readNotifier->setEnabled(false);
-        qWarning("Terminal input failed: %s", std::strerror(errno));
-        return;
-    }
-    emit inputReceived(QByteArray(buffer, static_cast<qsizetype>(count)));
 }
 
 } // namespace qmltui

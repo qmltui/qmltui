@@ -15,9 +15,13 @@ namespace qmltui {
 
 namespace {
 
-QMap<CanonicalProperty, StateController*>& propertyOwners() {
+QThreadStorage<QMap<CanonicalProperty, StateController*>>& propertyOwnerStorage() {
     static QThreadStorage<QMap<CanonicalProperty, StateController*>> owners;
-    return owners.localData();
+    return owners;
+}
+
+QMap<CanonicalProperty, StateController*>& propertyOwners() {
+    return propertyOwnerStorage().localData();
 }
 
 struct ResolvedProperty {
@@ -67,9 +71,12 @@ StateController::~StateController() {
 }
 
 void StateController::releaseAllOwnership() {
-    for (const CanonicalProperty& prop : m_ownedProperties) {
-        if (propertyOwners().value(prop) == this) {
-            propertyOwners().remove(prop);
+    if (propertyOwnerStorage().hasLocalData()) {
+        QMap<CanonicalProperty, StateController*>& owners = propertyOwners();
+        for (const CanonicalProperty& prop : m_ownedProperties) {
+            if (owners.value(prop) == this) {
+                owners.remove(prop);
+            }
         }
     }
     m_ownedProperties.clear();
@@ -103,9 +110,10 @@ void StateController::handleTargetDestroyed(QObject* obj) {
         else
             ++it;
     }
+    const bool hasOwnerMap = propertyOwnerStorage().hasLocalData();
     for (auto it = m_ownedProperties.begin(); it != m_ownedProperties.end();) {
         if (it->targetId == deadId) {
-            if (propertyOwners().value(*it) == this) propertyOwners().remove(*it);
+            if (hasOwnerMap && propertyOwners().value(*it) == this) propertyOwners().remove(*it);
             it = m_ownedProperties.erase(it);
         } else {
             ++it;

@@ -146,13 +146,18 @@ int parseChordString(const QString& input, bool* ok) {
 
 } // namespace
 
-static QList<Shortcut*>& threadShortcuts() {
+static QThreadStorage<QList<Shortcut*>>& shortcutStorage() {
     static QThreadStorage<QList<Shortcut*>> shortcuts;
-    return shortcuts.localData();
+    return shortcuts;
+}
+
+static QList<Shortcut*>& threadShortcuts() {
+    return shortcutStorage().localData();
 }
 
 const QList<Shortcut*>& activeShortcuts() {
-    return threadShortcuts();
+    static const QList<Shortcut*> empty;
+    return shortcutStorage().hasLocalData() ? shortcutStorage().localData() : empty;
 }
 
 void registerShortcut(Shortcut* shortcut) {
@@ -163,8 +168,8 @@ void registerShortcut(Shortcut* shortcut) {
 }
 
 void unregisterShortcut(Shortcut* shortcut) {
-    if (shortcut) {
-        threadShortcuts().removeOne(shortcut);
+    if (shortcut && shortcutStorage().hasLocalData()) {
+        shortcutStorage().localData().removeOne(shortcut);
     }
 }
 

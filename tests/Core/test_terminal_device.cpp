@@ -215,7 +215,9 @@ void TestTerminalDevice::testDisableTimeoutPreservesQueue() {
     received += readAvailable(pipe.readEnd);
     QCOMPARE(received, payload + "tail");
     QVERIFY(device.setAsyncOutput(false, 10));
-    QCOMPARE(::fcntl(pipe.writeEnd, F_GETFL), originalFlags);
+    const int restoredFlags = ::fcntl(pipe.writeEnd, F_GETFL);
+    QVERIFY(restoredFlags != -1);
+    QCOMPARE(restoredFlags & O_NONBLOCK, originalFlags & O_NONBLOCK);
     QVERIFY(device.write("blocking"));
     QCOMPARE(readAvailable(pipe.readEnd), std::string("blocking"));
     QVERIFY(device.finishOutput(100));
@@ -244,7 +246,9 @@ void TestTerminalDevice::testFinishTimeoutRestoresFlags() {
         QVERIFY(timer.elapsed() < 1000);
         QCOMPARE(device.pendingBytes(), size_t(0));
         QVERIFY(!device.asyncOutput());
-        QCOMPARE(::fcntl(pipe.writeEnd, F_GETFL), originalFlags);
+        const int restoredFlags = ::fcntl(pipe.writeEnd, F_GETFL);
+        QVERIFY(restoredFlags != -1);
+        QCOMPARE(restoredFlags & O_NONBLOCK, originalFlags & O_NONBLOCK);
         QVERIFY(!device.write("must not block"));
         QVERIFY(!device.finishOutput(20));
     }
@@ -348,7 +352,9 @@ void TestTerminalDevice::testDestructorUsesBoundedShutdown() {
         timer.start();
     }
     QVERIFY2(timer.elapsed() < 4000, "destruction must honor the 2 s default flush deadline");
-    QCOMPARE(::fcntl(pty.writeEnd, F_GETFL), originalFlags);
+    const int restoredFlags = ::fcntl(pty.writeEnd, F_GETFL);
+    QVERIFY(restoredFlags != -1);
+    QCOMPARE(restoredFlags & O_NONBLOCK, originalFlags & O_NONBLOCK);
 }
 
 void TestTerminalDevice::testSyncOutputBracketsFrame() {

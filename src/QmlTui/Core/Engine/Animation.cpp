@@ -53,7 +53,9 @@ Animation::Animation(QObject* parent) : QObject(parent) {}
 
 Animation::~Animation() {
     if (m_running) {
-        AnimationManager::instance()->unregisterAnimation(this);
+        if (AnimationManager* mgr = AnimationManager::existingInstance()) {
+            mgr->unregisterAnimation(this);
+        }
     }
 }
 
@@ -66,7 +68,9 @@ void Animation::setRunning(bool r) {
         AnimationManager::instance()->registerAnimation(this);
         emit started();
     } else {
-        AnimationManager::instance()->unregisterAnimation(this);
+        if (AnimationManager* mgr = AnimationManager::existingInstance()) {
+            mgr->unregisterAnimation(this);
+        }
         emit stopped();
     }
 }
@@ -288,12 +292,26 @@ AnimationManager::AnimationManager(QObject* parent) : QObject(parent) {
     connect(m_timer, &ClockTimer::timeout, this, &AnimationManager::handleTick);
 }
 
-AnimationManager* AnimationManager::instance() {
+namespace {
+
+QThreadStorage<AnimationManager*>& animationManagerStorage() {
     static QThreadStorage<AnimationManager*> managers;
+    return managers;
+}
+
+} // namespace
+
+AnimationManager* AnimationManager::instance() {
+    QThreadStorage<AnimationManager*>& managers = animationManagerStorage();
     if (!managers.hasLocalData()) {
         managers.setLocalData(new AnimationManager());
     }
     return managers.localData();
+}
+
+AnimationManager* AnimationManager::existingInstance() {
+    QThreadStorage<AnimationManager*>& managers = animationManagerStorage();
+    return managers.hasLocalData() ? managers.localData() : nullptr;
 }
 
 void AnimationManager::registerAnimation(Animation* anim) {

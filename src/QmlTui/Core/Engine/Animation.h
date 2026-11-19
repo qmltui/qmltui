@@ -162,6 +162,7 @@ class QMLTUI_CORE_EXPORT AnimationManager : public QObject {
     Q_OBJECT
 public:
     static AnimationManager* instance();
+    static AnimationManager* existingInstance();
     ~AnimationManager() override = default;
 
     void registerAnimation(Animation* anim);

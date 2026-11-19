@@ -46,8 +46,6 @@ public:
     int outputFd() const { return m_outputFd; }
 
 private:
-    void readInput();
-
     int m_outputFd;
     int m_inputFd;
     termios m_originalTermios{};
@@ -56,7 +54,6 @@ private:
     int m_originalFlags = -1;
     bool m_inputStarted = false;
     std::unique_ptr<QSocketNotifier> m_writeNotifier;
-    std::unique_ptr<QSocketNotifier> m_readNotifier;
 };
 
 } // namespace qmltui

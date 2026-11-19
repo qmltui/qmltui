@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include <QmlTui/Core/Primitives/UnicodeText.h>
@@ -1583,7 +1584,18 @@ void TestTerminalFramework::concurrentMultiThreadTerminals() {
     constexpr int kIterations = 25;
     const QString importPath = QCoreApplication::applicationDirPath() + QStringLiteral("/..");
 
+    const QByteArray previousEmbedded = qgetenv("QMLTUI_RUNNER_EMBEDDED_SCENARIO");
+    qputenv("QMLTUI_RUNNER_EMBEDDED_SCENARIO", QByteArrayLiteral("1"));
+    const auto restoreEnv = qScopeGuard([&] {
+        if (previousEmbedded.isNull())
+            qunsetenv("QMLTUI_RUNNER_EMBEDDED_SCENARIO");
+        else
+            qputenv("QMLTUI_RUNNER_EMBEDDED_SCENARIO", previousEmbedded);
+    });
+
+    std::mutex qmlMetaMutex;
     std::atomic<int> readyWorkers{0};
+    std::atomic<int> finishedWorkers{0};
     std::atomic<bool> startGate{false};
     std::vector<QString> errors(kWorkerCount);
     std::vector<std::unique_ptr<QThread>> threads;
@@ -1591,72 +1603,89 @@ void TestTerminalFramework::concurrentMultiThreadTerminals() {
 
     for (int workerIdx = 0; workerIdx < kWorkerCount; ++workerIdx) {
         std::unique_ptr<QThread> thread(QThread::create([&, workerIdx]() {
-            QQmlEngine qmlEngine;
-            qmlEngine.addImportPath(importPath);
+            std::unique_ptr<QQmlEngine> qmlEngine;
+            std::unique_ptr<QQmlComponent> component;
+            std::unique_ptr<QObject> rootObj;
+            Terminal* terminal = nullptr;
 
-            QQmlComponent component(&qmlEngine);
-            const QByteArray qmlSource = QStringLiteral(R"(
-                import QtQml
-                import QmlTui
+            {
+                // Serialize QQmlComponent compilation and QQmlEngine teardown across
+                // threads so Qt 6.8's global QQmlMetaType::freeUnusedTypesAndCaches()
+                // does not race composite type registration (QTBUG-146040 / QTBUG-149607),
+                // while keeping all QmlTui execution strictly concurrent below.
+                const std::lock_guard<std::mutex> lock(qmlMetaMutex);
+                qmlEngine = std::make_unique<QQmlEngine>();
+                qmlEngine->addImportPath(importPath);
 
-                Terminal {
-                    id: root
-                    property int hits: 0
-                    property bool toggled: false
+                component = std::make_unique<QQmlComponent>(qmlEngine.get());
+                const QByteArray qmlSource = QStringLiteral(R"(
+                    import QtQml
+                    import QmlTui
 
-                    Shortcut {
-                        sequence: Qt.Key_F5
-                        onActivated: {
-                            root.hits += 1;
-                            root.toggled = !root.toggled;
+                    Terminal {
+                        id: root
+                        property int hits: 0
+                        property bool toggled: false
+
+                        Shortcut {
+                            sequence: Qt.Key_F5
+                            onActivated: {
+                                root.hits += 1;
+                                root.toggled = !root.toggled;
+                            }
+                        }
+
+                        Text {
+                            id: label
+                            objectName: "label"
+                            width: 16
+                            height: 1
+                            text: "W%1:" + root.hits
+                            states: [
+                                State {
+                                    name: "active"
+                                    when: root.toggled
+                                    PropertyChanges {
+                                        target: label
+                                        properties: ({
+                                            "x": 2
+                                        })
+                                    }
+                                }
+                            ]
+                            transitions: [
+                                Transition {
+                                    NumberAnimation {
+                                        property: "x"
+                                        duration: 1
+                                    }
+                                }
+                            ]
                         }
                     }
-
-                    Text {
-                        id: label
-                        objectName: "label"
-                        width: 16
-                        height: 1
-                        text: "W%1:" + root.hits
-                        states: [
-                            State {
-                                name: "active"
-                                when: root.toggled
-                                PropertyChanges {
-                                    target: label
-                                    properties: ({
-                                        "x": 2
-                                    })
-                                }
-                            }
-                        ]
-                        transitions: [
-                            Transition {
-                                NumberAnimation {
-                                    property: "x"
-                                    duration: 1
-                                }
-                            }
-                        ]
+                )")
+                                                 .arg(workerIdx)
+                                                 .toUtf8();
+                const QUrl docUrl(
+                    QStringLiteral("memory:///concurrent_worker_%1.qml").arg(workerIdx));
+                component->setData(qmlSource, docUrl);
+                if (!component->isReady()) {
+                    errors[workerIdx] = component->errorString();
+                } else {
+                    rootObj.reset(component->create());
+                    terminal = qobject_cast<Terminal*>(rootObj.get());
+                    if (!terminal) {
+                        errors[workerIdx] = QStringLiteral("Failed to instantiate Terminal");
                     }
                 }
-            )")
-                                             .arg(workerIdx)
-                                             .toUtf8();
-            component.setData(qmlSource, QUrl());
-            if (!component.isReady()) {
-                errors[workerIdx] = component.errorString();
+            }
+
+            if (!terminal) {
                 readyWorkers.fetch_add(1);
+                finishedWorkers.fetch_add(1);
                 return;
             }
 
-            std::unique_ptr<QObject> rootObj(component.create());
-            auto* terminal = qobject_cast<Terminal*>(rootObj.get());
-            if (!terminal) {
-                errors[workerIdx] = QStringLiteral("Failed to instantiate Terminal");
-                readyWorkers.fetch_add(1);
-                return;
-            }
             terminal->engine()->setTerminalOutputEnabled(false);
             terminal->engine()->setTestViewportSize(QSize(20, 4));
             terminal->engine()->renderFrame();
@@ -1677,23 +1706,38 @@ void TestTerminalFramework::concurrentMultiThreadTerminals() {
                 errors[workerIdx] = QStringLiteral("Expected %1 shortcut hits, got %2")
                                         .arg(kIterations)
                                         .arg(finalHits);
-                return;
-            }
-            const auto frame = terminal->engine()->currentFrame();
-            if (!frame.has_value()) {
-                errors[workerIdx] = QStringLiteral("Missing rendered frame");
-                return;
-            }
-            QString row0;
-            for (int x = 0; x < frame->width(); ++x) {
-                if (!frame->cellAt(x, 0).continuation) {
-                    row0 += QString::fromUtf8(frame->cellAt(x, 0).character().toByteArray());
+            } else {
+                const auto frame = terminal->engine()->currentFrame();
+                if (!frame.has_value()) {
+                    errors[workerIdx] = QStringLiteral("Missing rendered frame");
+                } else {
+                    QString row0;
+                    for (int x = 0; x < frame->width(); ++x) {
+                        if (!frame->cellAt(x, 0).continuation) {
+                            row0 +=
+                                QString::fromUtf8(frame->cellAt(x, 0).character().toByteArray());
+                        }
+                    }
+                    const QString expectedToken =
+                        QStringLiteral("W%1:%2").arg(workerIdx).arg(kIterations);
+                    if (!row0.contains(expectedToken)) {
+                        errors[workerIdx] =
+                            QStringLiteral("Expected '%1' in row '%2'").arg(expectedToken, row0);
+                    }
                 }
             }
-            const QString expectedToken = QStringLiteral("W%1:%2").arg(workerIdx).arg(kIterations);
-            if (!row0.contains(expectedToken)) {
-                errors[workerIdx] =
-                    QStringLiteral("Expected '%1' in row '%2'").arg(expectedToken, row0);
+
+            finishedWorkers.fetch_add(1, std::memory_order_acq_rel);
+            while (finishedWorkers.load(std::memory_order_acquire) < kWorkerCount) {
+                QThread::yieldCurrentThread();
+            }
+
+            QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+            {
+                const std::lock_guard<std::mutex> lock(qmlMetaMutex);
+                rootObj.reset();
+                component.reset();
+                qmlEngine.reset();
             }
         }));
         thread->start();

@@ -13,6 +13,7 @@
 #include <QtEnvironmentVariables>
 #include <QtLogging>
 
+#include <atomic>
 #include <cstdio>
 #include <exception>
 #include <utility>
@@ -20,7 +21,71 @@
 namespace qmltui::TerminalMessageRouter {
 namespace {
 
-thread_local bool s_inCallback = false;
+// Tracks threads currently executing inside a log sink or log-file write without
+// C++ thread_local storage (which interacts poorly with WINDOWS_EXPORT_ALL_SYMBOLS
+// DLLs on MSVC) and without allocating during early startup or shutdown.
+class ActiveCallbackTracker {
+public:
+    bool containsCurrentThread() {
+        const Qt::HANDLE self = QThread::currentThreadId();
+        for (const auto& slot : m_fastSlots) {
+            if (slot.load(std::memory_order_acquire) == self) return true;
+        }
+        if (m_overflowCount.load(std::memory_order_acquire) == 0) return false;
+        QMutexLocker lock(&m_overflowMutex);
+        return m_overflowThreads.contains(self);
+    }
+
+    void enterCurrentThread() {
+        const Qt::HANDLE self = QThread::currentThreadId();
+        for (auto& slot : m_fastSlots) {
+            Qt::HANDLE expected = nullptr;
+            if (slot.compare_exchange_strong(expected, self, std::memory_order_acq_rel)) {
+                return;
+            }
+        }
+        QMutexLocker lock(&m_overflowMutex);
+        m_overflowThreads.push_back(self);
+        m_overflowCount.fetch_add(1, std::memory_order_release);
+    }
+
+    void leaveCurrentThread() {
+        const Qt::HANDLE self = QThread::currentThreadId();
+        for (auto& slot : m_fastSlots) {
+            Qt::HANDLE expected = self;
+            if (slot.compare_exchange_strong(expected, nullptr, std::memory_order_acq_rel)) {
+                return;
+            }
+        }
+        QMutexLocker lock(&m_overflowMutex);
+        for (qsizetype i = m_overflowThreads.size() - 1; i >= 0; --i) {
+            if (m_overflowThreads[i] == self) {
+                m_overflowThreads.remove(i);
+                m_overflowCount.fetch_sub(1, std::memory_order_release);
+                break;
+            }
+        }
+    }
+
+private:
+    std::atomic<Qt::HANDLE> m_fastSlots[64]{};
+    std::atomic<int> m_overflowCount{0};
+    QMutex m_overflowMutex;
+    QVarLengthArray<Qt::HANDLE, 8> m_overflowThreads;
+};
+
+ActiveCallbackTracker& callbackTracker() {
+    static ActiveCallbackTracker* tracker = new ActiveCallbackTracker;
+    return *tracker;
+}
+
+class ScopedCallbackGuard {
+public:
+    ScopedCallbackGuard() { callbackTracker().enterCurrentThread(); }
+    ~ScopedCallbackGuard() { callbackTracker().leaveCurrentThread(); }
+    ScopedCallbackGuard(const ScopedCallbackGuard&) = delete;
+    ScopedCallbackGuard& operator=(const ScopedCallbackGuard&) = delete;
+};
 
 struct PresentationRecord {
     uint64_t seq = 0;
@@ -106,7 +171,7 @@ void appendToConfiguredLogFile(const QtMessage& msg) {
     static LogFileState* logState = new LogFileState;
 
     QMutexLocker lock(&logState->mutex);
-    s_inCallback = true;
+    const ScopedCallbackGuard callbackGuard;
     if (logState->openPath != path || !logState->file.isOpen()) {
         if (logState->file.isOpen()) logState->file.close();
         logState->file.setFileName(path);
@@ -119,7 +184,6 @@ void appendToConfiguredLogFile(const QtMessage& msg) {
         logState->file.write(line);
         logState->file.flush();
     }
-    s_inCallback = false;
 }
 
 bool isPresentationDeferred(const RouterState& router) {
@@ -153,7 +217,7 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
         lock.unlock();
 
         if (sink) {
-            s_inCallback = true;
+            const ScopedCallbackGuard callbackGuard;
             try {
                 sink(rec.message);
             } catch (const std::exception& e) {
@@ -163,7 +227,6 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
                 std::fprintf(stderr, "qmltui: presentation sink unknown exception\n");
                 std::fflush(stderr);
             }
-            s_inCallback = false;
         }
 
         lock.relock();
@@ -176,7 +239,7 @@ void drainPresentationQueue(RouterState& router, QMutexLocker<QMutex>& lock) {
 }
 
 void routeMessage(QtMsgType type, const QMessageLogContext& context, const QString& message) {
-    if (s_inCallback) {
+    if (callbackTracker().containsCurrentThread()) {
         const QString formatted = qFormatLogMessage(type, context, message);
         std::fprintf(stderr, "%s\n", qPrintable(formatted));
         std::fflush(stderr);
@@ -210,19 +273,20 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
             if (presSink) router.beginDelivery(false);
         }
 
-        s_inCallback = true;
-        if (diagSink) {
-            try {
-                diagSink(msg);
-            } catch (...) {}
+        {
+            const ScopedCallbackGuard callbackGuard;
+            if (diagSink) {
+                try {
+                    diagSink(msg);
+                } catch (...) {}
+            }
+            if (presSink) {
+                try {
+                    presSink(msg);
+                } catch (...) {}
+            }
+            std::fflush(stderr);
         }
-        if (presSink) {
-            try {
-                presSink(msg);
-            } catch (...) {}
-        }
-        std::fflush(stderr);
-        s_inCallback = false;
         appendToConfiguredLogFile(msg);
         {
             QMutexLocker lock(&router.mutex);
@@ -275,7 +339,7 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
     appendToConfiguredLogFile(msg);
 
     if (diagSink) {
-        s_inCallback = true;
+        const ScopedCallbackGuard callbackGuard;
         try {
             diagSink(msg);
         } catch (const std::exception& e) {
@@ -285,7 +349,6 @@ void routeMessage(QtMsgType type, const QMessageLogContext& context, const QStri
             std::fprintf(stderr, "qmltui: diagnostic sink unknown exception\n");
             std::fflush(stderr);
         }
-        s_inCallback = false;
     }
 
     {

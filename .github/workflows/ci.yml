@@ -53,7 +53,7 @@ jobs:
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.qt-root-dir }}}"
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
@@ -72,9 +72,15 @@ jobs:
       - name: Check formatting, docs, and skills
         if: matrix.behavior == 'ON'
         run: |
-          export QMLTUI_QT_LINUX="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
-          if [ "${RUNNER_ENVIRONMENT:-}" != "self-hosted" ] && ! command -v clang-format >/dev/null 2>&1; then
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends clang-format
+          export QMLTUI_QT_LINUX="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.qt-root-dir }}}"
+          if [ "${RUNNER_ENVIRONMENT:-}" != "self-hosted" ]; then
+            if command -v pipx >/dev/null 2>&1; then
+              pipx install clang-format==23.1.3
+            else
+              python3 -m pip install --user --break-system-packages clang-format==23.1.3
+            fi
+            export PATH="$HOME/.local/bin:$PATH"
+            export CLANG_FORMAT="$HOME/.local/bin/clang-format"
           fi
           python3 ./scripts/format.py --check src tools examples tests
           python3 ./scripts/check_docs.py --build-dir build
@@ -106,7 +112,7 @@ jobs:
           cmake -S . -B build-asan -G Ninja
           -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
-          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.qt-root-dir }}}"
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
@@ -156,7 +162,7 @@ jobs:
           cmake -S . -B build-coverage -G Ninja
           -DCMAKE_CXX_COMPILER=clang++
           -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.qt-root-dir }}}"
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
@@ -245,7 +251,7 @@ jobs:
       - name: Configure
         shell: pwsh
         run: |
-          $qtPrefix = if ($env:QMLTUI_QT_WINDOWS) { $env:QMLTUI_QT_WINDOWS } else { "${{ steps.install-qt.outputs.install-dir }}" }
+          $qtPrefix = if ($env:QMLTUI_QT_WINDOWS) { $env:QMLTUI_QT_WINDOWS } else { "${{ steps.install-qt.outputs.qt-root-dir }}" }
           cmake -S . -B build -G Ninja `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_PREFIX_PATH="$qtPrefix" `
@@ -263,7 +269,7 @@ jobs:
         run: |
           # DLLs are found through PATH on Windows: Qt's bin plus every build
           # directory that holds one.
-          $qtPrefix = if ($env:QMLTUI_QT_WINDOWS) { $env:QMLTUI_QT_WINDOWS } else { "${{ steps.install-qt.outputs.install-dir }}" }
+          $qtPrefix = if ($env:QMLTUI_QT_WINDOWS) { $env:QMLTUI_QT_WINDOWS } else { "${{ steps.install-qt.outputs.qt-root-dir }}" }
           $dllDirs = Get-ChildItem -Path build -Recurse -Filter *.dll | ForEach-Object { $_.DirectoryName } | Sort-Object -Unique
           $env:PATH = "$qtPrefix\bin;" + ($dllDirs -join ';') + ";$env:PATH"
           $env:QML2_IMPORT_PATH = "$PWD\build\qml"
@@ -334,7 +340,7 @@ jobs:
         run: >
           cmake -S examples/helloworld -B build-qs -G Ninja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.install-dir }}}"
+          -DCMAKE_PREFIX_PATH="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.qt-root-dir }}}"
           -DFETCHCONTENT_SOURCE_DIR_QMLTUI=${{ github.workspace }}
 
       - name: Build
@@ -425,8 +431,8 @@ jobs:
         if: steps.filter.outputs.should_run == 'true'
         shell: bash
         run: |
-          qt_wasm_dir="${QMLTUI_QT_WASM:-${{ steps.qt-wasm.outputs.install-dir }}}"
-          qt_linux_dir="${QMLTUI_QT_LINUX:-${{ steps.qt-host.outputs.install-dir }}}"
+          qt_wasm_dir="${QMLTUI_QT_WASM:-${{ steps.qt-wasm.outputs.qt-root-dir }}}"
+          qt_linux_dir="${QMLTUI_QT_LINUX:-${{ steps.qt-host.outputs.qt-root-dir }}}"
           if [ -z "$qt_wasm_dir" ]; then
             echo "Error: QMLTUI_QT_WASM is not set on the self-hosted runner (see docs/contributing/ci-runners.md)." >&2
             exit 1

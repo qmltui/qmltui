@@ -9,12 +9,16 @@
 #include <QQmlProperty>
 #include <QQmlContext>
 #include <QMetaProperty>
+#include <QThreadStorage>
 
 namespace qmltui {
 
-thread_local QMap<CanonicalProperty, StateController*> StateController::s_propertyOwners;
-
 namespace {
+
+QMap<CanonicalProperty, StateController*>& propertyOwners() {
+    static QThreadStorage<QMap<CanonicalProperty, StateController*>> owners;
+    return owners.localData();
+}
 
 struct ResolvedProperty {
     CanonicalProperty key;
@@ -64,8 +68,8 @@ StateController::~StateController() {
 
 void StateController::releaseAllOwnership() {
     for (const CanonicalProperty& prop : m_ownedProperties) {
-        if (s_propertyOwners.value(prop) == this) {
-            s_propertyOwners.remove(prop);
+        if (propertyOwners().value(prop) == this) {
+            propertyOwners().remove(prop);
         }
     }
     m_ownedProperties.clear();
@@ -101,7 +105,7 @@ void StateController::handleTargetDestroyed(QObject* obj) {
     }
     for (auto it = m_ownedProperties.begin(); it != m_ownedProperties.end();) {
         if (it->targetId == deadId) {
-            if (s_propertyOwners.value(*it) == this) s_propertyOwners.remove(*it);
+            if (propertyOwners().value(*it) == this) propertyOwners().remove(*it);
             it = m_ownedProperties.erase(it);
         } else {
             ++it;
@@ -482,7 +486,7 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
             const ResolvedProperty resolved = resolveCanonicalProperty(target, it.key());
             revertProperty(resolved.key);
             m_baseRecords.remove(resolved.key);
-            if (s_propertyOwners.value(resolved.key) == this) s_propertyOwners.remove(resolved.key);
+            if (propertyOwners().value(resolved.key) == this) propertyOwners().remove(resolved.key);
             m_ownedProperties.remove(resolved.key);
         }
     }
@@ -504,7 +508,7 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
                 rec.baseValue = resolved.target->property(resolved.key.name.toUtf8().constData());
                 m_baseRecords.insert(resolved.key, rec);
             }
-            s_propertyOwners.insert(resolved.key, this);
+            propertyOwners().insert(resolved.key, this);
             m_ownedProperties.insert(resolved.key);
             resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
         } else if (oldMap.value(it.key()) != it.value()) {
@@ -552,7 +556,7 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
             }
             revertProperty(oldKey);
             m_baseRecords.remove(oldKey);
-            if (s_propertyOwners.value(oldKey) == this) s_propertyOwners.remove(oldKey);
+            if (propertyOwners().value(oldKey) == this) propertyOwners().remove(oldKey);
             m_ownedProperties.remove(oldKey);
         }
 
@@ -564,7 +568,7 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
                 const CanonicalProperty& canon = it.key();
                 const PropertyOverride& override = it.value();
                 if (!override.target) continue;
-                if (s_propertyOwners.contains(canon) && s_propertyOwners.value(canon) != this) {
+                if (propertyOwners().contains(canon) && propertyOwners().value(canon) != this) {
                     qmlWarning(pc) << "Cannot retarget PropertyChanges: property " << canon.name
                                    << " is owned by another StateGroup/Item";
                     continue;
@@ -582,7 +586,7 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
                 } else if (!override.restore) {
                     m_baseRecords[canon].restore = false;
                 }
-                s_propertyOwners.insert(canon, this);
+                propertyOwners().insert(canon, this);
                 m_ownedProperties.insert(canon);
                 committedKeys.insert(canon);
                 installOrWriteProperty(override.target.data(), canon.name, override.value,
@@ -601,7 +605,7 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
             const ResolvedProperty resolved = resolveCanonicalProperty(oldTarget, it.key());
             revertProperty(resolved.key);
             m_baseRecords.remove(resolved.key);
-            if (s_propertyOwners.value(resolved.key) == this) s_propertyOwners.remove(resolved.key);
+            if (propertyOwners().value(resolved.key) == this) propertyOwners().remove(resolved.key);
             m_ownedProperties.remove(resolved.key);
         }
     }
@@ -622,7 +626,7 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
                 rec.baseValue = resolved.target->property(resolved.key.name.toUtf8().constData());
                 m_baseRecords.insert(resolved.key, rec);
             }
-            s_propertyOwners.insert(resolved.key, this);
+            propertyOwners().insert(resolved.key, this);
             m_ownedProperties.insert(resolved.key);
             resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
         }
@@ -758,7 +762,7 @@ void StateController::applyState(const QString& newState) {
 
     // 2. Preflight Ownership Check
     for (const CanonicalProperty& canon : requestedOverrides.keys()) {
-        if (s_propertyOwners.contains(canon) && s_propertyOwners.value(canon) != this) {
+        if (propertyOwners().contains(canon) && propertyOwners().value(canon) != this) {
             qmlWarning(m_defaultTarget ? m_defaultTarget.data() : this)
                 << "Cannot apply state " << newState << ": property " << canon.name
                 << " is owned by another StateGroup/Item";
@@ -799,7 +803,7 @@ void StateController::applyState(const QString& newState) {
     for (const CanonicalProperty& canon : toRevert) {
         revertProperty(canon);
         m_baseRecords.remove(canon);
-        if (s_propertyOwners.value(canon) == this) s_propertyOwners.remove(canon);
+        if (propertyOwners().value(canon) == this) propertyOwners().remove(canon);
         m_ownedProperties.remove(canon);
     }
 
@@ -827,14 +831,14 @@ void StateController::applyState(const QString& newState) {
             m_baseRecords[canon].restore = false;
         }
 
-        s_propertyOwners.insert(canon, this);
+        propertyOwners().insert(canon, this);
         m_ownedProperties.insert(canon);
         applyOverride(canon, override, transitionObj, animatedProperties);
     }
 
     for (auto it = m_baseRecords.begin(); it != m_baseRecords.end();) {
         if (it.value().target.isNull()) {
-            if (s_propertyOwners.value(it.key()) == this) s_propertyOwners.remove(it.key());
+            if (propertyOwners().value(it.key()) == this) propertyOwners().remove(it.key());
             m_ownedProperties.remove(it.key());
             it = m_baseRecords.erase(it);
         } else {

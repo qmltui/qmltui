@@ -13,6 +13,7 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <mutex>
 #include <poll.h>
 #include <signal.h>
 #include <sys/ioctl.h>
@@ -187,6 +188,12 @@ struct sigaction g_previousFatal[std::size(kFatalSignals)];
 struct sigaction g_previousTstp;
 struct sigaction g_previousCont;
 bool g_handlersInstalled = false;
+std::mutex g_emergencyMutex;
+
+bool isOnApplicationThread() {
+    const QCoreApplication* app = QCoreApplication::instance();
+    return !app || QThread::currentThread() == app->thread();
+}
 
 void writeFromSignal(int fd, const char* data, size_t size) {
     // The descriptor may be non-blocking; retry a bounded number of times
@@ -268,6 +275,9 @@ void installTstpHandler() {
 
 void installEmergencyHandlers(const PosixTerminalBackend* owner, int inputFd, int outputFd,
                               const termios& original, const termios& raw) {
+    const std::lock_guard<std::mutex> lock(g_emergencyMutex);
+    g_emergency.active = 0;
+    std::atomic_signal_fence(std::memory_order_seq_cst);
     g_emergency.owner = owner;
     g_emergency.inputFd = inputFd;
     g_emergency.outputFd = outputFd;
@@ -290,8 +300,10 @@ void installEmergencyHandlers(const PosixTerminalBackend* owner, int inputFd, in
 }
 
 void uninstallEmergencyHandlers(const PosixTerminalBackend* owner) {
+    const std::lock_guard<std::mutex> lock(g_emergencyMutex);
     if (g_emergency.owner != nullptr && g_emergency.owner != owner) return;
     g_emergency.active = 0;
+    std::atomic_signal_fence(std::memory_order_seq_cst);
     g_emergency.keyboardProtocol = 0;
     g_emergency.owner = nullptr;
     std::atomic_thread_fence(std::memory_order_release);
@@ -319,7 +331,7 @@ PosixTerminalBackend::~PosixTerminalBackend() {
 
 bool PosixTerminalBackend::enterRawMode() {
     if (m_rawMode) return true;
-    if (!m_termiosValid) return false;
+    if (!m_termiosValid || !isOnApplicationThread()) return false;
     termios raw = m_originalTermios;
     // Disable echo, canonical mode, extended input processing, and signals.
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
@@ -336,11 +348,13 @@ bool PosixTerminalBackend::enterRawMode() {
 }
 
 void PosixTerminalBackend::setKeyboardProtocolActive(bool active) {
+    const std::lock_guard<std::mutex> lock(g_emergencyMutex);
     if (g_emergency.active && g_emergency.owner == this)
         g_emergency.keyboardProtocol = active ? 1 : 0;
 }
 
 bool PosixTerminalBackend::leaveRawMode() {
+    if (!m_rawMode) return true;
     if (!m_termiosValid) return false;
     m_rawMode = false;
     uninstallEmergencyHandlers(this);
@@ -410,7 +424,7 @@ bool PosixTerminalBackend::setNonBlockingOutput(bool enabled) {
 
 void PosixTerminalBackend::setWritableNotifications(bool enabled) {
     if (enabled && !m_writeNotifier) {
-        if (!QCoreApplication::instance()) return; // nothing to drain the queue from
+        if (!QCoreApplication::instance() || !isOnApplicationThread()) return;
         m_writeNotifier = std::make_unique<QSocketNotifier>(m_outputFd, QSocketNotifier::Write);
         connect(m_writeNotifier.get(), &QSocketNotifier::activated, this,
                 [this] { emit writable(); });
@@ -440,16 +454,13 @@ bool PosixTerminalBackend::isStderrInteractive() const {
 void PosixTerminalBackend::startInput() {
     if (m_inputStarted) return;
     m_inputStarted = true;
-    if (QCoreApplication::instance()) {
-        m_readNotifier = std::make_unique<QSocketNotifier>(m_inputFd, QSocketNotifier::Read);
-        connect(m_readNotifier.get(), &QSocketNotifier::activated, this, [this] { readInput(); });
-    }
+    if (!QCoreApplication::instance() || !isOnApplicationThread()) return;
+    m_readNotifier = std::make_unique<QSocketNotifier>(m_inputFd, QSocketNotifier::Read);
+    connect(m_readNotifier.get(), &QSocketNotifier::activated, this, [this] { readInput(); });
     if (SignalBridge* bridge = SignalBridge::instance()) {
         connect(bridge, &SignalBridge::received, this, &TerminalBackend::resized);
         connect(bridge, &SignalBridge::continued, this, &TerminalBackend::resumed);
         bridge->addListener(this);
-    } else {
-        qWarning("TerminalBackend must start input on the QCoreApplication thread.");
     }
 }
 

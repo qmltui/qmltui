@@ -11,10 +11,12 @@
 
 #include <QCoreApplication>
 #include <QString>
+#include <QThread>
 #include <QWinEventNotifier>
 
 #include <algorithm>
 #include <limits>
+#include <mutex>
 
 namespace qmltui {
 
@@ -24,7 +26,13 @@ HANDLE toHandle(void* pointer) {
     return static_cast<HANDLE>(pointer);
 }
 
+bool isOnApplicationThread() {
+    const QCoreApplication* app = QCoreApplication::instance();
+    return !app || QThread::currentThread() == app->thread();
+}
+
 struct Win32EmergencyState {
+    std::mutex mutex;
     const Win32ConsoleBackend* owner = nullptr;
     HANDLE input = INVALID_HANDLE_VALUE;
     HANDLE output = INVALID_HANDLE_VALUE;
@@ -46,6 +54,7 @@ BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {
     if (ctrlType == CTRL_CLOSE_EVENT || ctrlType == CTRL_LOGOFF_EVENT ||
         ctrlType == CTRL_SHUTDOWN_EVENT || ctrlType == CTRL_C_EVENT ||
         ctrlType == CTRL_BREAK_EVENT) {
+        const std::lock_guard<std::mutex> lock(g_win32Emergency.mutex);
         if (g_win32Emergency.active) {
             DWORD written = 0;
             if (g_win32Emergency.output != INVALID_HANDLE_VALUE) {
@@ -92,7 +101,7 @@ Win32ConsoleBackend::~Win32ConsoleBackend() {
 
 bool Win32ConsoleBackend::enterRawMode() {
     if (m_rawMode) return true;
-    if (!m_inputModeValid || !m_outputModeValid) return false;
+    if (!m_inputModeValid || !m_outputModeValid || !isOnApplicationThread()) return false;
 
     DWORD inputMode = m_originalInputMode;
     // No echo, no line buffering, no Ctrl+C processing, no console-side mouse
@@ -117,29 +126,35 @@ bool Win32ConsoleBackend::enterRawMode() {
     SetConsoleOutputCP(CP_UTF8);
     m_rawMode = true;
 
-    g_win32Emergency.owner = this;
-    g_win32Emergency.input = toHandle(m_input);
-    g_win32Emergency.output = toHandle(m_output);
-    g_win32Emergency.originalInputMode = m_originalInputMode;
-    g_win32Emergency.originalOutputMode = m_originalOutputMode;
-    g_win32Emergency.originalInputCodePage = m_originalInputCodePage;
-    g_win32Emergency.originalOutputCodePage = m_originalOutputCodePage;
-    g_win32Emergency.active = true;
-    if (!g_win32Emergency.handlerInstalled) {
-        if (SetConsoleCtrlHandler(&consoleCtrlHandler, TRUE))
-            g_win32Emergency.handlerInstalled = true;
+    {
+        const std::lock_guard<std::mutex> lock(g_win32Emergency.mutex);
+        g_win32Emergency.owner = this;
+        g_win32Emergency.input = toHandle(m_input);
+        g_win32Emergency.output = toHandle(m_output);
+        g_win32Emergency.originalInputMode = m_originalInputMode;
+        g_win32Emergency.originalOutputMode = m_originalOutputMode;
+        g_win32Emergency.originalInputCodePage = m_originalInputCodePage;
+        g_win32Emergency.originalOutputCodePage = m_originalOutputCodePage;
+        g_win32Emergency.active = true;
+        if (!g_win32Emergency.handlerInstalled) {
+            if (SetConsoleCtrlHandler(&consoleCtrlHandler, TRUE))
+                g_win32Emergency.handlerInstalled = true;
+        }
     }
     return true;
 }
 
 bool Win32ConsoleBackend::leaveRawMode() {
     if (!m_rawMode) return true;
-    if (g_win32Emergency.owner == this) {
-        g_win32Emergency.active = false;
-        g_win32Emergency.owner = nullptr;
-        if (g_win32Emergency.handlerInstalled) {
-            SetConsoleCtrlHandler(&consoleCtrlHandler, FALSE);
-            g_win32Emergency.handlerInstalled = false;
+    {
+        const std::lock_guard<std::mutex> lock(g_win32Emergency.mutex);
+        if (g_win32Emergency.owner == this) {
+            g_win32Emergency.active = false;
+            g_win32Emergency.owner = nullptr;
+            if (g_win32Emergency.handlerInstalled) {
+                SetConsoleCtrlHandler(&consoleCtrlHandler, FALSE);
+                g_win32Emergency.handlerInstalled = false;
+            }
         }
     }
     bool restored = true;
@@ -214,8 +229,9 @@ bool Win32ConsoleBackend::isStderrInteractive() const {
 void Win32ConsoleBackend::startInput() {
     if (m_inputStarted) return;
     m_inputStarted = true;
-    // Redirected input is not a console and cannot be waited on this way.
-    if (!m_inputModeValid || !QCoreApplication::instance()) return;
+    // Redirected input is not a console, and process-wide console input belongs
+    // exclusively to the QCoreApplication thread.
+    if (!m_inputModeValid || !QCoreApplication::instance() || !isOnApplicationThread()) return;
     m_inputNotifier = std::make_unique<QWinEventNotifier>(toHandle(m_input));
     connect(m_inputNotifier.get(), &QWinEventNotifier::activated, this, [this] { readInput(); });
     m_inputNotifier->setEnabled(true);

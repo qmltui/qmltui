@@ -54,7 +54,7 @@ jobs:
             const sha = pr.head.sha;
             const author = pr.user.login;
             const isBot = pr.user.type === 'Bot' || author.endsWith('[bot]');
-            const isOwner = pr.author_association === 'OWNER';
+            const isOwner = pr.author_association === 'OWNER' || author.toLowerCase() === 'yosriayed';
 
             const files = await github.paginate(github.rest.pulls.listFiles, {
               owner,

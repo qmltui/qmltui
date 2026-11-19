@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QMetaEnum>
 #include <QQmlInfo>
+#include <QThreadStorage>
 
 namespace qmltui {
 
@@ -145,21 +146,25 @@ int parseChordString(const QString& input, bool* ok) {
 
 } // namespace
 
-static thread_local QList<Shortcut*> s_shortcuts;
+static QList<Shortcut*>& threadShortcuts() {
+    static QThreadStorage<QList<Shortcut*>> shortcuts;
+    return shortcuts.localData();
+}
 
 const QList<Shortcut*>& activeShortcuts() {
-    return s_shortcuts;
+    return threadShortcuts();
 }
 
 void registerShortcut(Shortcut* shortcut) {
-    if (shortcut && !s_shortcuts.contains(shortcut)) {
-        s_shortcuts.append(shortcut);
+    QList<Shortcut*>& shortcuts = threadShortcuts();
+    if (shortcut && !shortcuts.contains(shortcut)) {
+        shortcuts.append(shortcut);
     }
 }
 
 void unregisterShortcut(Shortcut* shortcut) {
     if (shortcut) {
-        s_shortcuts.removeOne(shortcut);
+        threadShortcuts().removeOne(shortcut);
     }
 }
 

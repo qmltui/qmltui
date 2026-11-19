@@ -146,7 +146,6 @@ private:
     QMap<PropertyChanges*, QPointer<QObject>> m_appliedTargets;
     QMap<PropertyChanges*, QSet<CanonicalProperty>> m_appliedCustomProperties;
     QSet<QObject*> m_watchedTargets;
-    static thread_local QMap<CanonicalProperty, StateController*> s_propertyOwners;
 };
 
 } // namespace qmltui

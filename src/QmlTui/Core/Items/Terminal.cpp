@@ -410,7 +410,7 @@ void Terminal::setMouseMotionRequested(QObject* requester, bool requested) {
         if (m_d->mouseMotionRequesters.contains(requester)) return;
         const QMetaObject::Connection connection =
             connect(requester, &QObject::destroyed, this, [this, requester] {
-                if (m_d->mouseMotionRequesters.remove(requester) > 0 &&
+                if (m_d->mouseMotionRequesters.remove(requester) &&
                     m_d->mouseMotionRequesters.isEmpty()) {
                     emit mouseMotionRequestedChanged(false);
                 }

@@ -3,14 +3,23 @@
 
 #include <QByteArray>
 #include <QSet>
+#include <QThreadStorage>
 #include <QtGlobal>
 
 namespace qmltui {
 
 namespace {
 
-thread_local RenderPhase::Phase s_phase = RenderPhase::Idle;
-thread_local int s_dirtyDuringPaint = 0;
+struct RenderPhaseThreadState {
+    RenderPhase::Phase phase = RenderPhase::Idle;
+    int dirtyDuringPaint = 0;
+    QSet<QByteArray> reported;
+};
+
+RenderPhaseThreadState& threadState() {
+    static QThreadStorage<RenderPhaseThreadState> state;
+    return state.localData();
+}
 
 bool debugPaintDirtyEnabled() {
     static const bool enabled = [] {
@@ -23,33 +32,34 @@ bool debugPaintDirtyEnabled() {
 } // namespace
 
 RenderPhase::Phase RenderPhase::current() {
-    return s_phase;
+    return threadState().phase;
 }
 
 int RenderPhase::dirtyDuringPaintCount() {
-    return s_dirtyDuringPaint;
+    return threadState().dirtyDuringPaint;
 }
 
 void RenderPhase::recordDirtyDuringPaint(const Item* item) {
-    ++s_dirtyDuringPaint;
+    RenderPhaseThreadState& state = threadState();
+    ++state.dirtyDuringPaint;
     if (!debugPaintDirtyEnabled() || !item) return;
-    thread_local QSet<QByteArray> reported;
     QByteArray key = item->metaObject()->className();
     if (!item->objectName().isEmpty()) key += " \"" + item->objectName().toUtf8() + '"';
-    if (reported.contains(key)) return;
-    reported.insert(key);
+    if (state.reported.contains(key)) return;
+    state.reported.insert(key);
     qWarning("QmlTui: %s invalidated itself while painting; move the change to "
              "updateLayout() or a property setter",
              key.constData());
 }
 
-RenderPhase::Scope::Scope(Phase phase) : m_previous(s_phase) {
-    s_phase = phase;
-    if (phase == Paint) s_dirtyDuringPaint = 0;
+RenderPhase::Scope::Scope(Phase phase) : m_previous(threadState().phase) {
+    RenderPhaseThreadState& state = threadState();
+    state.phase = phase;
+    if (phase == Paint) state.dirtyDuringPaint = 0;
 }
 
 RenderPhase::Scope::~Scope() {
-    s_phase = m_previous;
+    threadState().phase = m_previous;
 }
 
 } // namespace qmltui

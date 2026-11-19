@@ -448,7 +448,8 @@ jobs:
           if [ -n "$qt_linux_dir" ] && [ -d "$qt_linux_dir" ]; then
             qt_host_arg=("-DQT_HOST_PATH=${qt_linux_dir}")
           fi
-          "$qt_wasm_dir/bin/qt-cmake" -S examples/helloworld -B build-wasm -G Ninja \
+          cmake -S examples/helloworld -B build-wasm -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$qt_wasm_dir/lib/cmake/Qt6/qt.toolchain.cmake" \
             -DCMAKE_BUILD_TYPE=MinSizeRel \
             "${qt_host_arg[@]}" \
             -DFETCHCONTENT_SOURCE_DIR_QMLTUI="${{ github.workspace }}"

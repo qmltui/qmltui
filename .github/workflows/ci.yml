@@ -1,6 +1,6 @@
 name: CI
 
-# Public CI runs on GitHub-hosted runners (ubuntu-24.04, windows-2022, macos-14)
+# Public CI runs on GitHub-hosted runners (ubuntu-24.04, windows-2022, macos-latest)
 # by default, installing and caching Qt 6.8 via jurplel/install-qt-action@v4.
 #
 # Maintainers can optionally route trusted non-fork runs (push, workflow_dispatch,
@@ -279,10 +279,10 @@ jobs:
 
   macos:
     name: macos / Behavior ON
-    # On public repositories, hosted macos-14 runs on every push and pull request.
+    # On public repositories, hosted macos-latest runs on every push and pull request.
     # On private forks/mirrors, macOS runs on workflow_dispatch and release tags only.
     if: ${{ !github.event.repository.private || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 

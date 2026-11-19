@@ -1,6 +1,6 @@
 # CI Runners: GitHub-Hosted Default and Optional Self-Hosted Mode
 
-By default, `.github/workflows/ci.yml` runs every job on GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, and `macos-14`), which are free on public GitHub repositories and install cached Qt `6.8.*` toolchains with `jurplel/install-qt-action@v4`.
+By default, `.github/workflows/ci.yml` runs every job on GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, and `macos-latest`), which are free on public GitHub repositories and install cached Qt `6.8.*` toolchains with `jurplel/install-qt-action@v4`.
 
 Maintainers who work on a private mirror (where GitHub bills Actions minutes) or want faster turnaround against local pre-installed toolchains can opt into self-hosted Linux and Windows runners by setting the repository Actions variable `QMLTUI_SELF_HOSTED=1` under **Settings > Secrets and variables > Actions > Variables**.
 
@@ -14,7 +14,7 @@ Never execute untrusted pull-request code on a persistent self-hosted machine. E
 
 As a result:
 
-- **External fork pull requests** (`head.repo.full_name != github.repository`) always run on ephemeral GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, `macos-14`). They never access self-hosted hardware and never block in "Queued" if a developer workstation is offline.
+- **External fork pull requests** (`head.repo.full_name != github.repository`) always run on ephemeral GitHub-hosted runners (`ubuntu-24.04`, `windows-2022`, `macos-latest`). They never access self-hosted hardware and never block in "Queued" if a developer workstation is offline.
 - **Trusted runs** (`push`, `workflow_dispatch`, and same-repository pull requests) use `[self-hosted, linux]` and `[self-hosted, windows]` when `QMLTUI_SELF_HOSTED=1`, and fall back to GitHub-hosted runners whenever `QMLTUI_SELF_HOSTED` is unset or set to `0`.
 
 ## Registering Optional Self-Hosted Runners
@@ -82,7 +82,7 @@ To remove a runner, generate a removal token on **Settings > Actions > Runners**
 | `sanitizers` (`ASan` + `UBSan`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `coverage` (Clang `llvm-cov` + badge update on `main`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `windows` (`Behavior` `ON`, MSVC 2022) | `windows-2022` | `[self-hosted, windows]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
-| `macos` (`Behavior` `ON`) | `macos-14` | `macos-14` | Every trigger on public repos; `workflow_dispatch` and `v*` tags on private repos |
+| `macos` (`Behavior` `ON`) | `macos-latest` | `macos-latest` | Every trigger on public repos; `workflow_dispatch` and `v*` tags on private repos |
 | `quickstart` (`examples/helloworld` via `FetchContent`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `wasm` (`examples/helloworld` Wasm compile-guard) | `ubuntu-24.04` | `[self-hosted, linux]` | Wasm/Core/Controls/CMake changes, `workflow_dispatch`, and `v*` tags (full Wasm playground & Pages site build runs in `qmltui/website`) |
 | `reuse` (`reuse lint`) | `ubuntu-24.04` | `ubuntu-24.04` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |

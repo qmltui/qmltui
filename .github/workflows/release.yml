@@ -56,7 +56,7 @@ jobs:
             platform: linux-x86_64
             qt_host: linux
             qt_arch: linux_gcc_64
-          - os: macos-14
+          - os: macos-latest
             platform: macos-arm64
             qt_host: mac
             qt_arch: clang_64
@@ -106,7 +106,9 @@ jobs:
         run: |
           pkg="qmltui-runner-${GITHUB_REF_NAME}-${{ matrix.platform }}"
           mkdir -p "dist/${pkg}"
-          cp build/tools/qmltui-runner/qmltui-runner "dist/${pkg}/"
+          runner_bin=$(find build -type f -name qmltui-runner -print -quit)
+          test -n "$runner_bin"
+          cp "$runner_bin" "dist/${pkg}/"
           cp LICENSE.md THIRD-PARTY.md "dist/${pkg}/"
           tar -C dist -czf "dist/${pkg}.tar.gz" "${pkg}"
 
@@ -116,7 +118,9 @@ jobs:
         run: |
           $pkg = "qmltui-runner-$env:GITHUB_REF_NAME-${{ matrix.platform }}"
           New-Item -ItemType Directory -Force -Path "dist/$pkg" | Out-Null
-          Copy-Item "build/tools/qmltui-runner/qmltui-runner.exe" "dist/$pkg/"
+          $runnerBin = Get-ChildItem -Path build -Recurse -Filter "qmltui-runner.exe" | Select-Object -First 1
+          if (-not $runnerBin) { throw "qmltui-runner.exe not found under build/" }
+          Copy-Item $runnerBin.FullName "dist/$pkg/"
           Copy-Item "LICENSE.md", "THIRD-PARTY.md" "dist/$pkg/"
           & "${{ steps.install-qt.outputs.qt-root-dir }}/bin/windeployqt.exe" --release --no-translations --no-compiler-runtime --no-opengl-sw --no-system-d3d-compiler "dist/$pkg/qmltui-runner.exe"
           Compress-Archive -Path "dist/$pkg" -DestinationPath "dist/$pkg.zip"

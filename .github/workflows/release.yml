@@ -35,7 +35,21 @@ jobs:
             exit 1
           fi
           echo "version=${cmake_ver}" >> "$GITHUB_OUTPUT"
-          cp docs/changes/changelog.md release-notes.md
+          python3 - "$tag" "${GITHUB_REPOSITORY}" <<'PY'
+          import posixpath, re, sys
+          tag, repo = sys.argv[1], sys.argv[2]
+          text = open("docs/changes/changelog.md", encoding="utf-8").read()
+          def repl(m):
+              label, target = m.group(1), m.group(2)
+              if re.match(r"^(?:https?:|mailto:|#)", target):
+                  return m.group(0)
+              path, sep, frag = target.partition("#")
+              norm = posixpath.normpath(posixpath.join("docs/changes", path))
+              kind = "tree" if path.endswith("/") else "blob"
+              return f"[{label}](https://github.com/{repo}/{kind}/{tag}/{norm}{sep}{frag})"
+          out = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", repl, text)
+          open("release-notes.md", "w", encoding="utf-8").write(out)
+          PY
 
       - name: Upload release notes
         uses: actions/upload-artifact@v4

@@ -8,6 +8,24 @@ Execution runs on the standard Qt event loop (`QCoreApplication`). `TerminalEngi
 
 The root `Terminal` initializes its engine after QML component completion, when parentage and presentation mode are known. C++ applications can initialize it earlier via `engine()`; otherwise initialization runs on the next event-loop turn. The engine connects the rendering lifecycle to terminal I/O and survives presentation-mode switches.
 
+```mermaid
+flowchart TD
+    Tree["QML / C++ Item Tree<br/>Property bindings call markDirty()"] --> Engine["TerminalEngine<br/>QCoreApplication event loop"]
+    Engine --> Pass["Layout &amp; Paint Pass<br/>updateLayout() · paint() · paintOverlay()"]
+    Pass --> Grid["TextGridBuffer<br/>24-byte Cell grid · prev vs. next diff"]
+
+    Grid --> Alt["AltScreenRenderer<br/>Full viewport · DEC ?2026 sync"]
+    Grid --> Inline["InlineRenderer<br/>Live bottom region + Scrollback queue"]
+
+    Alt --> Device["TerminalDevice<br/>Raw mode · async output queue"]
+    Inline --> Device
+    Device --> Backend["TerminalBackend<br/>Posix · Win32Console · Wasm · Memory"]
+
+    Backend -. "Raw VT bytes &amp; resize" .-> Decoder["InputDecoder<br/>UTF-8 · CSI/Kitty · SGR mouse · paste"]
+    Decoder -. "KeyEvent / MouseEvent" .-> Dispatch["Input Dispatch<br/>Focus chain · Popup · MouseArea"]
+    Dispatch -. "State &amp; bindings" .-> Tree
+```
+
 ## Rendering Pipeline
 
 Because the component tree stays resident in memory, property bindings mark only affected items dirty rather than rebuilding the UI on every tick. The `Renderer` interface drives terminal output through two implementations:
@@ -39,6 +57,17 @@ Visual elements inherit from `qmltui::Item`. Each `Item` tracks integer cell geo
 ## Module Boundaries
 
 QmlTui separates the core scene graph (`qmltui::core`) from interactive controls (`qmltui::controls`) and optional OS/GUI integrations (`qmltui::image` and `qmltui::pty_view`; see [Build Configuration and Installation](../build-configuration.md) for CMake targets and flags).
+
+```mermaid
+flowchart LR
+    QtCore["Qt6::Core + Qt6::Qml<br/>(+ optional Qt6::QmlPrivate)"] --> Core["qmltui::core<br/>import QmlTui · utf8proc"]
+    Core --> Controls["qmltui::controls<br/>import QmlTui.Controls"]
+    Core --> Image["qmltui::image (optional)<br/>import QmlTui.Image"]
+    QtGui["Qt6::Gui + Qt6::Network"] --> Image
+    Core --> Pty["qmltui::pty_view (optional)<br/>import QmlTui.PtyView · Unix"]
+    VTerm["libvterm"] --> Pty
+    Core --> Runner["qmltui::runner (test-only)<br/>BUILD_TESTING · qmltui-runner"]
+```
 
 `QmlTui.Controls` only admits controls that need engine knowledge an application cannot reproduce in QML (such as `ToolTip` overlay positioning or grapheme measurement) or that are standard across terminal toolkits. Domain-specific widgets (`Calendar`, `StatusBadge`, `BigText`, syntax highlighters) live as copyable recipes under [`examples/recipes/`](../../examples/recipes/).
 

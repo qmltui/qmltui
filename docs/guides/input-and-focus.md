@@ -38,6 +38,29 @@ Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ..
 
 Set `Keys.priority: Keys.BeforeItem` to intercept keys before an item's built-in C++ handler runs (for example, to catch a shortcut before `TextInput` or `PtyView` consumes the keystroke). Set `Keys.forwardTo: [targetItem]` to forward unhandled keys from a search field or container directly to another item such as a `ListView` or `TableView`.
 
+```mermaid
+flowchart TD
+    In(["KeyEvent from InputDecoder"]) --> SC{"Matching enabled Shortcut?<br/>(skipped on paste or unmodified<br/>printable key in TextInput/TextArea;<br/>modal Popup scopes to its subtree)"}
+    SC -- "Yes" --> SCAct(["Emit Shortcut.activated()"])
+    SC -- "No" --> Modal{"Modal Popup open?"}
+
+    Modal -- "Yes" --> ModEsc{"Escape + CloseOnEscape?"}
+    ModEsc -- "Yes" --> RejMod(["Reject top modal Popup"])
+    ModEsc -- "No" --> ModChain["Dispatch along modal focus chain<br/>stopping at modal Popup"]
+    ModChain --> ModAcc{"event.accepted?"}
+    ModAcc -- "Yes" --> Done(["Handled"])
+    ModAcc -- "No" --> ModTab["Tab / Backtab cycles inside modal;<br/>other keys trapped by modal"]
+
+    Modal -- "No" --> PopEsc{"Escape + visible Popup<br/>with CloseOnEscape?"}
+    PopEsc -- "Yes" --> RejPop(["Reject topmost matching Popup"])
+    PopEsc -- "No" --> Item["Current Item (starts at activeFocus)<br/>BeforeItem: Keys → keyPressEvent<br/>AfterItem: keyPressEvent → Keys<br/>then Keys.forwardTo targets"]
+    Item --> Acc{"event.accepted?"}
+    Acc -- "Yes" --> Done
+    Acc -- "No" --> HasParent{"Has parent Item?"}
+    HasParent -- "Yes" --> Item
+    HasParent -- "No (reached Terminal)" --> Tab["Unhandled Tab / Backtab<br/>cycles focus ring"]
+```
+
 ## Shortcuts and the Application Quit Path
 
 In terminal raw mode, `Ctrl+C` does not generate `SIGINT` (`TextInput` and `TextArea` use `Ctrl+C` for copying to the clipboard), and a root `Terminal` does not exit automatically on `Q` or `Escape`. Every application must provide an explicit keyboard quit path:

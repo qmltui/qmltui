@@ -181,6 +181,24 @@ buildLog.append({
 
 ## Inline Geometry, Dynamic Resizing, Mode Switching, and Queue Limits
 
+```mermaid
+flowchart TD
+    P1["Scrollback.print()"] --> Queue
+    P2["model + delegate"] --> Queue
+    P3["append(data) + delegate"] --> Queue
+
+    Queue{"Session Scrollback Queue<br/>1 MiB capacity"}
+    Queue -- "Exceeds 1 MiB" --> Reject(["print() returns false<br/>emit outputRejected(reason)"])
+    Queue -- "Queued" --> Mode{"Active Terminal.mode"}
+
+    Mode -- "Terminal.Inline" --> Inline["InlineRenderer single write<br/>1. Commit scrollback rows above<br/>2. Redraw live region (≤ rows - 1)<br/>3. Emit CSI J if height shrank"]
+    Inline --> Origin["Invalidate &amp; re-query mouse origin<br/>via CSI 6 n on resize, commit, or height change"]
+
+    Mode -- "Terminal.AltScreen" --> Hold["Retain queue in memory<br/>while alternate screen (?1049h) is active"]
+    Hold -. "Switch to Inline" .-> Inline
+    Hold -. "Exit (?1049l)" .-> Flush(["Flush queued scrollback<br/>to normal screen"])
+```
+
 - **Content-driven height and shrinking**: Do not set `anchors.fill: parent` or `height: parent.height` on the top-level child of an inline `Terminal`. Size the live region from its content (`Column`, explicit `height`, etc.). Hidden children (`visible: false`) do not contribute to inline height. When the live region grows and later shrinks (for example, after dismissing an inline completion list or confirmation box), `InlineRenderer` moves the cursor to the previous top row, redraws the shorter live region, and emits `CSI J` (`\033[J`) to erase leftover rows below it.
 - **Cursor origin (`CSI 6 n`) and terminal resize**: Because inline output begins at whatever row the shell cursor occupied when the process started, `InlineRenderer` queries the cursor row with `CSI 6 n` (`\033[6n`) to map terminal mouse coordinates to the live region's screen origin. Whenever the prompt height changes, scrollback rows are committed, or the terminal is resized, the cached mouse origin is invalidated and re-queried automatically.
 - **Switching between `Terminal.Inline` and `Terminal.AltScreen`**: You can toggle `root.mode` at runtime (for example, switching to `Terminal.AltScreen` to open a full-screen diff or pager and returning to `Terminal.Inline` afterward). Leaving `Terminal.Inline` erases the live inline region cleanly with `\033[J`.

@@ -11,18 +11,17 @@ Scope:
 
 ## Routing Pipeline
 
-```text
-                           Qt emits log message (qDebug, qWarning, ...)
-                                                │
-                                 ┌──────────────┴──────────────┐
-                                 ▼                             ▼
-                        [ Diagnostic Sink ]           [ Presentation Sink ]
-                      (Immediate / File Logger)      (Deferred Terminal Replay)
-                                 │                             │
-                      Delivered immediately           Is alternate screen active?
-                      • Synchronous on caller thread  ├── NO  ──► Delivered immediately
-                      • Never buffered or dropped     └── YES ──► Buffered up to 500 entries,
-                                                                  replayed after terminal restored
+```mermaid
+flowchart TD
+    Emit(["Qt log message<br/>qDebug · qInfo · qWarning · qCritical · qFatal"]) --> Fatal{"QtFatalMsg?"}
+    Fatal -- "Yes" --> FatalOut(["Delivered immediately to both sinks<br/>and QMLTUI_LOG_FILE before abort"])
+
+    Fatal -- "No" --> Diag["Diagnostic Sink / QMLTUI_LOG_FILE<br/>Synchronous on caller thread<br/>Never buffered or dropped"]
+    Fatal -- "No" --> Pres{"Presentation Sink deferred?<br/>(AltScreen active; default stderr<br/>only when pointing to a TTY)"}
+
+    Pres -- "No" --> Imm(["Delivered &amp; flushed immediately<br/>in FIFO order after diagnostic sink"])
+    Pres -- "Yes" --> Buf["Buffered in 500-entry queue<br/>(drops oldest on overflow)"]
+    Buf -. "Raw mode exits &amp;<br/>normal screen restored" .-> Replay(["Replayed in FIFO order<br/>to Presentation Sink"])
 ```
 
 ### Default Behavior

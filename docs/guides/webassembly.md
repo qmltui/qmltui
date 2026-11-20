@@ -82,6 +82,34 @@ If you embed `<target>.js` inside your own web application instead of using the 
 | Page to app | `instance.qmltuiFeedInput(bytes)` | `Uint8Array` of input bytes delivered to `InputDecoder`. Encode `term.onData` strings with `TextEncoder` so NUL bytes (`Ctrl+Space`) survive intact. |
 | Page to app | `instance.qmltuiResize(cols, rows)` | Stores viewport dimensions and emits `resized()`. Call once before `callMain()` so the initial frame renders at the right size. |
 
+```mermaid
+sequenceDiagram
+    participant XTerm as xterm.js (Browser)
+    participant Host as Host Page JS
+    participant Wasm as WasmTerminalBackend (Qt / C++)
+
+    Host->>Wasm: factory({ noInitialRun: true, qmltuiOnOutput, onExit, onAbort })
+    Wasm-->>Host: Module instance
+    Host->>Wasm: qmltuiResize(term.cols, term.rows)
+    Host->>Wasm: callMain(args)
+    Note over Host,Wasm: QCoreApplication::exec() throws "unwind"<br/>to yield back to the browser event loop
+
+    loop Interactive session
+        XTerm->>Host: onData / onBinary / onResize
+        Host->>Wasm: qmltuiFeedInput(Uint8Array) / qmltuiResize(cols, rows)
+        Wasm->>Host: Module.qmltuiOnOutput(Uint8Array)
+        Host->>XTerm: term.write(bytes)
+        opt OSC palette queries & clipboard
+            XTerm->>Host: OSC 4/10/11 handler → reply
+            Host->>Wasm: qmltuiFeedInput(OSC reply)
+            XTerm->>Host: OSC 52 handler → navigator.clipboard.writeText()
+        end
+    end
+
+    Wasm-->>Host: Qt.quit() triggers onAbort / onExit
+    Host->>XTerm: term.reset()
+```
+
 Minimal initialization sequence for a target built as `my_app`:
 
 ```js

@@ -69,7 +69,9 @@ Declarative child shapes such as [Line](line.md), [Circle](circle.md),
 [Point](point.md), [Polygon](polygon.md), and [CanvasRectangle](canvasrectangle.md)
 are automatically drawn onto the canvas during its paint pass. In addition,
 procedural drawing can be performed from JavaScript handlers using `setPixel()`,
-`setPixelColor()`, and `clear()`.
+`setPixelColor()`, and `clear()`. Because `autoClear` defaults to `true` for
+declarative shape children, set `autoClear: false` when calling `setPixel()` or
+`setPixelColor()` imperatively so drawn pixels persist across repaints.
 
 Coordinates for shapes and pixels are specified in canvas sub-cell pixels,
 bounded by `pixelWidth` and `pixelHeight`.

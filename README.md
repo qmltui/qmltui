@@ -23,7 +23,7 @@ Declare reactive layouts, property bindings, states, and reusable components in 
 
 QmlTui renders the item tree into a double-buffered character-cell grid, diffs consecutive frames, and writes minimal ANSI/SGR updates on `QCoreApplication` without requiring `QtQuick`, `QtGui`, or a display server.
 
-![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
+![QmlTui Showcase Applications](docs/assets/casts/apps-showcase.gif)
 
 ## Hello, World!
 
@@ -109,6 +109,8 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
+![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
+
 To create a standalone 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`), follow the [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/). For browser builds in `xterm.js`, see the [WebAssembly guide](docs/guides/webassembly.md).
 
 ## QML Modules and CMake Targets
@@ -139,7 +141,7 @@ See [Build Configuration and Installation](docs/build-configuration.md) for `Fet
 ## Documentation
 
 - **[Documentation Portal](https://qmltui.github.io/website/)** · **[Live Playground (Wasm)](https://qmltui.github.io/website/playground.html)** · **[Component Gallery](https://qmltui.github.io/website/playground.html?mode=gallery)** · **[App Showcase](https://qmltui.github.io/website/showcase.html)**
-- **[Getting Started](docs/getting-started.md)** · **[Qt Quick & Widgets Guide](docs/guides/qt-quick-to-qmltui.md)** · **[Build & CMake](docs/build-configuration.md)** · **[Editor Setup](docs/guides/editor-setup.md)**
+- **[Getting Started](docs/getting-started.md)** · **[Build & CMake](docs/build-configuration.md)** · **[Editor Setup](docs/guides/editor-setup.md)**
 - **[Guides](docs/guides/index.md)** · **[Testing with Runner](docs/guides/testing.md)** · **[Agentic Loop](docs/guides/agentic-development.md)** · **[Examples & Recipes](docs/examples.md)** ([qmltui/apps](https://github.com/qmltui/apps))
 - **[QML Types Reference](docs/qml-types/index.md)** · **[C++ Classes Reference](docs/cpp-classes/index.md)** · **[Changelog](docs/changes/changelog.md)** · **[Contributing](CONTRIBUTING.md)**
 

@@ -6,7 +6,6 @@
       "items": [
         { "text": "Overview", "link": "/" },
         { "text": "Getting Started Tutorial", "link": "/getting-started" },
-        { "text": "Qt Quick & Widgets to QmlTui", "link": "/guides/qt-quick-to-qmltui" },
         { "text": "Editor & IDE Setup", "link": "/guides/editor-setup" },
         { "text": "Build & CMake Configuration", "link": "/build-configuration" },
         { "text": "Examples & Recipes", "link": "/examples" },
@@ -20,7 +19,6 @@
       "collapsed": false,
       "items": [
         { "text": "All Guides", "link": "/guides/" },
-        { "text": "Qt Quick & Widgets to QmlTui", "link": "/guides/qt-quick-to-qmltui" },
         { "text": "Architecture", "link": "/guides/architecture" },
         { "text": "Layouts & Geometry", "link": "/guides/layouts" },
         { "text": "Input & Focus", "link": "/guides/input-and-focus" },

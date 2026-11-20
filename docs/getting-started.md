@@ -357,7 +357,7 @@ cmake --build build --target qmltui_gallery
 
 ## Next Steps
 
-- **[QmlTui for Qt Quick and Widgets Developers](guides/qt-quick-to-qmltui.md)**: Cell geometry, borders, colors, quit paths, and shared C++ models.
+- **[Layouts & Cell Geometry](guides/layouts.md)**, **[Input & Focus](guides/input-and-focus.md)**, **[Styling & Colors](guides/styling-and-colors.md)**, and **[Models in QmlTui Views](guides/models.md)**: Core UI primitives, focus chains, terminal colors, and C++ model views.
 - **[Editor and IDE Setup](guides/editor-setup.md)**: `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete.
 - **[Build Configuration and Installation](build-configuration.md)**: `find_package(QmlTui)`, multi-file modules, optional modules, and CMake/env options.
 - **[Guides](guides/index.md)** & **[Examples and Recipes](examples.md)**: Task guides, copyable recipes, and showcase apps in [qmltui/apps](https://github.com/qmltui/apps).

@@ -146,6 +146,7 @@ Combine `Item.states` with one or more [`StateGroup`](../qml-types/stategroup.md
 ## Transition Semantics on the Cell Grid
 
 - Geometry animations (`NumberAnimation` on `x`, `y`, `width`, `height`) step through integer character cells.
+- `easing` is a direct enum property on animations (for example, `easing: Easing.OutQuad`, rather than Qt Quick's grouped `easing.type`), and `loops: Animation.Infinite` repeats indefinitely.
 - QmlTui suppresses redundant writes when an animated property's destination equals its current displayed value.
 - Setting `duration: 0` applies the destination value synchronously without scheduling timer ticks.
 - Interrupting a running transition starts the new transition from the currently displayed value.

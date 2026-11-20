@@ -4,7 +4,7 @@ QmlTui maintains an explicit focus chain, routes decoded key events from the act
 
 ## Active Focus, Tab Chains, and `FocusScope`
 
-Set `focus: true` on the initial interactive item. Items with `focusPolicy: Qt.StrongFocus` or `Qt.TabFocus` (the default on interactive controls, `TextInput`, and `TextArea`) participate in the **Tab** / **Shift+Tab** ring in tree order.
+Set `focus: true` on the initial interactive item. Items with `focusPolicy: Qt.StrongFocus` or `Qt.TabFocus` (the default on interactive controls, `TextInput`, and `TextArea`) participate in the **Tab** / **Shift+Tab** ring in tree order. Plain `Item` and `Rectangle` default to `Qt.NoFocus`, so custom focusable items must set `focusPolicy: Qt.StrongFocus` explicitly in addition to `focus: true`.
 
 Use [`FocusScope`](../qml-types/focusscope.md) when building a composite component that needs to remember which internal child is focused and gain `activeFocus` as a unit when focused from outside:
 

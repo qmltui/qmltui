@@ -1,59 +1,252 @@
 # Agentic Development Loop with Runner
 
-Raw-mode and `Terminal.AltScreen` applications are hard for AI coding agents to verify directly: interactive binaries block waiting for a TTY or emit cursor-positioning ANSI sequences, while terminal screenshot loops require a display server and miss single-cell clipping.
+AI coding agents struggle to verify graphical and terminal interfaces directly. Browser and desktop workflows require a display server and multimodal screenshots that still miss off-by-one clipping, color regressions, and focus states. Raw-mode terminal binaries either block waiting for a TTY or emit cursor-positioning ANSI streams that force fragile PTY scrapers and wall-clock sleeps.
 
-`qmltui::Runner` and `qmltui-runner` give coding agents (Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Zed) a deterministic feedback loop on `QCoreApplication` without a TTY or display server. Agents compile a target, capture plain UTF-8 frames (`capture.txt`) and `#RRGGBBAA`/SGR style grids (`capture_styled.txt`), step animations on a virtual clock, and inspect structured diagnostics (`result.json`).
+[`qmltui::Runner`](../cpp-classes/runner.md) and [`qmltui-runner`](testing.md#2-run-scenarios-with-the-qmltui-runner-cli) give coding agents (Claude Code, Codex, Gemini CLI, Antigravity, Cursor, Zed) a text-native closed loop on `QCoreApplication` with an in-memory terminal backend. Without a TTY, display server, or separate test binary, an agent builds your real executable, sweeps multiple viewports with 0-based `(x, y)` coordinate rulers, inspects exact `#RRGGBBAA` colors and SGR attributes, steps animations instantaneously on a [virtual clock](testing.md#step-animations-and-timers-with-the-virtual-clock), checks retained-mode paint telemetry and idle repaint budgets, and records deterministic `.cast` replays for human review.
 
-For the complete `app.*` scenario API, CLI flags, `CMakeLists.txt` setup, and artifact format, see [Testing and Recording with Runner](testing.md) and the [Runner Reference](../cpp-classes/runner.md).
+```mermaid
+flowchart TD
+    Start(["Code Change"]) --> Agent["1. Coding Agent<br/>AGENTS.md + QmlTui skills"]
+    Agent --> Build["2. Build &amp; Static Lint<br/>cmake --build --target app_qmllint app"]
+    Build --> Runner["3. Headless qmltui-runner<br/>Real binary · QCoreApplication · Virtual Clock"]
 
-## 1. Locate `qmltui-runner` and Project Targets
+    Runner --> Visual["Visual &amp; Style Signals<br/>UTF-8 (x, y) rulers · --sweep · --styled"]
+    Runner --> Perf["Perf &amp; Failure Signals<br/>FrameStats · --idle-ms · result.json + .diff"]
 
-Ensure your project links `qmltui::runner` under `if(BUILD_TESTING AND TARGET qmltui::runner)` and sets `set(QT_QML_GENERATE_QMLLS_INI ON)` alongside `qmltui_scenario_editor_support()` (see [CMake Integration](testing.md#3-cmake-and-ctest-integration) and [Editor Setup](editor-setup.md)).
+    Visual --> Check{"All checks pass?"}
+    Perf --> Check
 
-| Project Layout | `qmltui-runner` Path |
-| :--- | :--- |
-| Installed package (`find_package(QmlTui)`) | `<install-prefix>/bin/qmltui-runner` (or `qmltui-runner` on `PATH`) |
-| `FetchContent` consumer build (`-B build`) | `./build/bin/qmltui-runner` (with `CMAKE_RUNTIME_OUTPUT_DIRECTORY`) or `./build/_deps/qmltui-build/tools/qmltui-runner/qmltui-runner` |
-| QmlTui repository build (`-B build`) | `./build/tools/qmltui-runner/qmltui-runner` |
+    Check -. "No: patch QML / C++" .-> Agent
+    Check -- "Yes" --> Ship["4. Lock &amp; Prove<br/>CTest Snapshots + demo.cast PR Replay"]
+```
 
-## 2. Run the Four-Step Verification Loop
+| Capability | Browser / Desktop Screenshot Agent | PTY / ANSI Scraper | QmlTui + [`qmltui-runner`](../cpp-classes/runner.md#qmltui-runner-command-line-launcher) |
+| :--- | :--- | :--- | :--- |
+| **Runtime environment** | Display server + headless browser | Interactive PTY (`tmux` / `script`) | `QCoreApplication` only (headless CI, containers, SSH, cloud sandboxes) |
+| **Visual perception** | PNG screenshots (vision tokens, pixel guessing) | Raw escape-sequence text | Exact 2D UTF-8 cell grid, 0-based `(x, y)` rulers, `#RRGGBBAA` / SGR style runs |
+| **Animations & timers** | Wall-clock waits | Wall-clock `sleep` | Deterministic virtual clock ([`app.advanceTime(ms)`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization)) in milliseconds |
+| **Targeting & assertions** | DOM or pixel coordinates | Substring regexes | [`clickText()`](../cpp-classes/runner.md#mouse-input), [`app.item("objectName")`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item), [`app.region()`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item), [`expectStyle()`](../cpp-classes/runner.md#frame-text-regex-and-style-assertions), [`Inline`](inline-mode.md) scrollback |
+| **Performance & paint audit** | External profiler | None | Built-in [`FrameStats`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization) (`paintAvg`, `diffBytes`, `dirtyDuringPaint=0`) and [`--idle-ms`](testing.md#qmltui-runner-options-reference) |
+| **Visual proof for PR review** | Static screenshots | None | Deterministic asciicast v2 `.cast` recordings ([`--record`](../cpp-classes/runner.md#asciicast-recording-cast)) |
 
-Run the narrowest check that proves each change before running the full suite:
+For the full 60-method [`app.*` facade](../cpp-classes/runner.md#javascript-app-runner-facade-reference), CLI flags, CMake macros, and C++ API, see [Testing and Recording with Runner](testing.md) and the [Runner Reference](../cpp-classes/runner.md).
 
-1. **Build and lint QML (`<target>_qmllint`)**:
-   ```bash
-   cmake --build build --target ops_console_qmllint ops_console
-   ```
-   Catches invalid imports (such as `import QtQuick`), unknown properties, and unqualified lookups before execution.
+## 1. Set Up Your Agent in 60 Seconds
 
-2. **Sweep viewports, rulers, and idle budget (`--sweep --ruler --idle-ms`)**:
-   ```bash
-   qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled \
-     --clean-artifacts --artifacts ./tmp/probe \
-     -- ./build/ops_console
-   ```
-   Prints `FrameStats`, 0-based `(x, y)` coordinate grids across `60x18`, `80x24`, and `120x36`, and `--- styles` runs directly to `stdout` while verifying `dirtyDuringPaintTotal === 0` and zero idle repaints.
+### Install the Bundled Agent Skills
 
-3. **Probe interactions and animations inline (`--eval` + `--clock virtual`)**:
-   ```bash
-   qmltui-runner --clock virtual --columns 80 --rows 24 \
-     --eval 'app.clickText("Start"); app.advanceTime(300); app.expectText("RUNNING"); app.captureText("after_start.txt");' \
-     -- ./build/ops_console
-   ```
-   `--clock virtual` steps QmlTui animations and QML `Timer` items instantaneously via `app.advanceTime(ms)` (use `--clock real` only for C++ `QTimer`, worker threads, or `PtyView`). For `Terminal.Inline` CLIs, assert emitted history with `app.scrollbackRowCount()` and `app.expectScrollbackText(...)`. On failure (exit code `1`), read `result.json` (`message` and `operation`) and `failure.txt` (or `.diff` on snapshot mismatch); exit code `2` indicates CLI, handshake, or crash errors.
+Install QmlTui's portable skills into your repository from [`qmltui/qmltui`](https://github.com/qmltui/qmltui):
 
-4. **Lock behavior into CTest (`qmltui_add_scenario`)**:
-   ```bash
-   QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest --test-dir build -R "^ops_console_smoke$" --output-on-failure
-   ctest --test-dir build -LE Demo --output-on-failure
-   ```
-   Review updated snapshot files with `git diff` so unintended layout shifts never become the baseline.
+```bash
+npx skills add qmltui/qmltui
+```
 
-## 3. Walkthrough: Catching Cell-Clipping Bugs Static Tools Miss
+This adds two domain skills that teach coding agents QmlTui's rules and verification loop out of the box:
 
-Compilers and `qmllint` validate types, not character-cell widths. Consider a 27-column `Panel` with two bordered `Button` controls:
+- **[`qmltui-qml`](../../.agents/skills/qmltui-qml/SKILL.md)**: Enforces allowed imports (no `QtQuick`), `pragma ComponentBehavior: Bound`, required-property delegates, `AltScreen` vs. `Inline` mode, integer cell geometry, border insets, and contextual quit paths.
+- **[`qmltui-dev-loop`](../../.agents/skills/qmltui-dev-loop/SKILL.md)**: Bundles the build/lint/probe workflow plus on-demand references for the complete [`app.*` Runner facade](../cpp-classes/runner.md#javascript-app-runner-facade-reference), visual and performance audit checklists, and CMake/subsystem configuration.
 
-```qml no-playground
+### Link `qmltui::runner` into Your Application Target
+
+Link [`qmltui::runner`](../cpp-classes/runner.md) conditionally under `BUILD_TESTING` in `CMakeLists.txt` (see [CMake and CTest Integration](testing.md#3-cmake-and-ctest-integration) and [Editor Setup](editor-setup.md)). Normal interactive startup is unaffected unless launched via [`qmltui-runner`](testing.md#2-run-scenarios-with-the-qmltui-runner-cli) or `QMLTUI_RUNNER_*` environment variables (see the [Runner Reference](../cpp-classes/runner.md)), and production builds (`-DBUILD_TESTING=OFF`) omit `qmltui::runner` entirely:
+
+```cmake
+set(QT_QML_GENERATE_QMLLS_INI ON)
+
+if(BUILD_TESTING AND TARGET qmltui::runner)
+    target_link_libraries(ops_console PRIVATE qmltui::runner)
+    qmltui_scenario_editor_support()
+endif()
+```
+
+### Add a Concise `AGENTS.md`
+
+Pair the installed skills with a short root `AGENTS.md` pointing agents to your targets and build directory (see QmlTui's [`AGENTS.md`](../../AGENTS.md)):
+
+```markdown
+# Project Agent Instructions
+
+- Build terminal UIs with `QtQml`, `QmlTui`, and `QmlTui.Controls`. Never import `QtQuick` or link `Qt6::Quick`.
+- All item geometry (`x`, `y`, `width`, `height`, margins, padding, spacing) uses integer character cells.
+- Provide a reachable keyboard quit path (`Q` or contextual `Escape` at the root `Terminal` after closing modals or clearing input focus).
+- Build and lint before probing: `cmake --build build --target ops_console_qmllint ops_console`
+- Audit every visible change with `qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled` and verify `dirtyDuringPaint=0` and zero idle repaints.
+- Lock verified flows into CTest scenarios and run `ctest --test-dir build -LE Demo --output-on-failure` plus `git diff --check` before handoff.
+```
+
+## 2. What the Agent Actually Sees
+
+One [`qmltui-runner`](../cpp-classes/runner.md#qmltui-runner-command-line-launcher) command gives an agent layout geometry, exact colors and text attributes, paint performance, and idle-budget verification in milliseconds:
+
+```mermaid
+sequenceDiagram
+    participant Agent as Coding Agent
+    participant Build as CMake + qmllint
+    participant Runner as qmltui-runner
+
+    Agent->>Build: Build app_qmllint + app
+    Build-->>Agent: Types & imports valid
+    Agent->>Runner: --sweep --idle-ms 300 --ruler --styled
+    Runner-->>Agent: FrameStats (2 ms) + ruled grids + styles
+    Agent->>Runner: --eval clickText / advanceTime / expectStyle
+    alt Assertion fails (exit 1)
+        Runner-->>Agent: result.json + failure.txt + .diff
+        Note over Agent: Inspect coordinates & patch QML/C++
+    else All checks pass (exit 0)
+        Agent->>Runner: CTest snapshot + --record demo.cast
+        Runner-->>Agent: Regression locked + PR replay ready
+    end
+```
+
+Running that probe against `hello_qmltui`:
+
+```bash
+qmltui-runner --clock virtual --sizes 60x13 --idle-ms 300 --ruler --styled \
+  -- ./build/examples/helloworld/hello_qmltui
+```
+
+prints structured telemetry, a 0-based `(x, y)` coordinate-ruled UTF-8 frame, and exact `#RRGGBBAA` / SGR style runs directly to `stdout`:
+
+```text
+[Test] PASSED in 2 ms; artifacts: /tmp/qmltui-runner-cTESlC
+FrameStats: frames=4 paintAvg=42us paintMax=156us diffBytes=0 bytesTotal=1141 dirtyDuringPaint=0 skippedBackpressure=0
+
+=== Viewport 60x13 ===
+    0         1         2         3         4         5
+    012345678901234567890123456789012345678901234567890123456789
+   ┌────────────────────────────────────────────────────────────
+00 │
+01 │    ┌──────────────────────────────────────────────────┐
+02 │    │                                                  │
+03 │    │     Hello, QmlTui!                               │
+04 │    │                                                  │
+05 │    │     QML Declarative terminal UIs                 │
+06 │    │                                                  │
+07 │    │     Interactions: 0                              │
+08 │    │                                                  │
+09 │    │     [Enter] Count  •  [R] Reset  •  [Q] Quit     │
+10 │    │                                                  │
+11 │    └──────────────────────────────────────────────────┘
+12 │
+--- Styles (60x13) ---
+y=1 x=4-55 fg=#2CDE85FF bg=#0D1117FF
+y=3 x=10-23 fg=#00FF66FF bg=#0D1117FF bold
+y=5 x=10-37 fg=#2CDE85FF bg=#0D1117FF dim
+y=7 x=10-24 fg=#C9D1D9FF bg=#0D1117FF
+y=9 x=10-49 fg=#8B949EFF bg=#0D1117FF dim
+...
+```
+
+From that single output, the agent checks four bug classes without needing a screenshot:
+
+1. **Cell alignment and clipping**: The `(x, y)` ruler shows exact column indices for every border corner, label, and 2-cell wide grapheme (CJK/emoji). With [`--sweep`](testing.md#qmltui-runner-options-reference), Runner checks `60x18`, `80x24`, and `120x36` in one run to catch cramped-pane overflow and wide-screen layout gaps.
+2. **Colors, attributes, and focus cues**: [`--- Styles`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item) lists exact `#RRGGBBAA` foreground/background colors and SGR attributes (`bold`, `dim`, `italic`, `underline`, `reverse`), confirming focus borders and text hierarchy stay legible. Set `NO_COLOR=1` or `QMLTUI_COLOR_DEPTH=16` in the environment when checking monochrome or 16-color resilience.
+3. **Idle repaint leaks**: [`--idle-ms 300`](testing.md#qmltui-runner-options-reference) advances time while idle and fails if [`frameCount()`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization) changes, catching unguarded timers or running animations on hidden tabs.
+4. **Retained-mode paint hygiene**: [`FrameStats`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization) reports `dirtyDuringPaint=0` (catching illegal `markDirty()` calls inside `Item::paint()`), `paintAvg`, and `diffBytes` (spotting unintended full-screen redraws).
+
+### Machine-Readable Self-Correction on Failure
+
+When an assertion fails, [`qmltui-runner`](../cpp-classes/runner.md#exit-codes-and-handshake-protocol) exits with code `1` (exit code `2` indicates CLI errors, handshake timeouts, or process crashes), prints the failing ruler frame, and writes atomic schema-v1 [`result.json`](testing.md#inspecting-artifacts), `failure.txt`, and (for snapshot mismatches) `snapshots/<name>.diff`:
+
+```bash
+qmltui-runner --clock virtual --columns 60 --rows 13 --ruler \
+  --eval 'app.press("Enter"); app.expectText("Interactions: 2");' \
+  -- ./build/examples/helloworld/hello_qmltui
+```
+
+```json
+{
+  "schemaVersion": 1,
+  "status": "failed",
+  "exitCode": 1,
+  "mode": "eval",
+  "clock": "virtual",
+  "message": "Expected frame to contain \"Interactions: 2\"",
+  "operation": { "index": 2, "name": "expectText", "status": "failed" },
+  "artifacts": { "finalFrame": "failure.txt", "result": "result.json" }
+}
+```
+
+The agent reads `result.json` (`message` and `operation`) alongside the ruler frame in `failure.txt` (which shows `Interactions: 1` at row `07`), fixes the root cause, and re-runs without guessing.
+
+## 3. The Five-Step Closed Verification Loop
+
+Run the tightest check that proves each edit before running the full CTest suite:
+
+### 1. Build and Static-Lint QML (`<target>_qmllint`)
+
+```bash
+cmake --build build --target ops_console_qmllint ops_console
+```
+
+Catches forbidden `import QtQuick` statements, unknown properties, type mismatches, and unqualified lookups before execution.
+
+### 2. Sweep Viewports, Styles, and Idle Budget (`--sweep --ruler --styled --idle-ms`)
+
+```bash
+qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled \
+  --clean-artifacts --artifacts ./tmp/probe \
+  -- ./build/ops_console
+```
+
+Sweeps `60x18`, `80x24`, and `120x36`, prints `FrameStats` and ruled frames, checks `dirtyDuringPaint=0`, and enforces zero idle repaints across 300 ms. `--clean-artifacts` safely reuses a prior Runner artifact directory (containing `result.json`); see the [`qmltui-runner` options reference](testing.md#qmltui-runner-options-reference) for all probe flags.
+
+### 3. Probe Interactions, Virtual-Clock Animations, and Scrollback (`--eval`)
+
+Drive keyboard shortcuts, mouse clicks, semantic locators, style checks, and animations inline without creating temporary script files (see the [JavaScript `app` facade reference](../cpp-classes/runner.md#javascript-app-runner-facade-reference)):
+
+```bash
+qmltui-runner --clock virtual --columns 80 --rows 24 --ruler \
+  --eval '
+    app.item("sidebar").clickText("Workers");
+    app.advanceTime(300);
+    app.expectText("RUNNING");
+    app.expectStyle(2, 1, { foreground: "cyan", bold: true });
+    app.injectKey("Down");
+    app.expectRepaint();
+  ' \
+  -- ./build/ops_console
+```
+
+- **[`--clock virtual`](testing.md#step-animations-and-timers-with-the-virtual-clock) + [`app.advanceTime(ms)`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization)**: Steps QmlTui animations (`NumberAnimation`, `ColorAnimation`, `Behavior`), `ToolTip` delays, `AnimatedSprite`, and QML `Timer` items instantaneously without wall-clock waiting. Use `--clock real` only for C++ `QTimer`, worker threads, or `PtyView`.
+- **Semantic targeting**: [`app.item("objectName")`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item) and [`app.region(x, y, w, h)`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item) scope clicks and assertions to a component's committed bounds instead of brittle full-screen coordinates.
+- **Self-scheduled invalidation**: [`app.injectKey()`](../cpp-classes/runner.md#keyboard-and-clipboard-input) paired with [`app.expectRepaint()`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization) proves the application scheduled its own redraw rather than relying on the harness to force a render.
+- **[`Terminal.Inline`](inline-mode.md) scrollback**: Add `--scrollback` to inspect committed history alongside the live bottom prompt, or checkpoint rows in JS with `const mark = app.scrollbackRowCount()` and `app.expectScrollbackText("...")` (see [Testing and Recording with Runner](testing.md)):
+
+```bash
+qmltui-runner --clock virtual --columns 60 --rows 10 --ruler --scrollback \
+  --eval 'app.typeText("help"); app.press("Enter"); app.expectScrollbackText("help");' \
+  -- ./build/examples/recipes/inline_repl/qmltui_inline_repl_demo
+```
+
+### 4. Lock Behavior into CTest Snapshots (`qmltui_add_scenario`)
+
+Promote ad-hoc probes into permanent [CTest scenarios](testing.md#3-cmake-and-ctest-integration) using [`expectSnapshot()` and `expectStyled()`](../cpp-classes/runner.md#frame-snapshots-and-captures) (UTF-8 text plus `#RRGGBBAA` / SGR runs), then update baselines intentionally and inspect the diff (see [Run and Update Scenarios with CTest](testing.md#run-and-update-scenarios-with-ctest)):
+
+```bash
+QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1 ctest --test-dir build -R "^ops_console_smoke$" --output-on-failure
+git diff -- '*snapshots*'
+ctest --test-dir build -LE Demo --output-on-failure
+```
+
+### 5. Produce Deterministic Visual Proof for Human Review (`--record`)
+
+When an agent finishes a feature or bug fix, it can record an [asciicast v2 `.cast` replay](../cpp-classes/runner.md#asciicast-recording-cast) on the virtual clock so reviewers can watch the interactive flow (`asciinema play` or rendered GIF) without compiling the branch:
+
+```bash
+qmltui-runner --clock virtual --columns 80 --rows 24 \
+  --script tests/tour_ops_console.js --record ops_console.cast \
+  --clean-artifacts --artifacts ./tmp/demo \
+  -- ./build/ops_console
+```
+
+Pace holds with [`app.advanceTime(ms)`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization) and tag steps with [`app.marker("Filter services")`](../cpp-classes/runner.md#asciicast-recording-cast) to produce byte-identical chaptered demos across runs.
+
+## 4. Walkthrough: Catching a Cell-Clipping Bug with `--ruler`
+
+Compilers and `qmllint` validate QML types, not character-cell budgets. Consider a 27-column `Panel` holding two 11-column `Button` items:
+
+```qml
 pragma ComponentBehavior: Bound
 import QtQml
 import QmlTui
@@ -100,101 +293,68 @@ Terminal {
 }
 ```
 
-This passes `qmllint`, but `qmltui-runner --capture-after-ms 0` immediately exposes clipped labels in `capture.txt`:
+This builds and passes `qmllint` cleanly, but `qmltui-runner --clock virtual --sizes 30x7 --ruler` immediately exposes clipped labels and exact column bounds:
 
 ```text
-┌─ CONTROLS ──────────────┐
-│ ┌─────────┐ ┌─────────┐ │
-│ │ S] STAR │ │ [X] STO │ │
-│ └─────────┘ └─────────┘ │
-└─────────────────────────┘
+=== Viewport 30x7 ===
+    0         1         2
+    012345678901234567890123456789
+   ┌──────────────────────────────
+00 │
+01 │ ┌─ CONTROLS ──────────────┐
+02 │ │ ┌─────────┐ ┌─────────┐ │
+03 │ │ │ S] STAR │ │ [X] STO │ │
+04 │ │ └─────────┘ └─────────┘ │
+05 │ └─────────────────────────┘
+06 │
 ```
 
-`Button` defaults to `leftPadding: 2` and `rightPadding: 2` (1 border cell + 1 inner margin cell per side), leaving `11 - 4 = 7` cells for a 9-cell string. Setting `leftPadding: 1` and `rightPadding: 1` with a width-aware label fixes the frame:
+Reading row `03` against the ruler shows each button spans 11 columns (`03..13` and `15..25`), leaving only 7 label cells because `Button` defaults to `leftPadding: 2` and `rightPadding: 2` (1 border cell plus 1 inner space per side: `11 - 4 = 7`). Setting `leftPadding: 1` and `rightPadding: 1` with width-aware labels resolves the budget:
 
-```qml
-pragma ComponentBehavior: Bound
-import QtQml
-import QmlTui
-import QmlTui.Controls
+<!-- check-docs: ignore -->
+```qml no-playground
+Button {
+    id: startBtn
+    width: 11
+    height: 3
+    leftPadding: 1
+    rightPadding: 1
+    text: startBtn.width >= 13 ? "[S] START" : "S START"
+}
 
-Terminal {
-    id: root
-
-    Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape || event.key === Qt.Key_Q) {
-            event.accepted = true;
-            Qt.quit();
-        }
-    }
-
-    Panel {
-        x: 1
-        y: 1
-        width: 27
-        height: 5
-        title: Text {
-            text: "CONTROLS"
-            bold: true
-        }
-
-        Row {
-            x: 2
-            y: 1
-            spacing: 1
-
-            Button {
-                id: startBtn
-                width: 11
-                height: 3
-                leftPadding: 1
-                rightPadding: 1
-                text: startBtn.width >= 13 ? "[S] START" : "S START"
-            }
-
-            Button {
-                id: stopBtn
-                width: 11
-                height: 3
-                leftPadding: 1
-                rightPadding: 1
-                text: stopBtn.width >= 12 ? "[X] STOP" : "X STOP"
-            }
-        }
-    }
+Button {
+    id: stopBtn
+    width: 11
+    height: 3
+    leftPadding: 1
+    rightPadding: 1
+    text: stopBtn.width >= 12 ? "[X] STOP" : "X STOP"
 }
 ```
 
-Re-running `--capture-after-ms 0` confirms clean cell alignment:
+Re-running `--sizes 30x7 --ruler --idle-ms 300` confirms clean borders, full labels, and zero idle repaints:
 
 ```text
-┌─ CONTROLS ──────────────┐
-│ ┌─────────┐ ┌─────────┐ │
-│ │ S START │ │ X STOP  │ │
-│ └─────────┘ └─────────┘ │
-└─────────────────────────┘
+=== Viewport 30x7 ===
+    0         1         2
+    012345678901234567890123456789
+   ┌──────────────────────────────
+00 │
+01 │ ┌─ CONTROLS ──────────────┐
+02 │ │ ┌─────────┐ ┌─────────┐ │
+03 │ │ │ S START │ │ X STOP  │ │
+04 │ │ └─────────┘ └─────────┘ │
+05 │ └─────────────────────────┘
+06 │
 ```
 
-## 4. Install QmlTui Skills and Configure `AGENTS.md`
+## 5. Reference: Locating `qmltui-runner`
 
-Install QmlTui's bundled portable agent skills (`qmltui-qml` and `qmltui-dev-loop`) into your repository from [`qmltui/qmltui`](https://github.com/qmltui/qmltui):
+| Project Layout | `qmltui-runner` Path |
+| :--- | :--- |
+| Installed package (`find_package(QmlTui)`) | `<install-prefix>/bin/qmltui-runner` (or `qmltui-runner` on `PATH`) |
+| `FetchContent` with `CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"` | `./build/bin/qmltui-runner` |
+| `FetchContent` default layout (`-B build`) | `./build/_deps/qmltui-build/tools/qmltui-runner/qmltui-runner` |
+| QmlTui repository build (`-B build`) | `./build/tools/qmltui-runner/qmltui-runner` |
 
-```bash
-npx skills add qmltui/qmltui
-```
-
-- **[`qmltui-qml`](../../.agents/skills/qmltui-qml/SKILL.md)**: Enforces QmlTui imports (no `QtQuick`), `pragma ComponentBehavior: Bound`, required-property delegates, `AltScreen` vs. `Inline` mode, integer cell geometry, borders, and contextual quit paths.
-- **[`qmltui-dev-loop`](../../.agents/skills/qmltui-dev-loop/SKILL.md)**: Guides `<target>_qmllint` builds, `qmltui-runner --sweep --ruler --idle-ms` multi-viewport probes, virtual-clock scenarios, and `.cast` demo recordings.
-
-Pair the skills with a concise root `AGENTS.md` in your application repository (see QmlTui's [`AGENTS.md`](../../AGENTS.md)):
-
-```markdown
-# Project Agent Instructions
-
-- Build terminal UIs with `QtQml`, `QmlTui`, and `QmlTui.Controls`. Never import `QtQuick` or link `Qt6::Quick`.
-- All item geometry (`x`, `y`, `width`, `height`, margins, padding, spacing) uses integer character cells.
-- Provide a reachable keyboard quit path (`Q` or contextual `Escape` at the root `Terminal` after closing popups or clearing input focus).
-- Build and lint before running scenarios: `cmake --build build --target ops_console_qmllint ops_console`
-- Verify every visible UI change against a committed terminal frame via `qmltui-runner` (`--ruler`, `--sweep`, or `expectSnapshot()`).
-- Run `ctest --test-dir build -LE Demo --output-on-failure` and `git diff --check` before handoff.
-```
+See [Testing and Recording with Runner](testing.md) for CTest scenario setup, [Runner Reference](../cpp-classes/runner.md) for all `app.*` methods and `QMLTUI_RUNNER_*` environment variables, and [Editor and IDE Setup](editor-setup.md) for `qmlls` and `qmltui-runner.d.ts` autocomplete.

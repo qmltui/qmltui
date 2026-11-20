@@ -108,11 +108,13 @@ void GridView::setReuseItems(bool reuse) {
     m_reuseItems = reuse;
     emit reuseItemsChanged();
     if (!reuse) {
-        for (Item* item : std::as_const(m_reusePool)) {
-            item->setParentItem(nullptr);
-            delete item;
+        const auto pooled = std::exchange(m_reusePool, {});
+        for (Item* item : pooled) {
+            if (item) {
+                item->setParentItem(nullptr);
+                delete item;
+            }
         }
-        m_reusePool.clear();
     }
 }
 
@@ -140,20 +142,24 @@ void GridView::setCellHeight(int height) {
 }
 
 void GridView::clearItems() {
-    for (Item* item : std::as_const(m_createdItems)) {
+    // Detach tracking containers before deleting delegates so re-entrant
+    // layout or ChildRemoved queries never dereference freed items.
+    const auto created = std::exchange(m_createdItems, {});
+    const auto pooled = std::exchange(m_reusePool, {});
+    m_materializedFirst = -1;
+    m_materializedLast = -1;
+    for (Item* item : created) {
         if (item) {
             item->setParentItem(nullptr);
             delete item;
         }
     }
-    m_createdItems.clear();
-    for (Item* item : std::as_const(m_reusePool)) {
-        item->setParentItem(nullptr);
-        delete item;
+    for (Item* item : pooled) {
+        if (item) {
+            item->setParentItem(nullptr);
+            delete item;
+        }
     }
-    m_reusePool.clear();
-    m_materializedFirst = -1;
-    m_materializedLast = -1;
 }
 
 void GridView::disconnectModelSignals() {

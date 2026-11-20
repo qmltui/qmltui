@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <utility>
 
 namespace qmltui {
 namespace {
@@ -119,13 +120,15 @@ void TableView::destroyDelegate(DelegateRecord& record) {
     record.component.clear();
 }
 void TableView::clearDelegateItems() {
-    for (auto& record : m_createdDelegateItems)
-        destroyDelegate(record);
-    m_createdDelegateItems.clear();
+    // Detach delegate records before deleting items so re-entrant ChildRemoved
+    // callbacks never inspect freed pointers.
+    auto records = std::exchange(m_createdDelegateItems, {});
     m_delegateProperties.clear();
     m_delegateStandardMask = NumericItemRoles::ClaimsAll;
     m_delegateSchemaResolved = false;
     m_delegateNeedsModelMap = true;
+    for (auto& record : records)
+        destroyDelegate(record);
 }
 void TableView::generateDelegateItems() {
     m_resetDelegates = true;
@@ -157,6 +160,7 @@ void TableView::clearSelection() {
     const bool rowChanged = m_selectedRow != -1;
     const bool columnChanged = m_currentColumn != -1;
     m_selectedRow = -1;
+    m_pendingSelectedRow = -1;
     m_currentColumn = -1;
     m_currentIndex = QPersistentModelIndex();
     if (rowChanged) emit selectedRowChanged();
@@ -180,7 +184,16 @@ void TableView::setModel(const QVariant& model) {
     else
         m_cppModel = qobject_cast<QAbstractItemModel*>(model.value<QObject*>());
     resetViewport();
-    if (m_selectedRow >= 0) {
+    if (m_pendingSelectedRow >= 0 && rowCount() > 0) {
+        const int target = std::exchange(m_pendingSelectedRow, -1);
+        m_selectedRow = std::clamp(target, 0, rowCount() - 1);
+        if (m_currentColumn < 0) {
+            m_currentColumn = 0;
+            emit currentColumnChanged();
+        }
+        m_currentIndex = sourceIndex(m_selectedRow, (std::max)(0, m_currentColumn));
+        emit selectedRowChanged();
+    } else if (m_selectedRow >= 0) {
         if (rowCount() > 0) {
             const int newRow = std::clamp(m_selectedRow, 0, rowCount() - 1);
             const bool rowChanged = (m_selectedRow != newRow);
@@ -229,7 +242,10 @@ void TableView::setModel(const QVariant& model) {
                 m_structureDirty = true;
                 m_builtInCells.clear();
                 resetViewport();
-                if (m_selectedRow >= 0) {
+                if (m_pendingSelectedRow >= 0 && rowCount() > 0) {
+                    const int target = std::exchange(m_pendingSelectedRow, -1);
+                    setSelectedRow(target);
+                } else if (m_selectedRow >= 0) {
                     if (rowCount() > 0) {
                         const int newRow = std::clamp(m_selectedRow, 0, rowCount() - 1);
                         const bool rowChanged = (m_selectedRow != newRow);
@@ -301,6 +317,8 @@ QModelIndex TableView::sourceIndex(int row, int column) const {
     return index;
 }
 void TableView::setSelectedRow(int row) {
+    // Keep a non-negative row set before the model resolves, matching ListView::currentIndex.
+    m_pendingSelectedRow = rowCount() == 0 && row >= 0 ? row : -1;
     const int normalized = row < 0 || rowCount() == 0 ? -1 : (std::min)(row, rowCount() - 1);
     if (m_selectedRow == normalized) return;
     const Position previous{m_selectedRow, m_currentColumn};
@@ -325,7 +343,13 @@ void TableView::setCurrentColumn(int column) {
     markDirty(DirtyFlag::LayoutDirty | DirtyFlag::SelfDirty);
 }
 void TableView::synchronizeSelection() {
-    if (m_selectedRow < 0) return;
+    if (m_selectedRow < 0) {
+        if (m_pendingSelectedRow >= 0 && rowCount() > 0) {
+            const int target = std::exchange(m_pendingSelectedRow, -1);
+            setSelectedRow(target);
+        }
+        return;
+    }
     if (rowCount() == 0) {
         clearSelection();
         return;

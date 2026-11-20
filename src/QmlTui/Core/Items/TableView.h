@@ -320,6 +320,7 @@ private:
     QList<QMetaObject::Connection> m_modelConnections;
 
     int m_selectedRow = -1;
+    int m_pendingSelectedRow = -1;
     int m_currentColumn = -1;
     int m_firstVisibleRow = 0;
     bool m_selectionKeepsCellColors = false;

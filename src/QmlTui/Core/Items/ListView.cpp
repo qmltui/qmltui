@@ -235,8 +235,8 @@ void ListView::setReuseItems(bool reuse) {
     if (m_reuseItems == reuse) return;
     m_reuseItems = reuse;
     if (!m_reuseItems) {
-        while (!m_reusePool.isEmpty()) {
-            Item* item = m_reusePool.pop();
+        const auto pooled = std::exchange(m_reusePool, {});
+        for (Item* item : pooled) {
             if (item) {
                 item->setParentItem(nullptr);
                 delete item;
@@ -305,22 +305,24 @@ void ListView::keyPressEvent(KeyEvent* event) {
 }
 
 void ListView::clearItems() {
-    for (Item* item : std::as_const(m_createdItems)) {
-        if (item) {
-            item->setParentItem(nullptr);
-            delete item;
-        }
-    }
-    m_createdItems.clear();
-    while (!m_reusePool.isEmpty()) {
-        Item* item = m_reusePool.pop();
-        if (item) {
-            item->setParentItem(nullptr);
-            delete item;
-        }
-    }
+    // Detach tracking containers before deleting delegates so re-entrant
+    // implicit-size queries triggered by ChildRemoved never see freed items.
+    const auto created = std::exchange(m_createdItems, {});
+    const auto pooled = std::exchange(m_reusePool, {});
     m_materializedFirst = -1;
     m_materializedLast = -1;
+    for (Item* item : created) {
+        if (item) {
+            item->setParentItem(nullptr);
+            delete item;
+        }
+    }
+    for (Item* item : pooled) {
+        if (item) {
+            item->setParentItem(nullptr);
+            delete item;
+        }
+    }
 }
 
 void ListView::recycleDelegateItem(Item* item) {

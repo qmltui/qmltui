@@ -548,13 +548,9 @@ void TreeView::collapseAll() {
 }
 
 void TreeView::clearDelegateItems() {
-    for (Item* item : m_delegateItems) {
-        if (item) {
-            item->setParentItem(nullptr);
-            delete item;
-        }
-    }
-    m_delegateItems.clear();
+    // Detach delegate tracking state before deleting items so ChildRemoved
+    // notifications never observe freed pointers.
+    const auto items = std::exchange(m_delegateItems, {});
     m_delegateModelIndexes.clear();
     m_delegatePaths.clear();
     m_delegateNodes.clear();
@@ -564,6 +560,12 @@ void TreeView::clearDelegateItems() {
     m_delegateStandardMask = NumericItemRoles::ClaimsAll;
     m_delegateSchemaResolved = false;
     m_delegateNeedsModelMap = true;
+    for (Item* item : items) {
+        if (item) {
+            item->setParentItem(nullptr);
+            delete item;
+        }
+    }
 }
 
 void TreeView::flattenTree(const QVariantMap& map, const QString& parentPath,

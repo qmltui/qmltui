@@ -50,6 +50,29 @@ int LinearLayout::maximumMainSize(Item* item) const {
                       m_direction == Horizontal ? info->maximumWidth : info->maximumHeight);
 }
 
+int LinearLayout::minimumCrossSize(Item* item) const {
+    const LayoutAttached* info = layoutInfo(item);
+    return info ? (m_direction == Horizontal ? info->minimumHeight : info->minimumWidth) : 0;
+}
+
+int LinearLayout::maximumCrossSize(Item* item) const {
+    const LayoutAttached* info = layoutInfo(item);
+    if (!info) return (std::numeric_limits<int>::max)();
+    const int minimum = m_direction == Horizontal ? info->minimumHeight : info->minimumWidth;
+    return (std::max)(minimum,
+                      m_direction == Horizontal ? info->maximumHeight : info->maximumWidth);
+}
+
+int LinearLayout::preferredCrossSize(Item* item) const {
+    const LayoutAttached* info = layoutInfo(item);
+    const int preferred =
+        info ? (m_direction == Horizontal ? info->preferredHeight : info->preferredWidth) : -1;
+    const int value = preferred >= 0 ? preferred
+                                     : (m_direction == Horizontal ? item->implicitHeight()
+                                                                  : item->implicitWidth());
+    return std::clamp(value, minimumCrossSize(item), maximumCrossSize(item));
+}
+
 void LinearLayout::layoutChildren() {
     QList<Item*> children;
     for (Item* child : childItems()) {
@@ -141,22 +164,62 @@ void LinearLayout::layoutChildren() {
         Item* child = children[i];
         const LayoutAttached* info = infos[i];
         if (m_direction == Horizontal) {
+            const int minH = info ? info->minimumHeight : 0;
+            const int maxH =
+                info ? (std::max)(minH, info->maximumHeight) : (std::numeric_limits<int>::max)();
+            if (info && info->fillHeight) {
+                child->setHeight(std::clamp(crossAvailable, minH, maxH));
+            } else if (info && info->preferredHeight >= 0) {
+                child->setHeight(
+                    std::clamp((std::min)(info->preferredHeight, crossAvailable), minH, maxH));
+            } else if (info && (info->minimumHeight > 0 ||
+                                info->maximumHeight < (std::numeric_limits<int>::max)())) {
+                child->setHeight(
+                    std::clamp((std::min)(child->height(), crossAvailable), minH, maxH));
+            }
+
+            int yPos = topPadding();
+            if (info && !info->fillHeight) {
+                const int slack = (std::max)(0, crossAvailable - child->height());
+                if (info->alignment & Qt::AlignBottom)
+                    yPos += slack;
+                else if (info->alignment & Qt::AlignVCenter)
+                    yPos += slack / 2;
+            }
+
             child->setX(position);
-            child->setY(topPadding());
+            child->setY(yPos);
             child->setWidth(sizes[i]);
-            if (info && info->fillHeight)
-                child->setHeight(std::clamp(crossAvailable, info->minimumHeight,
-                                            (std::max)(info->minimumHeight, info->maximumHeight)));
         } else {
-            child->setX(leftPadding());
+            const int minW = info ? info->minimumWidth : 0;
+            const int maxW =
+                info ? (std::max)(minW, info->maximumWidth) : (std::numeric_limits<int>::max)();
+            if (info && info->fillWidth) {
+                child->setWidth(std::clamp(crossAvailable, minW, maxW));
+            } else if (info && info->preferredWidth >= 0) {
+                child->setWidth(
+                    std::clamp((std::min)(info->preferredWidth, crossAvailable), minW, maxW));
+            } else if (info && (info->minimumWidth > 0 ||
+                                info->maximumWidth < (std::numeric_limits<int>::max)())) {
+                child->setWidth(std::clamp((std::min)(child->width(), crossAvailable), minW, maxW));
+            }
+
+            int xPos = leftPadding();
+            if (info && !info->fillWidth) {
+                const int slack = (std::max)(0, crossAvailable - child->width());
+                if (info->alignment & Qt::AlignRight)
+                    xPos += slack;
+                else if (info->alignment & Qt::AlignHCenter)
+                    xPos += slack / 2;
+            }
+
+            child->setX(xPos);
             child->setY(position);
             child->setHeight(sizes[i]);
-            if (info && info->fillWidth)
-                child->setWidth(std::clamp(crossAvailable, info->minimumWidth,
-                                           (std::max)(info->minimumWidth, info->maximumWidth)));
         }
         position += sizes[i] + m_spacing;
     }
+    notifyImplicitSizeIfChanged();
     clearDirty(DirtyFlag::LayoutDirty);
 }
 
@@ -175,7 +238,7 @@ int LinearLayout::implicitWidth() const {
     int maxCross = 0;
     for (Item* child : childItems()) {
         if (!child || !child->visible()) continue;
-        maxCross = (std::max)(maxCross, child->implicitWidth());
+        maxCross = (std::max)(maxCross, preferredCrossSize(child));
     }
     return leftPadding() + rightPadding() + maxCross;
 }
@@ -195,7 +258,7 @@ int LinearLayout::implicitHeight() const {
     int maxCross = 0;
     for (Item* child : childItems()) {
         if (!child || !child->visible()) continue;
-        maxCross = (std::max)(maxCross, child->implicitHeight());
+        maxCross = (std::max)(maxCross, preferredCrossSize(child));
     }
     return topPadding() + bottomPadding() + maxCross;
 }

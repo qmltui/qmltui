@@ -1554,6 +1554,68 @@ private slots:
             }
         }
     }
+
+    void pendingSelectedRowBeforeModel() {
+        QStandardItemModel model;
+        model.appendRow({new QStandardItem(QStringLiteral("alpha"))});
+        model.appendRow({new QStandardItem(QStringLiteral("beta"))});
+
+        // Declaring `selectedRow: 0` before `model` resolves in QML must retain
+        // the selection once rows populate and highlight row 0 on first paint.
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        const QString qml = QStringLiteral("pragma ComponentBehavior: Bound\n"
+                                           "import QtQml\n"
+                                           "import QmlTui\n"
+                                           "TableView {\n"
+                                           "    required property var inputModel\n"
+                                           "    width: 20\n"
+                                           "    height: 6\n"
+                                           "    selectedRow: 0\n"
+                                           "    selectionColor: '#224466'\n"
+                                           "    selectedTextColor: '#ffffff'\n"
+                                           "    columns: [{ title: 'NAME', width: 12 }]\n"
+                                           "    model: inputModel\n"
+                                           "}\n");
+        component.setData(qml.toUtf8(), QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> obj(
+            component.createWithInitialProperties({{"inputModel", QVariant::fromValue(&model)}}));
+        auto* table = qobject_cast<TableView*>(obj.get());
+        QVERIFY(table);
+        QCOMPARE(table->selectedRow(), 0);
+        QCOMPARE(table->currentColumn(), 0);
+
+        TextGridBuffer buffer;
+        QVERIFY(buffer.resize(20, 6));
+        testing::paintItem(table, buffer, 0, 0);
+        // Header is y=0, underline is y=1, row 0 is y=2.
+        QCOMPARE(buffer.cellAt(0, 2).bgColor, 0xff224466u);
+        QCOMPARE(buffer.cellAt(0, 2).fgColor, 0xffffffffu);
+
+        // Pending row set before rows exist clamps to the populated model size.
+        TableView emptyFirst;
+        emptyFirst.setSelectedRow(5);
+        QCOMPARE(emptyFirst.selectedRow(), -1);
+        emptyFirst.setModel(QVariant::fromValue(&model));
+        QCOMPARE(emptyFirst.selectedRow(), 1);
+
+        // Explicit -1 cancels a pending selection before rows arrive.
+        TableView cancelled;
+        cancelled.setSelectedRow(0);
+        cancelled.setSelectedRow(-1);
+        cancelled.setModel(QVariant::fromValue(&model));
+        QCOMPARE(cancelled.selectedRow(), -1);
+
+        // Rows inserted into an initially empty C++ model resolve pending selection.
+        QStandardItemModel lateModel;
+        TableView lateTable;
+        lateTable.setSelectedRow(1);
+        lateTable.setModel(QVariant::fromValue(&lateModel));
+        QCOMPARE(lateTable.selectedRow(), -1);
+        lateModel.appendRow({new QStandardItem(QStringLiteral("first"))});
+        QCOMPARE(lateTable.selectedRow(), 0);
+    }
 };
 
 QTEST_MAIN(TestTableViewHardening)

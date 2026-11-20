@@ -10,6 +10,7 @@
 #include <QStandardItemModel>
 #include <QmlTui/Core/Items/ListView.h>
 #include <QmlTui/Core/Items/GridView.h>
+#include <QmlTui/Core/Items/LinearLayout.h>
 #include <QmlTui/Core/Items/Repeater.h>
 #include <QmlTui/Core/Items/TableView.h>
 #include <QmlTui/Core/Items/TreeView.h>
@@ -785,6 +786,82 @@ private slots:
         f.paint();
         QVERIFY2(f.text().contains("leaf 2.0"), qPrintable(f.text()));
         QCOMPARE(list->rootIndex().row(), 3);
+    }
+
+    void listViewModelDestroyedInsideLinearLayout() {
+        // Destroying a C++ model while a ListView with >= 2 delegates lives inside
+        // a ColumnLayout triggers ChildRemoved -> LinearLayout::implicitWidth() ->
+        // ListView::implicitWidth() mid-clear; detached storage prevents UAF.
+        auto model = std::make_unique<QStringListModel>(
+            QStringList{QStringLiteral("alpha"), QStringLiteral("beta"), QStringLiteral("gamma")});
+        ViewFixture f;
+        const QString qml =
+            QStringLiteral("import QmlTui\n"
+                           "ColumnLayout {\n"
+                           "    width: 40; height: 10\n"
+                           "    ListView {\n"
+                           "        objectName: \"list\"\n"
+                           "        Layout.fillWidth: true\n"
+                           "        Layout.fillHeight: true\n"
+                           "        model: testModel\n"
+                           "        delegate: Text { text: model.display; width: 20; height: 1 }\n"
+                           "    }\n"
+                           "}\n");
+        QVERIFY2(f.create(model.get(), qml), qPrintable(f.component.errorString()));
+        QVERIFY(f.text().contains("alpha"));
+        QVERIFY(f.text().contains("beta"));
+
+        auto* list = f.root->findChild<ListView*>(QStringLiteral("list"));
+        QVERIFY(list);
+
+        model.reset();
+        QCOMPARE(list->count(), 0);
+        f.paint();
+        QVERIFY(!f.text().contains("alpha"));
+    }
+
+    void gridViewAndTreeViewClearInsideLinearLayout() {
+        auto gridModel = std::make_unique<QStringListModel>(
+            QStringList{QStringLiteral("g0"), QStringLiteral("g1"), QStringLiteral("g2")});
+        ViewFixture gf;
+        const QString gridQml =
+            QStringLiteral("import QmlTui\n"
+                           "ColumnLayout {\n"
+                           "    width: 40; height: 10\n"
+                           "    GridView {\n"
+                           "        Layout.fillWidth: true\n"
+                           "        Layout.fillHeight: true\n"
+                           "        cellWidth: 10; cellHeight: 1\n"
+                           "        model: testModel\n"
+                           "        delegate: Text { text: model.display; width: 10; height: 1 }\n"
+                           "    }\n"
+                           "}\n");
+        QVERIFY2(gf.create(gridModel.get(), gridQml), qPrintable(gf.component.errorString()));
+        QVERIFY(gf.text().contains("g0"));
+        QVERIFY(gf.text().contains("g1"));
+        gridModel.reset();
+        gf.paint();
+        QVERIFY(!gf.text().contains("g0"));
+
+        auto treeModel = makeTree(2, 2);
+        ViewFixture tf;
+        const QString treeQml =
+            QStringLiteral("import QmlTui\n"
+                           "ColumnLayout {\n"
+                           "    width: 40; height: 10\n"
+                           "    TreeView {\n"
+                           "        Layout.fillWidth: true\n"
+                           "        Layout.fillHeight: true\n"
+                           "        model: testModel\n"
+                           "        delegate: Text { text: model.display; width: 20; height: 1 }\n"
+                           "    }\n"
+                           "}\n");
+        QVERIFY2(tf.create(treeModel.get(), treeQml), qPrintable(tf.component.errorString()));
+        QVERIFY(tf.text().contains("group 0"));
+        QVERIFY(tf.text().contains("group 1"));
+        treeModel.reset();
+        tf.paint();
+        QVERIFY(!tf.text().contains("group 0"));
     }
 };
 

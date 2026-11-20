@@ -34,6 +34,9 @@ private:
     int preferredMainSize(Item* item) const;
     int minimumMainSize(Item* item) const;
     int maximumMainSize(Item* item) const;
+    int preferredCrossSize(Item* item) const;
+    int minimumCrossSize(Item* item) const;
+    int maximumCrossSize(Item* item) const;
 
     Direction m_direction;
     int m_spacing = 0;

@@ -80,16 +80,18 @@ void Repeater::setDelegate(QQmlComponent* delegate) {
 }
 
 void Repeater::clearItems() {
-    for (Item* item : m_createdItems) {
+    // Detach created-item storage before deleting delegates so re-entrant
+    // ChildRemoved observers never inspect freed pointers.
+    const auto items = std::exchange(m_createdItems, {});
+    m_contexts.clear();
+    m_roleMap.clear();
+    m_claimedNames = 0;
+    for (Item* item : items) {
         if (item) {
             item->setParentItem(nullptr);
             delete item;
         }
     }
-    m_createdItems.clear();
-    m_contexts.clear();
-    m_roleMap.clear();
-    m_claimedNames = 0;
 }
 
 void Repeater::disconnectModelSignals() {

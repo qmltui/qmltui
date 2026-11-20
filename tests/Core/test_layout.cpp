@@ -3,9 +3,11 @@
 #include <QSignalSpy>
 #include <QmlTui/Core/Items/Row.h>
 #include <QmlTui/Core/Items/Column.h>
+#include <QmlTui/Core/Items/LinearLayout.h>
 #include <QmlTui/Core/Items/GridLayout.h>
 #include <QmlTui/Core/Items/StackLayout.h>
 #include <QmlTui/Core/Items/Layout.h>
+#include <QQmlEngine>
 #include <QmlTui/Core/Items/ScrollView.h>
 #include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Items/Rectangle.h>
@@ -42,6 +44,8 @@ private slots:
     void testImplicitSizeSignalsOnlyOnChange();
     void testGuardedDataStateAndTransitionLists();
     void testItemPaddingAndParentAnchors();
+    void testRowLayoutCrossAxisSizingAndAlignment();
+    void testColumnLayoutCrossAxisSizingAndAlignment();
 };
 
 void TestLayout::testRowLayout() {
@@ -718,6 +722,111 @@ void TestLayout::testItemPaddingAndParentAnchors() {
     QCOMPARE(unanchored->y(), 2);
     QCOMPARE(explicitZero->x(), 0);
     QCOMPARE(explicitZero->y(), 0);
+}
+
+void TestLayout::testRowLayoutCrossAxisSizingAndAlignment() {
+    RowLayout row;
+    row.setWidth(40);
+    row.setHeight(5);
+    row.setSpacing(1);
+
+    // Zero-implicit-height item sized via Layout.preferredHeight and vertically centered.
+    auto* centered = new Rectangle(&row);
+    auto* centeredLayout =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(centered, true));
+    QVERIFY(centeredLayout);
+    centeredLayout->fillWidth = true;
+    centeredLayout->preferredHeight = 3;
+    centeredLayout->alignment = Qt::AlignVCenter;
+
+    // Preferred height exceeding crossAvailable shrinks to crossAvailable down to minimumHeight.
+    auto* clamped = new Rectangle(&row);
+    auto* clampedLayout =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(clamped, true));
+    QVERIFY(clampedLayout);
+    clampedLayout->preferredWidth = 8;
+    clampedLayout->preferredHeight = 9;
+    clampedLayout->minimumHeight = 2;
+
+    // Explicit height without cross-axis Layout constraints is preserved and can bottom-align.
+    auto* bottomAligned = new Item(&row);
+    bottomAligned->setWidth(6);
+    bottomAligned->setHeight(2);
+    auto* bottomLayout =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(bottomAligned, true));
+    QVERIFY(bottomLayout);
+    bottomLayout->preferredWidth = 6;
+    bottomLayout->alignment = Qt::AlignBottom;
+
+    QCOMPARE(row.implicitHeight(), 9);
+
+    TextGridBuffer buffer;
+    buffer.resize(40, 5);
+    paintItem(row, buffer, 0, 0);
+
+    QCOMPARE(centered->height(), 3);
+    QCOMPARE(centered->y(), 1);
+    QCOMPARE(clamped->height(), 5);
+    QCOMPARE(clamped->y(), 0);
+    QCOMPARE(bottomAligned->height(), 2);
+    QCOMPARE(bottomAligned->y(), 3);
+
+    // When constrained below minimumHeight, minimumHeight wins over crossAvailable.
+    row.setHeight(1);
+    paintItem(row, buffer, 0, 0);
+    QCOMPARE(clamped->height(), 2);
+}
+
+void TestLayout::testColumnLayoutCrossAxisSizingAndAlignment() {
+    ColumnLayout col;
+    col.setWidth(20);
+    col.setHeight(10);
+    col.setSpacing(1);
+
+    // Zero-implicit-width item sized via Layout.preferredWidth and horizontally centered.
+    auto* centered = new Rectangle(&col);
+    auto* centeredLayout =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(centered, true));
+    QVERIFY(centeredLayout);
+    centeredLayout->preferredWidth = 10;
+    centeredLayout->preferredHeight = 2;
+    centeredLayout->alignment = Qt::AlignHCenter;
+
+    // Preferred width exceeding crossAvailable shrinks to crossAvailable down to minimumWidth.
+    auto* clamped = new Rectangle(&col);
+    auto* clampedLayout =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(clamped, true));
+    QVERIFY(clampedLayout);
+    clampedLayout->preferredWidth = 30;
+    clampedLayout->minimumWidth = 6;
+    clampedLayout->preferredHeight = 2;
+
+    // Explicit width without cross-axis Layout constraints is preserved and right-aligned.
+    auto* rightAligned = new Item(&col);
+    rightAligned->setWidth(4);
+    rightAligned->setHeight(2);
+    auto* rightLayout =
+        qobject_cast<LayoutAttached*>(qmlAttachedPropertiesObject<Layout>(rightAligned, true));
+    QVERIFY(rightLayout);
+    rightLayout->preferredHeight = 2;
+    rightLayout->alignment = Qt::AlignRight;
+
+    QCOMPARE(col.implicitWidth(), 30);
+
+    TextGridBuffer buffer;
+    buffer.resize(20, 10);
+    paintItem(col, buffer, 0, 0);
+
+    QCOMPARE(centered->width(), 10);
+    QCOMPARE(centered->x(), 5);
+    QCOMPARE(clamped->width(), 20);
+    QCOMPARE(clamped->x(), 0);
+    QCOMPARE(rightAligned->width(), 4);
+    QCOMPARE(rightAligned->x(), 16);
+
+    col.setWidth(4);
+    paintItem(col, buffer, 0, 0);
+    QCOMPARE(clamped->width(), 6);
 }
 
 QTEST_MAIN(TestLayout)

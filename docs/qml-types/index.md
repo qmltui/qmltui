@@ -17,7 +17,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [FocusScope](focusscope.md): Encapsulates keyboard focus chains inside reusable composite components.
 - [Popup](popup.md): Overlay layer drawn above ordinary items with optional modal input trapping, background dimming, and focus restoration.
 - [Rectangle](rectangle.md): Filled character-grid box with optional Unicode borders and linear gradients.
-- [Border](border.md): Grouped property configuring border style (`Single`, `Double`, `Rounded`, `Heavy`, `Ascii`) and color on `Rectangle`.
+- [Border](border.md): Grouped property configuring border style (`Single`, `Double`, `Rounded`, `Ascii`) and color on `Rectangle`.
 - [Anchors](anchors.md): Grouped property defining edge and center alignment constraints between items.
 - [AnchorLine](anchorline.md): Edge or center reference line used in anchor bindings.
 - [Gradient](gradient.md): Linear color gradient interpolated across cells between `GradientStop` entries.
@@ -43,7 +43,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 
 ## `QmlTui`: Display and Text Inputs
 
-- [Text](text.md): Displays plain, rich HTML, ANSI SGR, or `span`-styled text with wrapping, elision, and link activation.
+- [Text](text.md): Displays plain, rich HTML, ANSI SGR, or `span`-styled text with wrapping, clipping, and link activation.
 - [TextInput](textinput.md): Single-line editable text field with cursor movement, selection, echo modes, and clipboard shortcuts.
 - [TextArea](textarea.md): Multi-line editable text editor with scrolling, selection, undo/redo, and syntax highlight ranges.
 

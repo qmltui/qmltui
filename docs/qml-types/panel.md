@@ -56,10 +56,12 @@ can host [MouseArea](mousearea.md) handlers, [ToolTip](tooltip.md) attachments,
 or composite rows.
 
 Panel adds no content layout of its own: children are positioned as in any
-Rectangle, and content should be inset by one cell on each side to stay
-inside the border, for example with `anchors.fill: parent` and
-`anchors.margins: 1`. It has no implicit size, so set `width` and `height`
-or anchor it. Change `border.style` to `Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Ascii`, or
+Rectangle. Because a visible Rectangle border automatically adds one cell of
+padding on each side, both un-anchored children and children with
+`anchors.fill: parent` stay inside the border automatically (adding
+`anchors.margins: 1` adds an extra cell of inner breathing room). Panel has no
+implicit size, so set `width` and `height` or anchor it. Change `border.style` to
+`Border.Single`, `Border.Double`, `Border.Rounded`, `Border.Ascii`, or
 `Border.None` like any Rectangle; types without a `border` group, such as
 [TabBar](tabbar.md) or [TableView](tableview.md), are typically wrapped in a
 Panel to get a titled frame.

@@ -35,6 +35,7 @@ cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build --target <target>_qmllint <target>
 
 # Standalone consumer application (FetchContent or find_package(QmlTui)):
+# Call include(CTest) BEFORE FetchContent_MakeAvailable(QmlTui) so qmltui::runner builds by default.
 cmake -S . -B build -G Ninja
 cmake --build build --target my_app_qmllint my_app
 ```
@@ -64,7 +65,7 @@ Use `./build/tools/qmltui-runner/qmltui-runner` for multi-viewport sweeps, 0-bas
   -- ./build/path/to/testing-linked-app
 ```
 
-Useful probe flags: `--sizes 60x18,80x24,120x36` (or `--sweep`), `--idle-ms <ms>`, `--print` (plain frames without rulers), `--ruler` (0-based `(x, y)` rulers), `--styled` (`--- styles`), `--scrollback` (`Terminal.Inline` history), and `--clock real` (for C++ `QTimer`, worker threads, or `PtyView`). Set `NO_COLOR=1` or `QMLTUI_COLOR_DEPTH=16` in the environment when checking monochrome/16-color fallback.
+Useful probe flags: `--sizes 60x18,80x24,120x36` (or `--sweep`), `--idle-ms <ms>`, `--print` (plain frames without rulers), `--ruler` (0-based `(x, y)` rulers), `--styled` (`--- styles`), `--scrollback` (`Terminal.Inline` history), and `--clock real` (for C++ `QTimer`, worker threads, or `PtyView`). Set `NO_COLOR=1` or `QMLTUI_COLOR_DEPTH=16` in the environment on non-recording probes or `--live` runs when checking monochrome/16-color fallback (`--record` pins 24-bit color for deterministic casts).
 
 Runs are quiet/headless by default. Pass `--live` (`QMLTUI_RUNNER_LIVE=1`) only for a human watching a real terminal; when debugging live or interactive `AltScreen` sessions, set `QMLTUI_LOG_FILE=/tmp/qmltui.log` so `console.log()` and QML warnings stream immediately instead of buffering until exit.
 

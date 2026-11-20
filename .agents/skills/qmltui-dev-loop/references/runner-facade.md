@@ -159,7 +159,7 @@ Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` /
 - `QMLTUI_DEBUG_PAINT_DIRTY=1`: Warns on `stderr` whenever an `Item` calls `markDirty()` inside `paint()`.
 - `QMLTUI_LOG_FILE=<path>`: Streams `qDebug` / `qWarning` / `console.log()` unbuffered to `<path>` (essential during `--live` or interactive `AltScreen` runs where TTY `stderr` is buffered until exit).
 - `QMLTUI_FRAME_STATS=1`: Logs periodic render timing and byte counters to `stderr`.
-- `NO_COLOR=1` / `QMLTUI_COLOR_DEPTH=mono|16|256|truecolor`: Overrides `TerminalCapabilities.colorDepth` and ANSI color encoding.
+- `NO_COLOR=1` / `QMLTUI_COLOR_DEPTH=mono|16|256|truecolor`: Overrides `TerminalCapabilities.colorDepth` and ANSI color encoding in non-recording probes and `--live` runs (`--record` forces 24-bit `truecolor`).
 
 ## `result.json` (Schema v1)
 

@@ -14,7 +14,11 @@ for small edits and follow the rule for new files.
 The authoritative type list is the module registration in the source tree, not
 this document. Check `src/QmlTui/Core/Items`, `src/QmlTui/Core/Engine`, `src/QmlTui/Controls`,
 `src/QmlTui/Image`, `src/QmlTui/PtyView`, and `docs/qml-types/index.md`
-before using a type or property you have not seen in a nearby file.
+before using a type or property you have not seen in a nearby file (in standalone
+`FetchContent` consumers, inspect `build/_deps/qmltui-src/docs/qml-types/` or the
+generated `build/qml/QmlTui*/*.qmltypes` metadata). For a quick cheat-sheet of
+high-divergence control properties, read [control-apis.md](./references/control-apis.md)
+on demand.
 
 ## 1. Imports
 
@@ -69,15 +73,19 @@ In delegates, declare `required property` for each model role so the engine
 binds roles directly instead of through dynamic lookup:
 
 ```qml
-TableView {
-    model: podTableModel
+ListView {
+    model: podListModel
     delegate: Text {
         required property string podName
         required property int restartCount
-        text: podName
+        text: podName + " (" + restartCount + ")"
     }
 }
 ```
+
+(`TableView` instantiates `delegate` per `(row, column)` cell, so multi-column
+table delegates also declare `required property int column` or `required property var display`;
+for standard text tables, prefer `columns` descriptors plus `cellFormat`.)
 
 Express state as declarative bindings. An imperative assignment in a handler
 replaces the binding permanently, so use it only for one-shot actions.
@@ -294,7 +302,7 @@ Before finishing a QmlTui QML file:
    connected table lines; wrap other borderless types when needed.
 8. A reachable keyboard quit path exists and does not fire while a text input
    has focus.
-9. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (run `./scripts/format.py <file>` in the QmlTui repo, or `qmlformat -i <file>` in consumer projects).
+9. File is formatted deterministically with `qmlformat` using `.qmlformat.ini` (`IndentWidth=4`, `UseTabs=false`, `SemicolonRule=always`): run `./scripts/format.py <file>` in the QmlTui repo, or `qmlformat -i <file>` in consumer projects (on Linux distributions where Qt 6 tools are not on `PATH`, look in `/usr/lib/qt6/bin/qmlformat` or `<Qt6>/bin/qmlformat`).
 10. Property declaration order adheres to Qt conventions: `id` -> properties -> signals -> functions -> geometry -> visual/text -> handlers -> children -> states.
 11. Signal handlers with arguments use arrow function syntax: `event => { ... }`.
 12. Visible behaviour is verified against the committed terminal frame using the

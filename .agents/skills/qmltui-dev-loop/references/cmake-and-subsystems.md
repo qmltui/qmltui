@@ -6,9 +6,23 @@ Reference patterns for wiring `qmltui::runner` across consumer and in-tree CMake
 
 Link `qmltui::runner` conditionally on the **existing** executable under `if(BUILD_TESTING AND TARGET qmltui::runner)`—never duplicate the executable or QML module target for tests. Production builds (`-DBUILD_TESTING=OFF`) omit Runner automatically.
 
-In consumer projects supporting both `find_package(QmlTui)` (`IMPORTED` targets) and `FetchContent` (`DEPENDENCIES TARGET`), branch on `IMPORTED` because Qt rejects `IMPORTED` targets inside `qt_add_qml_module(... DEPENDENCIES)`:
+In consumer projects supporting both `find_package(QmlTui)` (`IMPORTED` targets) and `FetchContent` (`DEPENDENCIES TARGET`), call `include(CTest)` **before** `FetchContent_MakeAvailable(QmlTui)` (so `BUILD_TESTING=ON` enables `QMLTUI_ENABLE_RUNNER` automatically) and branch on `IMPORTED` because Qt rejects `IMPORTED` targets inside `qt_add_qml_module(... DEPENDENCIES)`:
 
 ```cmake
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
+qt_standard_project_setup(REQUIRES 6.8)
+
+# Must precede FetchContent_MakeAvailable(QmlTui) so qmltui::runner builds by default
+# (passing -DBUILD_TESTING=OFF omits Runner cleanly for production builds).
+include(CTest)
+include(FetchContent)
+FetchContent_Declare(QmlTui
+    GIT_REPOSITORY https://github.com/qmltui/qmltui.git
+    GIT_TAG        v0.6.0
+)
+FetchContent_MakeAvailable(QmlTui)
+set(QT_QML_GENERATE_QMLLS_INI ON)
+
 set(app_qml_module_args)
 get_target_property(qmltui_is_imported qmltui::core IMPORTED)
 if(qmltui_is_imported)
@@ -23,9 +37,13 @@ else()
     )
 endif()
 
+# Optional QML singleton tokens file (`pragma Singleton`):
+# set_source_files_properties(Theme.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
+    # SOURCES MyModel.h MyModel.cpp
     QML_FILES Main.qml
     ${app_qml_module_args}
 )
@@ -43,6 +61,23 @@ if(BUILD_TESTING AND TARGET qmltui::runner)
         CLOCK VIRTUAL
     )
 endif()
+```
+
+Minimal consumer `main.cpp` (uses `QCoreApplication`, never `QGuiApplication`):
+
+```cpp
+#include <QCoreApplication>
+#include <QQmlApplicationEngine>
+
+int main(int argc, char* argv[]) {
+    QCoreApplication app(argc, argv);
+    QQmlApplicationEngine engine;
+    engine.loadFromModule("MyApp", "Main");
+    if (engine.rootObjects().isEmpty()) {
+        return -1;
+    }
+    return app.exec();
+}
 ```
 
 ### `qmltui_add_scenario` Options

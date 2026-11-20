@@ -33,7 +33,7 @@ Manages committing rendered output lines into the terminal's native scrollback b
 
 | Signal | Description |
 | :--- | :--- |
-| `outputRejected(string reason)` | Emitted when an output batch exceeds queue capacity or is refused. |
+| `outputRejected(string reason)` | Emitted when an output batch exceeds remaining session queue capacity or is refused. |
 
 ## Methods
 
@@ -53,8 +53,11 @@ rendered content directly into the terminal emulator's native scrollback buffer.
 This enables CLI tools and interactive REPLs to log previous outputs that
 remain accessible in the user's terminal history above the active inline interactive UI.
 
-Accepted scrollback belongs to the terminal session with a 1 MiB UTF-8 queue.
-In full-screen mode, scrollback output is queued until inline mode resumes.
+Accepted scrollback belongs to the terminal session with a 1 MiB ANSI/UTF-8 byte queue
+by default (plain UTF-8 text from `print(string)` and ANSI/SGR-encoded rows from delegates or
+styled spans; configurable via `QMLTUI_SCROLLBACK_QUEUE_LIMIT` or
+`TerminalEngine::setScrollbackQueueLimit`). In full-screen mode, scrollback output is queued
+until inline mode resumes or the session exits.
 
 ### Example
 

@@ -54,6 +54,21 @@ static QList<Span> normalizeSpansForScrollback(const QList<Span>& spans) {
     return normalized;
 }
 
+static QString scrollbackQueueRejectionReason(const TerminalEngine* engine) {
+    const size_t limit =
+        engine ? engine->scrollbackQueueLimit() : TerminalEngine::DefaultScrollbackQueueLimit;
+    QString formatted;
+    if (limit >= 1024 * 1024 && limit % (1024 * 1024) == 0) {
+        formatted = QStringLiteral("%1 MiB").arg(limit / (1024 * 1024));
+    } else if (limit >= 1024 && limit % 1024 == 0) {
+        formatted = QStringLiteral("%1 KiB").arg(limit / 1024);
+    } else {
+        formatted = QStringLiteral("%1 B").arg(limit);
+    }
+    return QStringLiteral("Scrollback queue limit (%1) exceeded; submission rejected")
+        .arg(formatted);
+}
+
 Scrollback::Scrollback(QObject* parent) : QObject(parent) {}
 
 Scrollback::~Scrollback() {
@@ -294,8 +309,7 @@ bool Scrollback::submitBatch(Item* item, Terminal* output) {
     if (!engine)
         return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
     if (!engine->submitScrollback(buffer))
-        return reportRejection(
-            QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+        return reportRejection(scrollbackQueueRejectionReason(engine));
     m_hasRenderedFirstItem = true;
     return true;
 }
@@ -540,8 +554,7 @@ bool Scrollback::print(const QString& text) {
     if (!output->engine())
         return reportRejection(QStringLiteral("Scrollback requires a root Terminal session"));
     if (!output->engine()->submitScrollback(text))
-        return reportRejection(
-            QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+        return reportRejection(scrollbackQueueRejectionReason(output->engine()));
     return true;
 }
 
@@ -569,8 +582,7 @@ bool Scrollback::print(const QList<qmltui::Span>& spans) {
     ItemPaintTraversal::paintSubtree(&textItem, buffer, 0, 0,
                                      ClipRect{0, 0, itemWidth, itemHeight});
     if (!engine->submitScrollback(buffer))
-        return reportRejection(
-            QStringLiteral("Scrollback queue limit (1 MiB) exceeded; submission rejected"));
+        return reportRejection(scrollbackQueueRejectionReason(engine));
     return true;
 }
 

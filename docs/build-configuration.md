@@ -161,6 +161,7 @@ cmake --build build-release
 | `QMLTUI_FRAME_STATS` | `1` / non-empty | Log periodic render timing and byte statistics to `stderr` |
 | `QMLTUI_DEBUG_PAINT_DIRTY` | `1` / non-empty | Warn when an `Item` calls `markDirty()` inside `paint()` |
 | `QMLTUI_OUTPUT_QUEUE_LIMIT` | bytes (`>= 0`, default `262144`) | Max queued async terminal output before backpressure defers rendering |
+| `QMLTUI_SCROLLBACK_QUEUE_LIMIT` | bytes (`>= 0`, default `1048576`) | Max pending `Scrollback` ANSI/UTF-8 bytes queued in the session before submissions are rejected |
 | `QMLTUI_SCROLLBACK_HISTORY_ROWS` | integer `>= 0` (default `5000`) | Max committed `Inline` scrollback rows retained in memory |
 | `QMLTUI_ESCAPE_TIMEOUT_MS` | ms (default `50`) | Timeout before a lone `ESC` byte dispatches as `Qt::Key_Escape` |
 | `QMLTUI_QUERY_TIMEOUT_MS` | ms (default `100`) | Timeout for terminal capability and OSC color queries |

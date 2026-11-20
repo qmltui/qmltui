@@ -127,10 +127,14 @@ public:
     int terminalWidth() const;
     int terminalHeight() const;
 
-    // Accepted output belongs to the session, independent of renderer lifetime.
-    // Reject a whole submission on overflow; retain already accepted output.
+    // Accepted ANSI/UTF-8 bytes belong to the session, independent of renderer
+    // lifetime. Whole submissions are rejected on overflow while retaining
+    // already-accepted output; QMLTUI_SCROLLBACK_QUEUE_LIMIT overrides the cap.
     bool submitScrollback(const QString& text);
-    static constexpr size_t ScrollbackQueueLimit = 1024 * 1024;
+    void setScrollbackQueueLimit(size_t bytes) { m_scrollbackQueueLimit = bytes; }
+    size_t scrollbackQueueLimit() const { return m_scrollbackQueueLimit; }
+    static constexpr size_t DefaultScrollbackQueueLimit = 1024 * 1024;
+    static constexpr size_t ScrollbackQueueLimit = DefaultScrollbackQueueLimit;
     size_t pendingScrollbackBytes() const { return m_scrollback.size(); }
     // Painted rows submitted as one block: the terminal receives them as
     // trimmed ANSI rows and, while history is recorded, the cells are kept so a
@@ -305,6 +309,7 @@ private:
     QString m_title;
     std::string m_scrollback;
     size_t m_scrollbackInFlight = 0;
+    size_t m_scrollbackQueueLimit = DefaultScrollbackQueueLimit;
     std::deque<ScrollbackRow> m_pendingScrollbackRows;
     std::deque<ScrollbackRow> m_committedScrollbackRows;
     quint64 m_committedScrollbackTotal = 0;

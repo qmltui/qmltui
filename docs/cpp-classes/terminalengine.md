@@ -31,7 +31,8 @@
 - `void invalidateCommittedRect(const QRect &rect)` / `QList<QRect> takeInvalidatedCommittedRects()` — marks or drains cell rectangles overwritten on the terminal by pre-diff control sequences so the renderer resets its committed buffer in those cells before diffing.
 - `bool enqueuePostControlSequence(QByteArray bytes)` / `QByteArray takePostControlSequences()` — queues or drains terminal resource commands (such as Sixel graphics) emitted after the cell diff each frame.
 - `int terminalWidth() const` / `int terminalHeight() const` — current terminal viewport dimensions in columns and rows.
-- `bool submitScrollback(const QString &text)` / `bool submitScrollback(const TextGridBuffer &rows)` — queues text or painted rows for scrollback emission (bounded to `ScrollbackQueueLimit` = `1 MiB`).
+- `bool submitScrollback(const QString &text)` / `bool submitScrollback(const TextGridBuffer &rows)` — queues UTF-8 text or ANSI/SGR-encoded painted rows for scrollback emission, bounded by `scrollbackQueueLimit()`.
+- `void setScrollbackQueueLimit(size_t bytes)` / `size_t scrollbackQueueLimit() const` — configures the maximum pending scrollback ANSI/UTF-8 byte budget (`DefaultScrollbackQueueLimit` = `1 MiB`, overridden by `QMLTUI_SCROLLBACK_QUEUE_LIMIT`).
 - `size_t pendingScrollbackBytes() const` / `size_t pendingScrollbackRowCount() const` — returns the queued scrollback byte or cell-row count awaiting emission.
 - `void setScrollbackHistoryEnabled(bool enabled)` / `bool scrollbackHistoryEnabled() const` — enables or queries cell-level scrollback history recording (enabled automatically in `Runner` sessions).
 - `void setScrollbackHistoryLimit(int rows)` / `int scrollbackHistoryLimit() const` — configures the maximum retained scrollback rows (`DefaultScrollbackHistoryLimit` = `5000`, overridden by `QMLTUI_SCROLLBACK_HISTORY_ROWS`).

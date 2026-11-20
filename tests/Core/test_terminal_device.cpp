@@ -104,6 +104,7 @@ private slots:
     void testDestructorUsesBoundedShutdown();
     void testScrollbackAcrossModes();
     void testScrollbackHistoryRows();
+    void testScrollbackQueueLimit();
     void testOsc11BackgroundOutput();
     void testResizeRepaint();
 };
@@ -538,6 +539,98 @@ void TestTerminalDevice::testScrollbackHistoryRows() {
     QVERIFY(commit());
     QCOMPARE(engine->committedScrollbackTotal(), quint64(5));
     QCOMPARE(engine->committedScrollbackRowCount(), 0);
+}
+
+void TestTerminalDevice::testScrollbackQueueLimit() {
+    const auto restoreEnv = qScopeGuard([] { qunsetenv("QMLTUI_SCROLLBACK_QUEUE_LIMIT"); });
+
+    {
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QCOMPARE(engine->scrollbackQueueLimit(), TerminalEngine::DefaultScrollbackQueueLimit);
+        QCOMPARE(TerminalEngine::DefaultScrollbackQueueLimit, size_t(1024 * 1024));
+        QCOMPARE(TerminalEngine::ScrollbackQueueLimit, TerminalEngine::DefaultScrollbackQueueLimit);
+
+        Scrollback history(&terminal);
+        QSignalSpy rejected(&history, &Scrollback::outputRejected);
+
+        engine->setScrollbackQueueLimit(16);
+        QCOMPARE(engine->scrollbackQueueLimit(), size_t(16));
+        QVERIFY(history.print(QStringLiteral("hello"))); // "hello\r\n" = 7 bytes
+        QCOMPARE(engine->pendingScrollbackBytes(), size_t(7));
+        QCOMPARE(engine->pendingScrollbackRowCount(), size_t(1));
+
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(QStringLiteral(
+                              "Scrollback queue limit \\(16 B\\) exceeded; submission rejected")));
+        QVERIFY(!history.print(QStringLiteral("0123456789"))); // +12 bytes > 16
+        QCOMPARE(rejected.count(), 1);
+        QCOMPARE(rejected.takeFirst().first().toString(),
+                 QStringLiteral("Scrollback queue limit (16 B) exceeded; submission rejected"));
+        // Already-accepted bytes and rows remain intact on overflow.
+        QCOMPARE(engine->pendingScrollbackBytes(), size_t(7));
+        QCOMPARE(engine->pendingScrollbackRowCount(), size_t(1));
+
+        // Lowering the limit below pending bytes retains accepted output and rejects new writes.
+        engine->setScrollbackQueueLimit(4);
+        QCOMPARE(engine->pendingScrollbackBytes(), size_t(7));
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(QStringLiteral(
+                              "Scrollback queue limit \\(4 B\\) exceeded; submission rejected")));
+        QVERIFY(!history.print(QStringLiteral("a")));
+        QCOMPARE(rejected.count(), 1);
+        rejected.clear();
+        QCOMPARE(engine->pendingScrollbackBytes(), size_t(7));
+
+        // Raising the limit unlocks new submissions; KiB formatting applies on exact KiB multiples.
+        engine->setScrollbackQueueLimit(2048);
+        QVERIFY(history.print(QStringLiteral("0123456789")));
+        QCOMPARE(engine->pendingScrollbackBytes(), size_t(19));
+
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(QStringLiteral(
+                              "Scrollback queue limit \\(2 KiB\\) exceeded; submission rejected")));
+        QVERIFY(!history.print(QString(2048, QLatin1Char('z'))));
+        QCOMPARE(rejected.count(), 1);
+        rejected.clear();
+
+        // Styled spans / painted rows serialize ANSI SGR bytes and obey the same limit.
+        Span styledSpan;
+        styledSpan.setText(QString(2048, QLatin1Char('s')));
+        styledSpan.setBold(true);
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(QStringLiteral(
+                              "Scrollback queue limit \\(2 KiB\\) exceeded; submission rejected")));
+        QVERIFY(!history.print(styledSpan));
+        QCOMPARE(rejected.count(), 1);
+    }
+
+    qputenv("QMLTUI_SCROLLBACK_QUEUE_LIMIT", "24");
+    {
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QCOMPARE(engine->scrollbackQueueLimit(), size_t(24));
+        Scrollback history(&terminal);
+        QVERIFY(history.print(QStringLiteral("fits")));
+        QTest::ignoreMessage(
+            QtWarningMsg, QRegularExpression(QStringLiteral(
+                              "Scrollback queue limit \\(24 B\\) exceeded; submission rejected")));
+        QVERIFY(!history.print(QString(24, QLatin1Char('x'))));
+    }
+
+    qputenv("QMLTUI_SCROLLBACK_QUEUE_LIMIT", "-1");
+    {
+        Terminal terminal;
+        QCOMPARE(terminal.engine()->scrollbackQueueLimit(),
+                 TerminalEngine::DefaultScrollbackQueueLimit);
+    }
+
+    qputenv("QMLTUI_SCROLLBACK_QUEUE_LIMIT", "invalid");
+    {
+        Terminal terminal;
+        QCOMPARE(terminal.engine()->scrollbackQueueLimit(),
+                 TerminalEngine::DefaultScrollbackQueueLimit);
+    }
 }
 
 void TestTerminalDevice::testOsc11BackgroundOutput() {

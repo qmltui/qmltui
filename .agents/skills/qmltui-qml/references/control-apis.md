@@ -22,7 +22,7 @@ On-demand property, signal, and method reference for QmlTui types whose APIs dif
   - `print(value)` -> `bool`: bypasses `delegate`/`spacing`/`separator`; accepts `string`, `span` (`QmlTui.span()`), `{ text, color, bold, ... }` map, or an array of spans/maps.
   - `append(data)` / `append(Item)` / `append(span)` / `append(list<span>)`: renders via `delegate` (or snapshots `Item`/spans) honoring `spacing` and `separator`. In a `delegate`, declare `required property var model` (and bind via an explicit `id` on the delegate root under `pragma ComponentBehavior: Bound`, not `parent.model`).
   - `clear()`.
-- **Signals**: `outputRejected(string reason)` (queue bounded to 1 MiB).
+- **Signals**: `outputRejected(string reason)` (ANSI/UTF-8 byte queue bounded to 1 MiB by default; `QMLTUI_SCROLLBACK_QUEUE_LIMIT`).
 
 ## Inputs & Shortcuts (`import QmlTui`)
 

@@ -75,6 +75,11 @@ TerminalEngine::TerminalEngine(Terminal* rootWindow, QObject* parent)
     const qlonglong envLimit =
         qgetenv("QMLTUI_OUTPUT_QUEUE_LIMIT").trimmed().toLongLong(&limitValid);
     if (limitValid && envLimit >= 0) m_outputQueueLimit = static_cast<size_t>(envLimit);
+    bool scrollbackLimitValid = false;
+    const qlonglong envScrollbackLimit =
+        qgetenv("QMLTUI_SCROLLBACK_QUEUE_LIMIT").trimmed().toLongLong(&scrollbackLimitValid);
+    if (scrollbackLimitValid && envScrollbackLimit >= 0)
+        m_scrollbackQueueLimit = static_cast<size_t>(envScrollbackLimit);
     bool historyValid = false;
     const int envHistoryRows =
         qgetenv("QMLTUI_SCROLLBACK_HISTORY_ROWS").trimmed().toInt(&historyValid);
@@ -914,7 +919,10 @@ void TerminalEngine::applyOutputPolicy() {
 }
 
 bool TerminalEngine::submitScrollback(const QString& text) {
-    if (m_stopped || text.size() > static_cast<qsizetype>(ScrollbackQueueLimit)) return false;
+    const size_t remaining =
+        m_scrollbackQueueLimit -
+        (std::min)(m_scrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight);
+    if (m_stopped || static_cast<size_t>(text.size()) > remaining) return false;
     const QByteArray utf8 = text.toUtf8();
     std::string bytes;
     bytes.reserve(static_cast<size_t>(utf8.size()) + 2);
@@ -942,7 +950,7 @@ bool TerminalEngine::submitScrollback(const TextGridBuffer& painted) {
         bytes += "\033[0m\r\n";
         if (m_scrollbackHistoryEnabled) rows.push_back(trimmedRow(painted, y));
     }
-    if (bytes.size() > ScrollbackQueueLimit) return false;
+    if (bytes.size() > m_scrollbackQueueLimit) return false;
     return enqueueScrollback(std::move(bytes), std::move(rows));
 }
 
@@ -950,8 +958,8 @@ bool TerminalEngine::enqueueScrollback(std::string&& bytes, std::deque<Scrollbac
     // Bytes and rows are accepted or rejected together so the history never
     // drifts from what the terminal received.
     if (bytes.size() >
-        ScrollbackQueueLimit -
-            (std::min)(ScrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight))
+        m_scrollbackQueueLimit -
+            (std::min)(m_scrollbackQueueLimit, m_scrollback.size() + m_scrollbackInFlight))
         return false;
     m_scrollback += bytes;
     if (m_scrollbackHistoryEnabled) {

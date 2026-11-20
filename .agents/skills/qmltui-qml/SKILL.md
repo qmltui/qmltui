@@ -134,8 +134,9 @@ Terminal {
 destruction never changes mode. It accepts text through `print()`, snapshots
 items/data through `append()`, or renders model entries through a delegate.
 Accepted output is queued during full-screen mode and committed when inline
-resumes or the session stops. The shared queue is bounded to 1 MiB; rejection
-emits `outputRejected(reason)`, and `print()` returns false.
+resumes or the session stops. The shared ANSI/UTF-8 byte queue defaults to
+1 MiB (`QMLTUI_SCROLLBACK_QUEUE_LIMIT`); rejection emits `outputRejected(reason)`,
+and `print()` returns false.
 
 Change `mode` for presentation; bind ordinary child `visible` and focus state
 for page switching. There are no nested terminals or automatic takeover pages.

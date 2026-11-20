@@ -150,9 +150,14 @@ Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` /
 | `--timeout-ms <ms>` | `QMLTUI_RUNNER_TIMEOUT_MS` | `300000` | Watchdog (`30000` ms default in `qmltui_add_scenario`) |
 | `--startup-timeout-ms <ms>` | *(launcher handshake)* | `5000` | Deadline for `Runner::start()` handshake |
 
+**Flag composition notes**:
+- `--ruler` implies `--print` (both incompatible with `--live`), works with `--script`, enables `QMLTUI_DEBUG_PAINT_DIRTY=1`, and decorates `stdout` only (saved artifact files remain plain UTF-8).
+- `--styled` alone only writes `*_styled.txt` artifacts; pair with `--print` or `--ruler` to print `--- Styles ---` to `stdout`.
+- Probe modifiers (`--sweep` / `--sizes` / `--idle-ms` / `--scrollback`) enable `QMLTUI_DEBUG_PAINT_DIRTY=1` and exit `1` if `dirtyDuringPaintTotal > 0`.
+
 **Exit codes**:
 - `0`: Scenario passed (`result.json` `status: "passed"`).
-- `1`: Assertion failure or uncaught JS/render error (`status: "failed"`, `failure.txt` written).
+- `1`: Assertion failure, uncaught JS/render error (`status: "failed"`, `failure.txt` written), or `dirtyDuringPaintTotal > 0` during a probe run.
 - `2`: Invalid CLI args (including non-empty `--artifacts`), handshake timeout (target missing `qmltui::runner` link or C++ `startFromEnvironment` call), or process crash.
 
 **Engine diagnostic environment variables**:

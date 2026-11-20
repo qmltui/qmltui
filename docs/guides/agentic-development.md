@@ -189,7 +189,7 @@ qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled \
   -- ./build/ops_console
 ```
 
-Sweeps `60x18`, `80x24`, and `120x36`, prints `FrameStats` and ruled frames, checks `dirtyDuringPaint=0`, and enforces zero idle repaints across 300 ms. `--clean-artifacts` safely reuses a prior Runner artifact directory (containing `result.json`); see the [`qmltui-runner` options reference](testing.md#qmltui-runner-options-reference) for all probe flags.
+Sweeps `60x18`, `80x24`, and `120x36`, prints `FrameStats` and ruled frames, checks `dirtyDuringPaint=0`, and enforces zero idle repaints across 300 ms. `--ruler` implies `--print` without altering saved artifact files, `--styled` requires `--print` or `--ruler` to print `--- Styles ---` to `stdout`, and `--clean-artifacts` safely reuses a prior Runner artifact directory (containing `result.json`); see [How Probe and Output Flags Compose](../cpp-classes/runner.md#how-probe-and-output-flags-compose) and the [`qmltui-runner` options reference](testing.md#qmltui-runner-options-reference) for full flag composition rules.
 
 ### 3. Probe Interactions, Virtual-Clock Animations, and Scrollback (`--eval`)
 

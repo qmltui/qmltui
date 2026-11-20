@@ -415,10 +415,28 @@ Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` 
 | `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms). |
 | `--startup-timeout-ms <ms>` | `5000` | Runner activation handshake deadline (`1..300000` ms). |
 
+### How Probe and Output Flags Compose
+
+Launcher flags fall into three groups:
+
+- **Base modes** (`--script`, `--eval`, `--capture-after-ms`): specify at most one.
+- **Probe modifiers** (`--sweep`, `--sizes`, `--idle-ms`, `--scrollback`): synthesize an inline `EVAL` scenario instead of requiring a script file. They cannot be combined with `--script` (exit `2`), but compose cleanly with `--eval` and `--capture-after-ms`. Any probe modifier also enables `QMLTUI_DEBUG_PAINT_DIRTY=1` (unless already set) and fails the run with exit code `1` if `frameStats.dirtyDuringPaintTotal > 0`.
+- **Output flags** (`--print`, `--ruler`, `--styled`): not standalone modes—pair them with a base mode or probe modifier. `--ruler` implies `--print`, works with `--script`, and enables `QMLTUI_DEBUG_PAINT_DIRTY=1`; both `--print` and `--ruler` are incompatible with `--live`.
+  - `--ruler` adds 0-based `(x, y)` column/row rulers to `stdout` only; saved files in `--artifacts` (`frame_<WxH>.txt`, `final.txt`, `capture.txt`, snapshots) remain plain un-ruled UTF-8 frames.
+  - `--styled` writes `frame_<WxH>_styled.txt` (or `capture_styled.txt`, plus `scrollback_styled.txt` with `--scrollback`) containing logical `TextGridBuffer` `#RRGGBBAA`/SGR runs. By itself it does not print to `stdout`—pair it with `--print` or `--ruler` to print the `--- Styles ---` section.
+
+When probe modifiers are active (for example `--sweep --idle-ms 300 --styled`), `qmltui-runner` launches the target at the first viewport (`60x18` for `--sweep`) and synthesizes:
+
+1. `app.sleep(<capture-after-ms>)` (when `--capture-after-ms > 0`).
+2. User `--eval` body (when `--eval` is also provided).
+3. `app.captureText("frame_<W>x<H>.txt")` (plus `app.captureStyled(...)` when `--styled` is set) and `app.captureScrollback(...)` (when `--scrollback` is set).
+4. For each remaining viewport in `--sizes`/`--sweep`: `app.resize(W, H)` followed by `captureText` (and `captureStyled`).
+5. Idle-budget gate (when `--idle-ms` is set): compares `app.frameCount()` across `app.sleep(<idle-ms>)` and fails if any unscripted repaint occurred.
+
 ### Exit Codes and Handshake Protocol
 
 - **Exit code `0`**: Scenario passed and produced a valid schema-v1 `result.json` with `status: "passed"`.
-- **Exit code `1`**: Scenario failed a test assertion or threw a script error (`status: "failed"` in `result.json`).
+- **Exit code `1`**: Scenario failed a test assertion, threw a script error (`status: "failed"` in `result.json`), or reported `dirtyDuringPaintTotal > 0` during a probe run (`--sweep` / `--sizes` / `--idle-ms` / `--scrollback`).
 - **Exit code `2`**: Invalid CLI arguments, startup/handshake timeout, child process crash, or missing/inconsistent `result.json`.
 
 When `qmltui-runner` starts a child process, it clears inherited `QMLTUI_RUNNER_*` variables, sets `QMLTUI_RUNNER_HANDSHAKE_PATH` and `QMLTUI_RUNNER_HANDSHAKE_TOKEN`, and verifies that `Runner::start()` writes `{"protocolVersion":1,"token":"...","pid":123}` before `--startup-timeout-ms` expires. After activation, the child has `--timeout-ms` plus 5 seconds to exit before termination (`SIGTERM` followed by `SIGKILL` after 1 second).

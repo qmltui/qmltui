@@ -114,12 +114,15 @@ The `qmltui-runner` command-line tool (built by default in top-level builds or w
    qmltui-runner --eval 'app.expectText("Welcome"); app.press("Enter"); app.expectText("Clicked!");' -- ./build/my_app
    ```
 
-3. **Capture or sweep viewports without a script (`--capture-after-ms`, `--sweep`, `--ruler`)**:
+3. **Capture or sweep viewports without a script (`--capture-after-ms`, `--sweep`, `--ruler`, `--styled`)**:
    ```bash
    qmltui-runner --capture-after-ms 0 --columns 80 --rows 24 --artifacts ./capture-out -- ./build/my_app
    qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled --clean-artifacts --artifacts ./probe-out -- ./build/my_app
    ```
-   `--capture-after-ms 0` writes `capture.txt` and `capture_styled.txt`. `--sweep` (`60x18,80x24,120x36`) with `--ruler` and `--idle-ms` prints `FrameStats` and 0-based `(x, y)` coordinate grids directly to `stdout` while reusing `./probe-out` safely via `--clean-artifacts`.
+   - `--capture-after-ms 0` writes `capture.txt` and `capture_styled.txt`.
+   - `--sweep` is shorthand for `--sizes 60x18,80x24,120x36`; it synthesizes an inline `EVAL` pass that resizes across all three viewports, writes `frame_<WxH>.txt` (plus `frame_<WxH>_styled.txt` with `--styled`), enforces zero idle repaints when `--idle-ms` is set, and fails with exit `1` if `dirtyDuringPaintTotal > 0`.
+   - `--ruler` implies `--print` and adds 0-based `(x, y)` coordinate rulers to `stdout` only (saved artifact files stay plain un-ruled UTF-8). `--styled` alone only writes `*_styled.txt` artifacts—pair it with `--print` or `--ruler` to print `--- Styles ---` to `stdout`.
+   - See [How Probe and Output Flags Compose](../cpp-classes/runner.md#how-probe-and-output-flags-compose) for exact flag compatibility and execution order.
 
 4. **Watch a scenario run live in your terminal (`--live`)**:
    ```bash
@@ -162,7 +165,7 @@ Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` 
 | `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms; CTest `qmltui_add_scenario()` defaults `SCENARIO_TIMEOUT_MS` to `30000`). |
 | `--startup-timeout-ms <ms>` | `5000` | Deadline for the application to start and complete the Runner handshake (`1..300000` ms). |
 
-`qmltui-runner` exits with `0` when the scenario passes, `1` when an assertion or script error fails the scenario, and `2` on invalid CLI arguments, startup/handshake timeouts, or process crashes.
+`qmltui-runner` exits with `0` when the scenario passes, `1` when an assertion, script error, or probe `dirtyDuringPaintTotal > 0` check fails, and `2` on invalid CLI arguments, startup/handshake timeouts, or process crashes.
 
 ### Inspecting Artifacts
 

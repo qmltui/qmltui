@@ -241,10 +241,10 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeou
     }
 
     static const QStringList allowedProperties = {
-        QStringLiteral("character"),  QStringLiteral("bold"),       QStringLiteral("dim"),
-        QStringLiteral("italic"),     QStringLiteral("underline"),  QStringLiteral("reversed"),
-        QStringLiteral("blink"),      QStringLiteral("conceal"),    QStringLiteral("strikethrough"),
-        QStringLiteral("foreground"), QStringLiteral("background"),
+        QStringLiteral("character"),     QStringLiteral("bold"),       QStringLiteral("dim"),
+        QStringLiteral("italic"),        QStringLiteral("underline"),  QStringLiteral("reversed"),
+        QStringLiteral("reverse"),       QStringLiteral("blink"),      QStringLiteral("conceal"),
+        QStringLiteral("strikethrough"), QStringLiteral("foreground"), QStringLiteral("background"),
     };
     int propertyCount = 0;
     QJSValueIterator propIt(expectedStyle);
@@ -317,14 +317,27 @@ void Runner::expectStyle(int x, int y, const QJSValue& expectedStyle, int timeou
             return;
         }
     }
-    if (expectedStyle.hasProperty(QStringLiteral("reversed"))) {
-        const bool expectedRev = expectedStyle.property(QStringLiteral("reversed")).toBool();
+    const bool hasReversed = expectedStyle.hasProperty(QStringLiteral("reversed"));
+    const bool hasReverse = expectedStyle.hasProperty(QStringLiteral("reverse"));
+    if (hasReversed || hasReverse) {
+        const bool expectedRev = hasReversed
+                                     ? expectedStyle.property(QStringLiteral("reversed")).toBool()
+                                     : expectedStyle.property(QStringLiteral("reverse")).toBool();
+        if (hasReversed && hasReverse &&
+            expectedRev != expectedStyle.property(QStringLiteral("reverse")).toBool()) {
+            failScenario(QStringLiteral(
+                "expectStyle cannot specify conflicting \"reverse\" and \"reversed\" values"));
+            return;
+        }
         const bool actualRev = (static_cast<uint8_t>(cell.attributes) &
                                 static_cast<uint8_t>(TextAttribute::Reversed)) != 0;
         if (expectedRev != actualRev) {
-            failScenario(QStringLiteral("Cell at (%1,%2) reversed expected %3 but got %4")
+            const QString keyName =
+                hasReversed ? QStringLiteral("reversed") : QStringLiteral("reverse");
+            failScenario(QStringLiteral("Cell at (%1,%2) %3 expected %4 but got %5")
                              .arg(x)
                              .arg(y)
+                             .arg(keyName)
                              .arg(expectedRev)
                              .arg(actualRev));
             return;
@@ -1118,7 +1131,21 @@ bool Runner::writeFinalFrameArtifact(QString* error) {
         m_finalFrameRelativePath = QStringLiteral("capture.txt");
     else
         m_finalFrameRelativePath = QStringLiteral("final.txt");
-    return writeTextArtifact(m_finalFrameRelativePath, frame, error);
+    if (!writeTextArtifact(m_finalFrameRelativePath, frame, error)) return false;
+
+    const QByteArray wantStyled = qgetenv("QMLTUI_RUNNER_FINAL_STYLED").trimmed().toLower();
+    if (!wantStyled.isEmpty() && wantStyled != "0" && wantStyled != "false" &&
+        wantStyled != "off" && m_mode != QLatin1String("capture")) {
+        QString styledError;
+        const QString styled = currentStyledFrameText(&styledError);
+        if (styledError.isEmpty()) {
+            const QString styledRel = m_state == State::Failed
+                                          ? QStringLiteral("failure_styled.txt")
+                                          : QStringLiteral("final_styled.txt");
+            if (!writeTextArtifact(styledRel, styled, error)) return false;
+        }
+    }
+    return true;
 }
 
 bool Runner::writeResultArtifact(int exitCode, QString* error) {

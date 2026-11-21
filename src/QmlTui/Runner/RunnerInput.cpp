@@ -320,6 +320,16 @@ void Runner::scroll(int x, int y, int deltaX, int deltaY, const QStringList& mod
     (void)waitForNextFrame(m_operationTimeoutMs);
 }
 
+void Runner::clickFrame(int x, int y, const QString& button, const QStringList& modifiers) {
+    if (!ensureRunning("click") || !m_terminalEngine || !m_terminalEngine->renderer()) return;
+    const auto offset = m_terminalEngine->renderer()->mouseRowOffset();
+    if (!offset) {
+        failScenario(QStringLiteral("The inline frame's screen position is not yet known"));
+        return;
+    }
+    click(x, y + *offset, button, modifiers);
+}
+
 void Runner::clickText(const QString& text, int occurrence, const QString& button,
                        const QStringList& modifiers) {
     if (!ensureRunning("clickText") || !m_terminalEngine) return;
@@ -341,13 +351,7 @@ void Runner::clickText(const QString& text, int occurrence, const QString& butto
         return;
     }
     const TextMatch& match = matches.at(occurrence);
-    const auto offset = m_terminalEngine->renderer()->mouseRowOffset();
-    if (!offset) {
-        failScenario(QStringLiteral("The inline frame's screen position is not yet known"));
-        return;
-    }
-    const int screenY = match.y + *offset;
-    click(match.x + (std::max)(0, match.width - 1) / 2, screenY, button, modifiers);
+    clickFrame(match.x + (std::max)(0, match.width - 1) / 2, match.y, button, modifiers);
 }
 
 void Runner::hoverText(const QString& text, int occurrence, const QStringList& modifiers) {

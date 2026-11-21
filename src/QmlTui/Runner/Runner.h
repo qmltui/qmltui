@@ -218,6 +218,10 @@ public:
                                const QString& button = QStringLiteral("left"),
                                const QStringList& modifiers = {});
 
+    // Translates frame-relative (x, y) by mouseRowOffset() before clicking.
+    Q_INVOKABLE void clickFrame(int x, int y, const QString& button = QStringLiteral("left"),
+                                const QStringList& modifiers = {});
+
     Q_INVOKABLE void hoverText(const QString& text, int occurrence = 0,
                                const QStringList& modifiers = {});
     Q_INVOKABLE void click(int x, int y, const QString& button = QStringLiteral("left"),

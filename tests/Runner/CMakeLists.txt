@@ -531,6 +531,9 @@ add_qmltui_runner_scenario(test_runner_scrollback_timeout qmltui_runner_fixture
 add_qmltui_runner_scenario(test_runner_scrollback_altscreen qmltui_runner_fixture
     "${qmltui_runner_scenarios}/scrollback_altscreen.js" 1
     FAILURE_PATTERN "needs a Terminal in Inline mode")
+add_qmltui_runner_scenario(test_runner_inline_locators qmltui_runner_fixture
+    "${qmltui_runner_scenarios}/inline_locators.js" 0
+    ARGUMENTS --fixture=inline)
 
 # Asciicast recording: the session bytes land in a cast under the artifacts,
 # and QMLTUI_RECORD_POST_COMMAND expands <CAST>, <CAST_STEM>, and <NAME>.
@@ -570,6 +573,13 @@ endif()
 add_qmltui_environment_scenario(test_runner_expect_style_unknown_property qmltui_runner_fixture 1
     EVAL_CODE "app.expectStyle(1, 1, { fg: '#ffffff' })"
     FAILURE_PATTERN "Unknown property \"fg\" for expectStyle()"
+)
+add_qmltui_environment_scenario(test_runner_expect_style_reverse_alias qmltui_runner_fixture 0
+    EVAL_CODE "app.expectStyle(1, 1, { reverse: false })"
+)
+add_qmltui_environment_scenario(test_runner_expect_style_reverse_conflict qmltui_runner_fixture 1
+    EVAL_CODE "app.expectStyle(1, 1, { reverse: true, reversed: false })"
+    FAILURE_PATTERN "conflicting \"reverse\" and \"reversed\""
 )
 
 if(TARGET qmltui-runner)

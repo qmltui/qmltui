@@ -60,6 +60,9 @@ endif()
 
 if(BUILD_TESTING AND TARGET QmlTui::Runner)
     target_link_libraries(hello_qmltui PRIVATE QmlTui::Runner)
+    if(PROJECT_IS_TOP_LEVEL)
+        qmltui_scenario_editor_support()
+    endif()
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test_helloworld.js")
         enable_testing()
         qmltui_add_scenario(

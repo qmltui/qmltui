@@ -261,9 +261,11 @@ private slots:
                            temporary.filePath("recorded"), "--", fixtureBinary()});
         QVERIFY2(result.code == 0, result.err.constData());
         QVERIFY(readFile(temporary.filePath("baseline.txt")).contains("TESTRUNNER FIXTURE"));
-        result = run({"--script", script, "--artifacts", temporary.filePath("verified"), "--",
-                      fixtureBinary()});
+        result = run({"--script", script, "--ruler", "--styled", "--artifacts",
+                      temporary.filePath("verified"), "--", fixtureBinary()});
         QVERIFY2(result.code == 0, result.err.constData());
+        QVERIFY(result.out.contains("--- Styles ---"));
+        QVERIFY(result.out.contains("fg=#"));
     }
 
     void probeSweepAndCleanArtifacts() {

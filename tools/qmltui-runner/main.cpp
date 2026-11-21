@@ -214,7 +214,12 @@ void printProbeOutput(QTextStream& out, const QString& artifacts, const QJsonObj
             out << formatRulerFrame(readTextFile(candidate), cols, rows, showRuler) << '\n';
         }
         if (showStyled) {
-            const QString styledPath = dir.filePath(QStringLiteral("capture_styled.txt"));
+            QString styledPath = dir.filePath(QStringLiteral("capture_styled.txt"));
+            if (!QFileInfo::exists(styledPath)) {
+                styledPath = dir.filePath(result.value(QStringLiteral("exitCode")).toInt() == 0
+                                              ? QStringLiteral("final_styled.txt")
+                                              : QStringLiteral("failure_styled.txt"));
+            }
             if (QFileInfo::exists(styledPath)) {
                 const QString styles = extractStylesSection(readTextFile(styledPath));
                 out << "--- Styles ---\n"
@@ -463,6 +468,7 @@ int main(int argc, char** argv) {
     set("ARTIFACT_DIR", artifacts);
     set("HANDSHAKE_PATH", handshake);
     set("HANDSHAKE_TOKEN", token);
+    if (parser.isSet("styled")) set("FINAL_STYLED", "1");
     if (parser.isSet("record")) set("RECORD", QDir(artifacts).filePath(recording));
     environment.insert("QT_FORCE_STDERR_LOGGING", "1");
     if ((hasProbeModifiers || parser.isSet("print") || parser.isSet("ruler")) &&

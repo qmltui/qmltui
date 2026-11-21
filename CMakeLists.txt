@@ -61,9 +61,7 @@ qmltui_provide_utf8proc()   # QmlTui::Core links it; PtyView provides libvterm i
 set(qt_required_components Core Qml)
 
 if(QMLTUI_BUILD_TESTS)
-    list(APPEND qt_required_components Test Gui)   # Gui: QStandardItemModel in TableView/TreeView unit tests
-elseif(QMLTUI_BUILD_BENCHMARKS)
-    list(APPEND qt_required_components Gui)        # Gui: benchmark_view_compare
+    list(APPEND qt_required_components Test)
 endif()
 list(REMOVE_DUPLICATES qt_required_components)
 
@@ -73,6 +71,9 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS ${qt_required_components})
+if(QMLTUI_BUILD_TESTS OR QMLTUI_BUILD_BENCHMARKS)
+    find_package(Qt6 6.8 QUIET OPTIONAL_COMPONENTS Gui)
+endif()
 
 # Qt <= 6.8.3 FindWrapOpenGL.cmake appends "-framework AGL" when AGL.framework
 # is absent, breaking links against the macOS 26+ SDK where Apple removed AGL.

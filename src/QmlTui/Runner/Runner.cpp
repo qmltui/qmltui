@@ -687,19 +687,19 @@ bool Runner::installJavaScriptFacade() {
                                       + " (" + matches.length + " matches)");
                 }
                 const match = matches[occurrence];
-                nativeRunner.click(match.x + Math.floor(Math.max(0, match.width - 1) / 2),
-                                   match.y,
-                                   optionValue("region.clickText", options, "button", "left"),
-                                   optionValue("region.clickText", options, "modifiers", []));
+                nativeRunner.clickFrame(match.x + Math.floor(Math.max(0, match.width - 1) / 2),
+                                        match.y,
+                                        optionValue("region.clickText", options, "button", "left"),
+                                        optionValue("region.clickText", options, "modifiers", []));
             });
         };
         region.click = function(options) {
             composite("region.click", function() {
                 rejectUnknownOptions("region.click", options || {}, ["button", "modifiers"]);
-                nativeRunner.click(x + Math.floor((width - 1) / 2),
-                                   y + Math.floor((height - 1) / 2),
-                                   optionValue("region.click", options, "button", "left"),
-                                   optionValue("region.click", options, "modifiers", []));
+                nativeRunner.clickFrame(x + Math.floor((width - 1) / 2),
+                                        y + Math.floor((height - 1) / 2),
+                                        optionValue("region.click", options, "button", "left"),
+                                        optionValue("region.click", options, "modifiers", []));
             });
         };
         return region;

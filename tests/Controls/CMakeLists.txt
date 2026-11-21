@@ -2,8 +2,10 @@
 
 add_qmltui_test(test_popup test_popup.cpp)
 add_qmltui_test(test_indicators test_indicators.cpp)
-add_qmltui_test(test_standard_roles test_standard_roles.cpp)
-add_qmltui_test(test_terminal_colors test_terminal_colors.cpp)
+if(TARGET Qt6::Gui)
+    add_qmltui_test(test_standard_roles test_standard_roles.cpp)
+    add_qmltui_test(test_terminal_colors test_terminal_colors.cpp)
+endif()
 add_qmltui_test(test_controls_behaviour test_controls_behaviour.cpp)
 
 # The colour fixture reuses the Runner fixture's main() with its own QML.

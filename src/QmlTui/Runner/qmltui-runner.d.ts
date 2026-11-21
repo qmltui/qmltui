@@ -75,6 +75,8 @@ interface QmlTuiStyleExpectation {
     italic?: boolean;
     underline?: boolean;
     reversed?: boolean;
+    /** Alias for reversed, matching styledText() output. */
+    reverse?: boolean;
     blink?: boolean;
     conceal?: boolean;
     strikethrough?: boolean;

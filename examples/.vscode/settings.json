@@ -1,8 +1,8 @@
 {
-    "qml.importPaths": [
+    "qt-qml.qmlls.useQmlImportPathEnvVar": true,
+    "qt-qml.qmlls.additionalImportPaths": [
         "${workspaceFolder}/build/qml",
         "${workspaceFolder}/../build/qml"
     ],
-    "qml.qmllint.enabled": true,
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

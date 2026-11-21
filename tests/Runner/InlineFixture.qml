@@ -8,6 +8,8 @@ import QmlTui
 // keeps focus: F1 a model row, F2 a wide-character row, F3 a styled row.
 Terminal {
     id: root
+    property int clickedCount: 0
+
     mode: Terminal.Inline
     focus: true
 
@@ -29,8 +31,14 @@ Terminal {
 
     Column {
         Text {
-            text: "INLINE FIXTURE"
+            objectName: "inlineTitle"
+            text: root.clickedCount === 0 ? "INLINE FIXTURE" : "INLINE CLICKED " + root.clickedCount
             color: "#7ee0ff"
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.clickedCount++
+            }
         }
         Row {
             Text {

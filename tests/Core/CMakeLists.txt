@@ -59,9 +59,11 @@ add_qmltui_test(test_repeater test_repeater.cpp)
 add_qmltui_test(test_loader test_loader.cpp)
 add_qmltui_test(test_scroll_view test_scroll_view.cpp)
 add_qmltui_test(test_views_virtualization test_views_virtualization.cpp)
-add_qmltui_test(test_table_view_hardening test_table_view_hardening.cpp)
-add_qmltui_test(test_model_contracts test_model_contracts.cpp)
-add_qmltui_test(test_tree_view test_tree_view.cpp)
+if(TARGET Qt6::Gui)
+    add_qmltui_test(test_table_view_hardening test_table_view_hardening.cpp)
+    add_qmltui_test(test_model_contracts test_model_contracts.cpp)
+    add_qmltui_test(test_tree_view test_tree_view.cpp)
+endif()
 endif()
 
 if(QMLTUI_BUILD_BENCHMARKS)
@@ -80,24 +82,26 @@ if(QMLTUI_BUILD_BENCHMARKS)
 
     # Side-by-side model/view comparison against Qt Quick and Qt Widgets when
     # those optional Qt modules are installed on the host.
-    find_package(Qt6 QUIET OPTIONAL_COMPONENTS Widgets Quick)
-    add_executable(benchmark_view_compare benchmark_view_compare.cpp)
-    target_link_libraries(benchmark_view_compare PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Qml QmlTui::Core QmlTui::Controls)
-    if(TARGET Qt6::Widgets)
-        target_link_libraries(benchmark_view_compare PRIVATE Qt6::Widgets)
-        target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_WIDGETS=1)
-    endif()
-    if(TARGET Qt6::Quick)
-        target_link_libraries(benchmark_view_compare PRIVATE Qt6::Quick)
-        target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_QUICK=1)
-    endif()
-    if(QMLTUI_BUILD_TESTS)
-        add_test(NAME test_benchmark_view_compare_smoke
-            COMMAND benchmark_view_compare --rows 1000 --steps 10)
-        set_tests_properties(test_benchmark_view_compare_smoke PROPERTIES
-            ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
-        )
+    if(TARGET Qt6::Gui)
+        find_package(Qt6 QUIET OPTIONAL_COMPONENTS Widgets Quick)
+        add_executable(benchmark_view_compare benchmark_view_compare.cpp)
+        target_link_libraries(benchmark_view_compare PRIVATE
+            Qt6::Core Qt6::Gui Qt6::Qml QmlTui::Core QmlTui::Controls)
+        if(TARGET Qt6::Widgets)
+            target_link_libraries(benchmark_view_compare PRIVATE Qt6::Widgets)
+            target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_WIDGETS=1)
+        endif()
+        if(TARGET Qt6::Quick)
+            target_link_libraries(benchmark_view_compare PRIVATE Qt6::Quick)
+            target_compile_definitions(benchmark_view_compare PRIVATE QMLTUI_BENCHMARK_HAS_QUICK=1)
+        endif()
+        if(QMLTUI_BUILD_TESTS)
+            add_test(NAME test_benchmark_view_compare_smoke
+                COMMAND benchmark_view_compare --rows 1000 --steps 10)
+            set_tests_properties(test_benchmark_view_compare_smoke PROPERTIES
+                ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}"
+            )
+        endif()
     endif()
 
     # Per-frame paint/diff cost for representative scenes. Informational; run

@@ -184,6 +184,28 @@ void TestPtyView::scrollbarDefaultColorsAndShortcutSuppression() {
         }
         QVERIFY(sawThumb);
         QVERIFY(sawTrack);
+
+        // Once scrollback exists and scrollBarVisible is true, TIOCSWINSZ reserves column w - 1.
+        PtyView colView;
+        colView.setWidth(20);
+        colView.setHeight(4);
+        colView.setScrollBarVisible(true);
+        colView.setProgram(QStringLiteral("/bin/sh"));
+        colView.setArguments({QStringLiteral("-c"),
+                              QStringLiteral("for i in 1 2 3 4 5 6; do printf 'X\\r\\n'; done; "
+                                             "sleep 0.05; stty size")});
+        QSignalSpy colDone(&colView, &PtyView::finished);
+        colView.start();
+        QTRY_COMPARE_WITH_TIMEOUT(colDone.count(), 1, 5000);
+        TextGridBuffer colBuf;
+        QVERIFY(colBuf.resize(20, 4));
+        paintItem(colView, colBuf, 0, 0, ClipRect{0, 0, 20, 4});
+        QByteArray colText;
+        for (int row = 0; row < 4; ++row)
+            for (int col = 0; col < 19; ++col)
+                if (!colBuf.cellAt(col, row).continuation)
+                    colText += colBuf.cellAt(col, row).character().toByteArray();
+        QVERIFY2(colText.contains("4 19"), colText.constData());
     }
 
     // 2. Focused running PtyView suppresses unmodified single-key Shortcut

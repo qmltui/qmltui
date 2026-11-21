@@ -196,7 +196,9 @@ public:
     QRect damageRect() const { return m_damageRect; }
     void clearDamage();
 
-    void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false);
+    void handleKeyInput(int key, const QString& text, int modifiers, bool paste = false,
+                        bool autoRepeat = false);
+    void handleKeyRelease(int key, const QString& text, int modifiers);
     // Raw terminal bytes, exactly as a backend delivers them. Runner feeds
     // scripted typing here so it takes the same decoder path as a real keyboard.
     void feedInput(QByteArrayView bytes);
@@ -236,11 +238,12 @@ private:
     void finishQueries();
     bool canQueryTerminal() const;
     void applyCapabilities(const TerminalCapabilities& capabilities);
-    // Kitty keyboard flag 1 (disambiguate escape codes), push/pop form. The
-    // mode is owned per output session: pushed once the terminal has proven
-    // support and the renderer is on its screen, popped before that screen
-    // is left. Stacks are per screen, so the order relative to the renderer
-    // matters and an entry this session did not push is never popped.
+    // Kitty keyboard flags 1 | 2 (disambiguate escape codes and report event
+    // types: press, repeat, release), push/pop form. The mode is owned per
+    // output session: pushed once the terminal has proven support and the
+    // renderer is on its screen, popped before that screen is left. Stacks are
+    // per screen, so the order relative to the renderer matters and an entry
+    // this session did not push is never popped.
     void updateKittyKeyboard();
     void popKittyKeyboard();
     void scheduleEscapeFlush();

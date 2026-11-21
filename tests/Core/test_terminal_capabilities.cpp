@@ -24,6 +24,7 @@ private slots:
     void testDefaultsToTrueColor();
     void testColorTermAndDirect();
     void testIndexedFromTerm();
+    void testBasic16FromLegacyTerm();
     void testWindowsTerminalIsTrueColor();
     void testTermProgramTable();
     void testMonoFromNoColorAndDumb();
@@ -64,6 +65,20 @@ void TestTerminalCapabilities::testIndexedFromTerm() {
     QCOMPARE(
         TerminalCapabilities::detect(environmentWith({{"TERM", "screen-256color"}})).colorDepth,
         ColorDepth::Indexed256);
+}
+
+void TestTerminalCapabilities::testBasic16FromLegacyTerm() {
+    for (const char* term : {"linux", "vt220", "ansi", "rxvt", "xterm-color", "xterm-16color"}) {
+        QCOMPARE(
+            TerminalCapabilities::detect(environmentWith({{"TERM", QString::fromLatin1(term)}}))
+                .colorDepth,
+            ColorDepth::Basic16);
+    }
+    // COLORTERM=truecolor still wins when set alongside a 16-color TERM.
+    QCOMPARE(TerminalCapabilities::detect(
+                 environmentWith({{"TERM", "linux"}, {"COLORTERM", "truecolor"}}))
+                 .colorDepth,
+             ColorDepth::TrueColor);
 }
 
 void TestTerminalCapabilities::testWindowsTerminalIsTrueColor() {
@@ -116,9 +131,16 @@ void TestTerminalCapabilities::testMonoFromNoColorAndDumb() {
                  .colorDepth,
              ColorDepth::Mono);
     const TerminalCapabilities dumb =
-        TerminalCapabilities::detect(environmentWith({{"TERM", "dumb"}}));
+        TerminalCapabilities::detect(environmentWith({{"TERM", "dumb"}}), true);
     QCOMPARE(dumb.colorDepth, ColorDepth::Mono);
     QVERIFY(!dumb.syncOutput);
+
+    for (const char* legacy : {"vt100", "vt102", "vt52"}) {
+        const TerminalCapabilities caps = TerminalCapabilities::detect(
+            environmentWith({{"TERM", QString::fromLatin1(legacy)}}), true);
+        QCOMPARE(caps.colorDepth, ColorDepth::Mono);
+        QVERIFY(!caps.syncOutput);
+    }
 }
 
 void TestTerminalCapabilities::testOverrideWins() {

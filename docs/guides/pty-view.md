@@ -39,7 +39,7 @@ target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Pty
 
 ## Key Interception, Focus Escape, `sendText()`, and Scrollback
 
-While running and focused, `PtyView` forwards `Tab`, printable keys (`Q`), `Escape`, arrow keys, and `Ctrl+C` directly to the child PTY so interactive programs inside the shell work naturally. Always provide a host `Shortcut` (such as `Shortcut { sequence: "Ctrl+Q"; ... }` or a focus-switching chord) or attach `Keys.priority: Keys.BeforeItem` so keyboard users can move focus out of `PtyView` or exit the host application:
+While running and focused, `PtyView` forwards `Tab`, printable keys (`Q`), `Escape`, arrow keys, `Ctrl+C`, and SGR mouse events (when requested by the child) directly to the child PTY so interactive programs inside the shell work naturally. Built-in `Shift+PageUp`, `Shift+PageDown`, `Shift+Up`, `Shift+Down`, and `Shift+Wheel` bindings navigate `PtyView`'s local scrollback (`scrollBarVisible: true` reserves the rightmost column in `TIOCSWINSZ` once scrollback history exists). Always provide a host `Shortcut` (such as `Shortcut { sequence: "Ctrl+Q"; ... }` or a focus-switching chord) or attach `Keys.priority: Keys.BeforeItem` so keyboard users can move focus out of `PtyView` or exit the host application:
 
 ```qml
 pragma ComponentBehavior: Bound

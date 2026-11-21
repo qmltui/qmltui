@@ -17,10 +17,11 @@ void InputRouter::setTerminal(Terminal* terminal) {
     m_terminal = terminal;
 }
 
-bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool paste) {
+bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool paste,
+                           bool autoRepeat) {
     if (!m_terminal) return false;
 
-    KeyEvent event(key, text, modifiers, paste);
+    KeyEvent event(key, text, modifiers, paste, autoRepeat);
 
     auto dispatchToItem = [](Item* item, KeyEvent& ev) {
         if (!item->isEffectivelyEnabled() || !item->isEffectivelyVisible()) return;
@@ -195,6 +196,88 @@ bool InputRouter::routeKey(int key, const QString& text, int modifiers, bool pas
         } else if (key == Qt::Key_Backtab) {
             FocusManager::cycleFocus(m_terminal.data(), false);
         }
+    }
+    return event.isAccepted();
+}
+
+bool InputRouter::routeKeyRelease(int key, const QString& text, int modifiers) {
+    if (!m_terminal) return false;
+
+    KeyEvent event(key, text, modifiers, false, false);
+
+    auto dispatchToItem = [](Item* item, KeyEvent& ev) {
+        if (!item->isEffectivelyEnabled() || !item->isEffectivelyVisible()) return;
+
+        QPointer<Item> itemGuard(item);
+        QPointer<Keys> attached =
+            qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(item, false));
+        const bool beforeItem = attached && (attached->priority() == Keys::BeforeItem);
+
+        auto emitAttachedRelease = [&]() {
+            if (attached && !ev.isAccepted()) emit attached->released(&ev);
+        };
+
+        if (beforeItem) {
+            emitAttachedRelease();
+            if (ev.isAccepted() || !itemGuard) return;
+            itemGuard->keyReleaseEvent(&ev);
+        } else {
+            if (!itemGuard) return;
+            itemGuard->keyReleaseEvent(&ev);
+            if (ev.isAccepted()) return;
+            emitAttachedRelease();
+        }
+
+        if (!ev.isAccepted() && attached) {
+            const QList<QPointer<Item>> forwardedItems = attached->forwardToItems();
+            for (const QPointer<Item>& forwardedGuard : forwardedItems) {
+                if (forwardedGuard && forwardedGuard->isEffectivelyEnabled() &&
+                    forwardedGuard->isEffectivelyVisible()) {
+                    forwardedGuard->keyReleaseEvent(&ev);
+                    if (ev.isAccepted() || !forwardedGuard) return;
+                    QPointer<Keys> fwdAttached = qobject_cast<Keys*>(
+                        qmlAttachedPropertiesObject<Keys>(forwardedGuard.data(), false));
+                    if (fwdAttached) {
+                        emit fwdAttached->released(&ev);
+                        if (ev.isAccepted()) return;
+                    }
+                }
+            }
+        }
+    };
+
+    const QList<InputScope*> scopes = m_terminal->orderedInputScopes();
+    InputScope* activeModalScope = nullptr;
+    for (int i = scopes.size() - 1; i >= 0; --i) {
+        InputScope* s = scopes[i];
+        if (s && s->isScopeVisible() && s->isScopeModal()) {
+            activeModalScope = s;
+            break;
+        }
+    }
+
+    if (activeModalScope) {
+        Item* modalItem = activeModalScope->asItem();
+        Item* current = FocusManager::resolveModalFocusOrigin(m_terminal.data(), modalItem);
+        while (current) {
+            QPointer<Item> next = current->parentItem();
+            dispatchToItem(current, event);
+            if (event.isAccepted() || current == modalItem) break;
+            current = next.data();
+        }
+        return true;
+    }
+
+    Item* focused = m_terminal->focusedItem();
+    if (focused && (!focused->isEffectivelyVisible() || !focused->isEffectivelyEnabled()))
+        m_terminal->setFocusedItem(nullptr);
+    Item* current = m_terminal->focusedItem() ? m_terminal->focusedItem() : m_terminal.data();
+
+    while (current) {
+        QPointer<Item> next = current->parentItem();
+        dispatchToItem(current, event);
+        if (event.isAccepted()) break;
+        current = next.data();
     }
     return event.isAccepted();
 }

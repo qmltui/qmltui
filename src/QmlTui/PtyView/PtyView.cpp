@@ -84,6 +84,7 @@ PtyView::PtyView(QObject* parent)
         const int before = m_adapter->scrollbackSize();
         m_adapter->feed(bytes);
         const int after = m_adapter->scrollbackSize();
+        if ((before > 0) != (after > 0)) syncSize();
         if (before != after) emit scrollbackSizeChanged();
         if (m_scrollOffset > 0) {
             const int added = (std::max)(0, after - before);
@@ -176,6 +177,7 @@ void PtyView::setScrollbackLimit(int value) {
     m_scrollbackLimit = value;
     m_adapter->setScrollbackLimit(value);
     emit scrollbackLimitChanged();
+    if ((before > 0) != (m_adapter->scrollbackSize() > 0)) syncSize();
     if (before != m_adapter->scrollbackSize()) emit scrollbackSizeChanged();
     setScrollOffset(m_scrollOffset);
 }
@@ -195,6 +197,7 @@ int PtyView::scrollbackSize() const {
 void PtyView::setScrollBarVisible(bool value) {
     if (m_scrollBarVisible == value) return;
     m_scrollBarVisible = value;
+    syncSize();
     emit scrollBarVisibleChanged();
     markDirty();
 }
@@ -260,10 +263,13 @@ void PtyView::start() {
         m_errorString.clear();
         emit errorStringChanged();
     }
-    const int initialRows = (std::max)(1, height() > 1 ? height() : 24);
-    const int initialCols = (std::max)(1, width() > 1 ? width() : 80);
-    m_adapter->resize(initialRows, initialCols);
     m_adapter->reset();
+    const int initialRows = (std::max)(1, height() > 1 ? height() : 24);
+    const int initialCols = height() > 1 && width() > 1 ? effectiveColumns()
+                                                        : (std::max)(1, width() > 1 ? width() : 80);
+    m_lastSyncedRows = initialRows;
+    m_lastSyncedColumns = initialCols;
+    m_adapter->resize(initialRows, initialCols);
     setScrollOffset(0);
     setProcessState(Starting);
     if (!m_session->start(prog, args, m_workingDirectory, processEnvironment, initialRows,
@@ -294,6 +300,7 @@ void PtyView::sendText(const QString& text) {
 void PtyView::clearScrollback() {
     const int before = m_adapter->scrollbackSize();
     m_adapter->clearScrollback();
+    if ((before > 0) != (m_adapter->scrollbackSize() > 0)) syncSize();
     if (before != m_adapter->scrollbackSize()) emit scrollbackSizeChanged();
     setScrollOffset(0);
 }
@@ -459,10 +466,18 @@ void PtyView::setError(const QString& error) {
     emit errorOccurred(error);
 }
 
+int PtyView::effectiveColumns() const {
+    const int w = (std::max)(1, width());
+    return (m_scrollBarVisible && m_adapter->scrollbackSize() > 0 && w > 2) ? (w - 1) : w;
+}
+
 void PtyView::syncSize() {
     if (height() <= 1 || width() <= 1) return;
     const int rows = (std::max)(1, height());
-    const int columns = (std::max)(1, width());
+    const int columns = effectiveColumns();
+    if (rows == m_lastSyncedRows && columns == m_lastSyncedColumns) return;
+    m_lastSyncedRows = rows;
+    m_lastSyncedColumns = columns;
     m_adapter->resize(rows, columns);
     m_session->resize(rows, columns);
 }

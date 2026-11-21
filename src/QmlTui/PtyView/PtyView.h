@@ -181,6 +181,7 @@ signals:
 private:
     void setProcessState(ProcessState state);
     void setError(const QString& error);
+    int effectiveColumns() const;
     void syncSize();
 
     QString m_program;
@@ -201,6 +202,8 @@ private:
     QList<Color> m_palette;
     int m_scrollbackLimit = 10000;
     int m_scrollOffset = 0;
+    int m_lastSyncedRows = 0;
+    int m_lastSyncedColumns = 0;
     bool m_scrollBarVisible = true;
     bool m_allowTitleChanges = true;
     bool m_allowClipboardWrite = false;

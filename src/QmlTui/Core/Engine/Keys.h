@@ -55,6 +55,7 @@ public:
 signals:
     void priorityChanged();
     void pressed(qmltui::KeyEvent* event);
+    void released(qmltui::KeyEvent* event);
     void returnPressed(qmltui::KeyEvent* event);
     void escapePressed(qmltui::KeyEvent* event);
     void spacePressed(qmltui::KeyEvent* event);

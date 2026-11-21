@@ -238,6 +238,15 @@ void InputDecoder::setKeyCallback(KeyCallback cb) {
     m_keyCallback = std::move(cb);
 }
 
+void InputDecoder::setKeyEventCallback(KeyEventCallback cb) {
+    m_keyEventCallback = std::move(cb);
+}
+
+void InputDecoder::emitKey(int qtKey, const QString& text, int modifiers, KeyAction action) {
+    if (m_keyEventCallback) m_keyEventCallback(qtKey, text, modifiers, action);
+    if (action != KeyAction::Release && m_keyCallback) m_keyCallback(qtKey, text, modifiers);
+}
+
 void InputDecoder::setPasteCallback(PasteCallback cb) {
     m_pasteCallback = std::move(cb);
 }
@@ -306,12 +315,15 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
             if (m_focusCallback) m_focusCallback(final == 'I');
             return;
         }
-        // Kitty event types apply to every key form once flag 2 is on; a
-        // release or an unknown type is consumed and never dispatched.
+        // Kitty event types apply to every key form once flag 2 is on; an
+        // unknown type is consumed and never dispatched.
         const KeyEventType eventType = keyEventType(sequence);
-        if (eventType == KeyEventType::Release || eventType == KeyEventType::Unknown) return;
+        if (eventType == KeyEventType::Unknown) return;
+        const KeyAction action = eventType == KeyEventType::Release  ? KeyAction::Release
+                                 : eventType == KeyEventType::Repeat ? KeyAction::Repeat
+                                                                     : KeyAction::Press;
         if (sequence.kind == Sequence::Csi && final == 'u') {
-            if (dispatchKittyKey(sequence)) return;
+            if (dispatchKittyKey(sequence, action)) return;
         }
         int key = 0;
         int modifiers = keyModifiers(sequence);
@@ -345,7 +357,7 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
                 }
         }
         if (key) {
-            if (m_keyCallback) m_keyCallback(key, QString(), modifiers);
+            emitKey(key, QString(), modifiers, action);
             return;
         }
     }
@@ -355,7 +367,7 @@ void InputDecoder::dispatchSequence(const ControlSequence& sequence) {
 // CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text-codepoints] u
 // The kitty keyboard protocol's key form. Returns false for a malformed
 // sequence so it reaches the reply callback rather than the text path.
-bool InputDecoder::dispatchKittyKey(const ControlSequence& sequence) {
+bool InputDecoder::dispatchKittyKey(const ControlSequence& sequence, KeyAction action) {
     if (sequence.params.size() > 3) return false;
     const int codepoint = sequence.parameter(0, 0, -1);
     if (codepoint <= 0 || !isUnicodeScalar(codepoint)) return false;
@@ -414,7 +426,7 @@ bool InputDecoder::dispatchKittyKey(const ControlSequence& sequence) {
     } else if (shortcut) {
         text.clear();
     }
-    if (m_keyCallback) m_keyCallback(key, text, modifiers);
+    emitKey(key, text, modifiers, action);
     return true;
 }
 
@@ -425,7 +437,7 @@ bool InputDecoder::hasPendingEscape() const {
 void InputDecoder::flushPendingEscape() {
     if (!hasPendingEscape()) return;
     m_buffer.clear();
-    if (m_keyCallback) m_keyCallback(Qt::Key_Escape, "", 0);
+    emitKey(Qt::Key_Escape, "", 0);
 }
 
 void InputDecoder::decode(const char* buffer, size_t size) {
@@ -475,8 +487,8 @@ void InputDecoder::processBuffer() {
             const QString text = QString::fromUtf8(m_buffer.data() + i, end - i);
             if (m_pasteCallback)
                 m_pasteCallback(text);
-            else if (m_keyCallback && !text.isEmpty())
-                m_keyCallback(0, text, 0);
+            else if (!text.isEmpty())
+                emitKey(0, text, 0);
             i = end + PasteEnd.size();
             m_bracketedPaste = false;
             continue;
@@ -485,14 +497,14 @@ void InputDecoder::processBuffer() {
         unsigned char c = m_buffer[i];
 
         if (c == 0) {
-            if (m_keyCallback) m_keyCallback(Qt::Key_Space, "", Qt::ControlModifier);
+            emitKey(Qt::Key_Space, "", Qt::ControlModifier);
             i++;
             continue;
         }
 
         if (c >= 1 && c <= 26 && c != 8 && c != 9 && c != 10 && c != 13) {
             int qtKey = c - 1 + Qt::Key_A;
-            if (m_keyCallback) m_keyCallback(qtKey, "", Qt::ControlModifier);
+            emitKey(qtKey, "", Qt::ControlModifier);
             i++;
             continue;
         }
@@ -535,25 +547,25 @@ void InputDecoder::processBuffer() {
                                                                             : 1;
                 continue;
             }
-            if (m_keyCallback) m_keyCallback(Qt::Key_Escape, "", 0);
+            emitKey(Qt::Key_Escape, "", 0);
             ++i;
             continue;
         }
 
         if (c == '\t') {
-            if (m_keyCallback) m_keyCallback(Qt::Key_Tab, "", 0);
+            emitKey(Qt::Key_Tab, "", 0);
             i++;
             continue;
         }
 
         if (c == '\r' || c == '\n') {
-            if (m_keyCallback) m_keyCallback(Qt::Key_Return, "\n", 0);
+            emitKey(Qt::Key_Return, "\n", 0);
             i++;
             continue;
         }
 
         if (c == '\x7f' || c == '\x08') {
-            if (m_keyCallback) m_keyCallback(Qt::Key_Backspace, "", 0);
+            emitKey(Qt::Key_Backspace, "", 0);
             i++;
             continue;
         }
@@ -572,7 +584,7 @@ void InputDecoder::processBuffer() {
                 QString text = QString::fromUtf8(m_buffer.data() + i, len);
                 const auto codepoints = text.toUcs4();
                 int unicodeKey = codepoints.isEmpty() ? 0 : keyForCharacter(codepoints[0]);
-                if (m_keyCallback) m_keyCallback(unicodeKey, text, 0);
+                emitKey(unicodeKey, text, 0);
                 i += len;
                 continue;
             } else {
@@ -582,7 +594,7 @@ void InputDecoder::processBuffer() {
 
         if (c >= 32 && c < 127) {
             QString text = QString((char)c);
-            if (m_keyCallback) m_keyCallback(keyForCharacter(c), text, 0);
+            emitKey(keyForCharacter(c), text, 0);
             i++;
             continue;
         }

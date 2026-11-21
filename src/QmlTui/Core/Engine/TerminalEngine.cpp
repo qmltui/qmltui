@@ -125,8 +125,12 @@ TerminalEngine::TerminalEngine(Terminal* rootWindow, QObject* parent)
         [this](const InputDecoder::ControlSequence& sequence) { handleReply(sequence); });
 
     // Setup InputDecoder callbacks
-    m_inputDecoder.setKeyCallback([this](int key, const QString& text, int modifiers) {
-        handleKeyInput(key, text, modifiers);
+    m_inputDecoder.setKeyEventCallback([this](int key, const QString& text, int modifiers,
+                                              InputDecoder::KeyAction action) {
+        if (action == InputDecoder::KeyAction::Release)
+            handleKeyRelease(key, text, modifiers);
+        else
+            handleKeyInput(key, text, modifiers, false, action == InputDecoder::KeyAction::Repeat);
     });
     m_inputDecoder.setPasteCallback(
         [this](const QString& text) { handleKeyInput(0, text, 0, true); });
@@ -607,8 +611,16 @@ bool TerminalEngine::canQueryTerminal() const {
     // both must be the terminal, or the probes are printed into a pipe and the
     // replies are typed into the user's shell after exit.
     const TerminalBackend* backend = m_device.backend();
-    return m_terminalOutputEnabled && !m_stopped && !m_capabilitiesOverridden && backend &&
-           backend->isInteractive() && backend->isInputInteractive();
+    if (!m_terminalOutputEnabled || m_stopped || m_capabilitiesOverridden || !backend ||
+        !backend->isInteractive() || !backend->isInputInteractive()) {
+        return false;
+    }
+    bool timeoutValid = false;
+    const int timeout = qEnvironmentVariableIntValue("QMLTUI_QUERY_TIMEOUT_MS", &timeoutValid);
+    if (timeoutValid && timeout <= 0) return false;
+    const QByteArray term = qgetenv("TERM").trimmed().toLower();
+    if (term == "dumb" || term == "vt100" || term == "vt102" || term == "vt52") return false;
+    return true;
 }
 
 void TerminalEngine::readResizeSignal() {
@@ -641,8 +653,13 @@ void TerminalEngine::handleResume() {
     requestRender();
 }
 
-void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers, bool paste) {
-    m_router->routeKey(key, text, modifiers, paste);
+void TerminalEngine::handleKeyInput(int key, const QString& text, int modifiers, bool paste,
+                                    bool autoRepeat) {
+    m_router->routeKey(key, text, modifiers, paste, autoRepeat);
+}
+
+void TerminalEngine::handleKeyRelease(int key, const QString& text, int modifiers) {
+    m_router->routeKeyRelease(key, text, modifiers);
 }
 
 void TerminalEngine::handleMouseInput(int button, int x, int y, bool release, bool motion,
@@ -815,7 +832,7 @@ void TerminalEngine::updateKittyKeyboard() {
         popKittyKeyboard();
         return;
     }
-    if (!m_device.write("\033[>1u")) return;
+    if (!m_device.write("\033[>3u")) return;
     m_kittyKeyboardPushed = true;
     if (TerminalBackend* backend = m_device.backend()) backend->setKeyboardProtocolActive(true);
 }

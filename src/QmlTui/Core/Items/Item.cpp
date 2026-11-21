@@ -1182,6 +1182,10 @@ void Item::keyPressEvent(class KeyEvent* event) {
     Q_UNUSED(event);
 }
 
+void Item::keyReleaseEvent(class KeyEvent* event) {
+    Q_UNUSED(event);
+}
+
 void Item::mousePressEvent(class MouseEvent* event) {
     Q_UNUSED(event);
 }

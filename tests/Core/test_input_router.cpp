@@ -44,6 +44,7 @@ private slots:
     void testInlineModeMouseOffset();
     void testShortcutScopedPerTerminalAndPrintableFocusSuppression();
     void testShortcutStringSequences();
+    void testKeyReleaseAndAutoRepeatRouting();
 };
 
 void TestInputRouter::testImplicitMouseGrab() {
@@ -936,6 +937,73 @@ void TestInputRouter::testShortcutStringSequences() {
     QCOMPARE(qmlTerm->property("hits").toInt(), 10);
     QVERIFY(qmlRouter.routeKey(Qt::Key_Q, QStringLiteral("\x11"), Qt::ControlModifier));
     QCOMPARE(qmlTerm->property("hits").toInt(), 11);
+}
+
+class ReleaseTrackingItem : public Item {
+    Q_OBJECT
+public:
+    explicit ReleaseTrackingItem(QObject* parent = nullptr) : Item(parent) {
+        setFocusPolicy(Qt::StrongFocus);
+    }
+    int pressCount = 0;
+    int releaseCount = 0;
+    bool lastAutoRepeat = false;
+    bool acceptRelease = false;
+
+    void keyPressEvent(KeyEvent* event) override {
+        ++pressCount;
+        lastAutoRepeat = event->isAutoRepeat();
+        event->setAccepted(true);
+    }
+    void keyReleaseEvent(KeyEvent* event) override {
+        ++releaseCount;
+        if (acceptRelease) event->setAccepted(true);
+    }
+};
+
+void TestInputRouter::testKeyReleaseAndAutoRepeatRouting() {
+    Terminal term;
+    term.engine()->setTerminalOutputEnabled(false);
+    term.engine()->setTestViewportSize(QSize(80, 24));
+
+    Shortcut quitShortcut(&term);
+    quitShortcut.setSequence(QStringLiteral("Ctrl+Q"));
+    int shortcutHits = 0;
+    connect(&quitShortcut, &Shortcut::activated, [&]() { ++shortcutHits; });
+
+    ReleaseTrackingItem focused(&term);
+    ReleaseTrackingItem forwarded(&term);
+    focused.forceActiveFocus();
+    QCOMPARE(term.focusedItem(), &focused);
+
+    Keys* attached = qobject_cast<Keys*>(qmlAttachedPropertiesObject<Keys>(&focused, true));
+    QVERIFY(attached != nullptr);
+    auto fwdList = attached->forwardTo();
+    fwdList.append(&fwdList, &forwarded);
+    int attachedReleases = 0;
+    connect(attached, &Keys::released, [&](KeyEvent*) { ++attachedReleases; });
+
+    InputRouter router(&term);
+    QVERIFY(router.routeKey(Qt::Key_A, QStringLiteral("a"), 0, false, false));
+    QCOMPARE(focused.pressCount, 1);
+    QVERIFY(!focused.lastAutoRepeat);
+
+    QVERIFY(router.routeKey(Qt::Key_A, QStringLiteral("a"), 0, false, true));
+    QCOMPARE(focused.pressCount, 2);
+    QVERIFY(focused.lastAutoRepeat);
+
+    // Key release does not trigger Shortcut, Tab cycling, or Escape popup rejection.
+    QVERIFY(!router.routeKeyRelease(Qt::Key_Q, QString(), Qt::ControlModifier));
+    QCOMPARE(shortcutHits, 0);
+    QCOMPARE(attachedReleases, 1);
+    QCOMPARE(focused.releaseCount, 1);
+    QCOMPARE(forwarded.releaseCount, 1);
+
+    forwarded.acceptRelease = true;
+    QVERIFY(router.routeKeyRelease(Qt::Key_A, QStringLiteral("a"), 0));
+    QCOMPARE(attachedReleases, 2);
+    QCOMPARE(focused.releaseCount, 2);
+    QCOMPARE(forwarded.releaseCount, 2);
 }
 
 QTEST_MAIN(TestInputRouter)

@@ -21,20 +21,25 @@ class QMLTUI_CORE_EXPORT KeyEvent : public QObject {
     // True when text arrived inside a bracketed-paste sequence (?2004h) rather
     // than as an individual keystroke.
     Q_PROPERTY(bool paste READ isPaste CONSTANT)
+    // True when the terminal reported a Kitty key-repeat event (event type 2).
+    Q_PROPERTY(bool isAutoRepeat READ isAutoRepeat CONSTANT)
     Q_PROPERTY(bool accepted READ isAccepted WRITE setAccepted NOTIFY acceptedChanged)
 
 public:
     KeyEvent(int key, const QString& text, int modifiers = 0, bool paste = false,
-             QObject* parent = nullptr)
+             bool autoRepeat = false, QObject* parent = nullptr)
         : QObject(parent), m_key(key), m_text(text), m_modifiers(modifiers), m_paste(paste),
-          m_accepted(false) {}
+          m_autoRepeat(autoRepeat), m_accepted(false) {}
+    KeyEvent(int key, const QString& text, int modifiers, bool paste, QObject* parent)
+        : KeyEvent(key, text, modifiers, paste, false, parent) {}
     KeyEvent(int key, const QString& text, int modifiers, QObject* parent)
-        : KeyEvent(key, text, modifiers, false, parent) {}
+        : KeyEvent(key, text, modifiers, false, false, parent) {}
 
     int key() const { return m_key; }
     QString text() const { return m_text; }
     int modifiers() const { return m_modifiers; }
     bool isPaste() const { return m_paste; }
+    bool isAutoRepeat() const { return m_autoRepeat; }
     bool isAccepted() const { return m_accepted; }
     void setAccepted(bool accepted) {
         if (m_accepted != accepted) {
@@ -51,6 +56,7 @@ private:
     QString m_text;
     int m_modifiers;
     bool m_paste;
+    bool m_autoRepeat;
     bool m_accepted;
 };
 

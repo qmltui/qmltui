@@ -550,15 +550,15 @@ Terminal { color: "black"; Text { text: "x" } }
         const auto& output = backend->output();
         const auto npos = std::string::npos;
         QVERIFY(output.find("\033[?u") != npos);
-        QCOMPARE(output.find("\033[>1u"), npos);
+        QCOMPARE(output.find("\033[>3u"), npos);
         backend->feedInput("\033[?0u");          // zero flags is still a valid reply
-        QCOMPARE(output.find("\033[>1u"), npos); // the window is still open
+        QCOMPARE(output.find("\033[>3u"), npos); // the window is still open
         backend->feedInput("\033[?1c");
         QVERIFY(engine->capabilities().kittyKeyboard);
-        const auto push = output.find("\033[>1u");
+        const auto push = output.find("\033[>3u");
         QVERIFY(push != npos);
         QVERIFY(output.find("\033[?1049h") < push);
-        QCOMPARE(output.find("\033[>1u", push + 1), npos);
+        QCOMPARE(output.find("\033[>3u", push + 1), npos);
         engine->stop();
         const auto pop = output.find("\033[<u");
         QVERIFY(pop != npos);
@@ -584,7 +584,7 @@ Terminal { color: "black"; Text { text: "x" } }
             backend->feedInput("\033[?0u\033[?1c"); // it answers, but the user said no
         QVERIFY(!engine->capabilities().kittyKeyboard);
         const auto& output = backend->output();
-        QCOMPARE(output.find("\033[>1u"), std::string::npos);
+        QCOMPARE(output.find("\033[>3u"), std::string::npos);
         engine->stop();
         QCOMPARE(output.find("\033[<u"), std::string::npos);
     }
@@ -595,7 +595,7 @@ Terminal { color: "black"; Text { text: "x" } }
         engine->stop();
         backend->feedInput("\033[?0u\033[?1c"); // the reply arrives late
         QVERIFY(!engine->capabilities().kittyKeyboard);
-        QCOMPARE(backend->output().find("\033[>1u"), std::string::npos);
+        QCOMPARE(backend->output().find("\033[>3u"), std::string::npos);
         QCOMPARE(backend->output().find("\033[<u"), std::string::npos);
     }
     void kittyKeyboardFollowsOutputSession() {
@@ -605,34 +605,34 @@ Terminal { color: "black"; Text { text: "x" } }
         backend->feedInput("\033[?0u\033[?1c");
         const auto& output = backend->output();
         const auto npos = std::string::npos;
-        QVERIFY(output.find("\033[>1u") != npos);
+        QVERIFY(output.find("\033[>3u") != npos);
         // Output disabled: popped before the screen is left, nothing after.
         backend->clearOutput();
         engine->setTerminalOutputEnabled(false);
         QVERIFY(output.find("\033[<u") != npos);
         QVERIFY(output.find("\033[<u") < output.find("\033[?1049l"));
-        QCOMPARE(output.find("\033[>1u"), npos);
+        QCOMPARE(output.find("\033[>3u"), npos);
         // Re-enabled: the capability was proven, so the new screen gets its
         // own push right after it is entered, before the query round-trip.
         backend->clearOutput();
         engine->setTerminalOutputEnabled(true);
-        QTRY_VERIFY(output.find("\033[>1u") != npos);
-        QVERIFY(output.find("\033[?1049h") < output.find("\033[>1u"));
+        QTRY_VERIFY(output.find("\033[>3u") != npos);
+        QVERIFY(output.find("\033[?1049h") < output.find("\033[>3u"));
         QCOMPARE(output.find("\033[<u"), npos);
         // Renderer switch: pop on the alternate screen, push on the main one.
         backend->clearOutput();
         engine->setRenderer(new InlineRenderer);
-        QTRY_VERIFY(output.find("\033[>1u") != npos);
+        QTRY_VERIFY(output.find("\033[>3u") != npos);
         QVERIFY(output.find("\033[<u") < output.find("\033[?1049l"));
-        QVERIFY(output.find("\033[?1049l") < output.find("\033[>1u"));
-        QCOMPARE(output.find("\033[>1u", output.find("\033[>1u") + 1), npos);
+        QVERIFY(output.find("\033[?1049l") < output.find("\033[>3u"));
+        QCOMPARE(output.find("\033[>3u", output.find("\033[>3u") + 1), npos);
         // A programmatic override that withdraws the capability pops at once.
         backend->clearOutput();
         TerminalCapabilities withdrawn = engine->capabilities();
         withdrawn.kittyKeyboard = false;
         engine->setCapabilities(withdrawn);
         QVERIFY(output.find("\033[<u") != npos);
-        QCOMPARE(output.find("\033[>1u"), npos);
+        QCOMPARE(output.find("\033[>3u"), npos);
         backend->clearOutput();
         engine->stop();
         QCOMPARE(output.find("\033[<u"), npos); // nothing left to pop
@@ -648,13 +648,20 @@ Terminal {
     id: root
     focus: true
     property int presses: 0
+    property int releases: 0
+    property bool lastRepeat: false
     property string last: "none"
     Keys.onPressed: event => {
         root.presses++
+        root.lastRepeat = event.isAutoRepeat
         root.last = "K" + event.key + " M" + event.modifiers + " T" + event.text.length
         event.accepted = true
     }
-    Text { text: root.last + " N" + root.presses }
+    Keys.onReleased: event => {
+        root.releases++
+        event.accepted = true
+    }
+    Text { text: root.last + " N" + root.presses + " R" + root.releases + (root.lastRepeat ? " REP" : "") }
 }
 )",
                           QUrl());
@@ -663,23 +670,46 @@ Terminal {
         auto* terminal = qobject_cast<Terminal*>(object.get());
         QVERIFY(terminal);
         auto* engine = terminal->engine();
-        QTRY_VERIFY(frameText(engine).contains("none N0"));
+        QTRY_VERIFY(frameText(engine).contains("none N0 R0"));
         const QString ctrlShift = QString::number(int(Qt::ControlModifier | Qt::ShiftModifier));
         backend->feedInput("\033[97:65:;6u"); // Ctrl+Shift+A
-        QTRY_VERIFY(frameText(engine).contains("K65 M" + ctrlShift + " T0 N1"));
+        QTRY_VERIFY(frameText(engine).contains("K65 M" + ctrlShift + " T0 N1 R0"));
         backend->feedInput("\033[9;2u"); // Shift+Tab keeps the Backtab convention
         QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Backtab)) + " M" +
-                                               QString::number(int(Qt::ShiftModifier)) + " T0 N2"));
+                                               QString::number(int(Qt::ShiftModifier)) +
+                                               " T0 N2 R0"));
         backend->feedInput("\033[13;5u"); // Ctrl+Enter: no text
         QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Return)) + " M" +
                                                QString::number(int(Qt::ControlModifier)) +
-                                               " T0 N3"));
+                                               " T0 N3 R0"));
         backend->feedInput("\033[27u"); // Escape, unambiguous and immediate
-        QTRY_VERIFY(
-            frameText(engine).contains("K" + QString::number(int(Qt::Key_Escape)) + " M0 T0 N4"));
-        backend->feedInput("\033[98;1:2u\033[98;1:3u"); // repeat dispatches, release does not
-        QTRY_VERIFY(frameText(engine).contains("K66 M0 T1 N5"));
+        QTRY_VERIFY(frameText(engine).contains("K" + QString::number(int(Qt::Key_Escape)) +
+                                               " M0 T0 N4 R0"));
+        backend->feedInput(
+            "\033[98;1:2u\033[98;1:3u"); // repeat sets isAutoRepeat, release hits onReleased
+        QTRY_VERIFY(frameText(engine).contains("K66 M0 T1 N5 R1 REP"));
         QCOMPARE(terminal->property("presses").toInt(), 5);
+        QCOMPARE(terminal->property("releases").toInt(), 1);
+        QCOMPARE(terminal->property("lastRepeat").toBool(), true);
+    }
+    void queriesSuppressedByZeroTimeoutOrVt100_data() {
+        QTest::addColumn<QByteArray>("timeout");
+        QTest::addColumn<QByteArray>("term");
+        QTest::newRow("zero timeout") << QByteArray("0") << QByteArray("xterm-256color");
+        QTest::newRow("vt100") << QByteArray("1000") << QByteArray("vt100");
+    }
+    void queriesSuppressedByZeroTimeoutOrVt100() {
+        QFETCH(QByteArray, timeout);
+        QFETCH(QByteArray, term);
+        qputenv("QMLTUI_QUERY_TIMEOUT_MS", timeout);
+        qputenv("TERM", term);
+        Terminal terminal;
+        auto* engine = terminal.engine();
+        QTRY_VERIFY(engine->frameSequence() > 0);
+        const auto& output = backend->output();
+        QCOMPARE(output.find("\033]10;?\033\\"), std::string::npos);
+        QCOMPARE(output.find("\033]11;?\033\\"), std::string::npos);
+        QCOMPARE(output.find("\033[?u"), std::string::npos);
     }
     void kittyEnterChordsDoNotInsertText() {
         QQmlEngine qml;

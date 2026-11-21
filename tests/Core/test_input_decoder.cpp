@@ -629,7 +629,12 @@ void TestInputDecoder::testKittyEventTypes() {
     InputDecoder decoder;
     int replies = 0;
     QList<QPair<int, int>> keys;
+    QList<std::tuple<int, int, InputDecoder::KeyAction>> detailed;
     decoder.setKeyCallback([&](int key, const QString&, int mods) { keys.append({key, mods}); });
+    decoder.setKeyEventCallback(
+        [&](int key, const QString&, int mods, InputDecoder::KeyAction action) {
+            detailed.append({key, mods, action});
+        });
     decoder.setReplyCallback([&](const InputDecoder::ControlSequence&) { ++replies; });
     // press, repeat, release, unknown type; then the legacy forms with the
     // same sub-parameter, which flag 2 attaches to every key.
@@ -643,6 +648,21 @@ void TestInputDecoder::testKittyEventTypes() {
     QCOMPARE(keys[2], qMakePair(int(Qt::Key_Up), int(Qt::ShiftModifier)));
     QCOMPARE(keys[3], qMakePair(int(Qt::Key_Delete), int(Qt::ControlModifier)));
     QCOMPARE(keys[4], qMakePair(int(Qt::Key_B), 0)); // the byte after a release is still typing
+
+    QCOMPARE(detailed.size(), 9);
+    QCOMPARE(detailed[0], std::make_tuple(int(Qt::Key_A), 0, InputDecoder::KeyAction::Press));
+    QCOMPARE(detailed[1], std::make_tuple(int(Qt::Key_A), 0, InputDecoder::KeyAction::Repeat));
+    QCOMPARE(detailed[2], std::make_tuple(int(Qt::Key_A), 0, InputDecoder::KeyAction::Release));
+    QCOMPARE(detailed[3], std::make_tuple(int(Qt::Key_Up), int(Qt::ShiftModifier),
+                                          InputDecoder::KeyAction::Press));
+    QCOMPARE(detailed[4], std::make_tuple(int(Qt::Key_Up), int(Qt::ShiftModifier),
+                                          InputDecoder::KeyAction::Release));
+    QCOMPARE(detailed[5], std::make_tuple(int(Qt::Key_Delete), int(Qt::ControlModifier),
+                                          InputDecoder::KeyAction::Repeat));
+    QCOMPARE(detailed[6], std::make_tuple(int(Qt::Key_Delete), int(Qt::ControlModifier),
+                                          InputDecoder::KeyAction::Release));
+    QCOMPARE(detailed[7], std::make_tuple(int(Qt::Key_A), 0, InputDecoder::KeyAction::Release));
+    QCOMPARE(detailed[8], std::make_tuple(int(Qt::Key_B), 0, InputDecoder::KeyAction::Press));
 }
 
 void TestInputDecoder::testKittyIgnoredKeys() {

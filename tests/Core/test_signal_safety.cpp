@@ -26,7 +26,7 @@ constexpr const char* kAltScreenOn = "\033[?1049h";
 constexpr const char* kAltScreenOff = "\033[?1049l";
 constexpr const char* kCursorShow = "\033[?25h";
 constexpr const char* kKeyboardQuery = "\033[?u";
-constexpr const char* kKeyboardPush = "\033[>1u";
+constexpr const char* kKeyboardPush = "\033[>3u";
 constexpr const char* kKeyboardPop = "\033[<u";
 
 class Child {

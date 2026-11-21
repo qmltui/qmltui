@@ -42,7 +42,7 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `scrollbackLimit` | `int` | `10000` | Holds the maximum number of scrollback lines retained in history. |
 | `scrollOffset` | `int` | `0` | Holds the current scroll offset into scrollback history (0 at live screen). |
 | `scrollbackSize` | `int` | `0` | Read-only. Holds the current line count in the scrollback buffer. |
-| `scrollBarVisible` | `bool` | `true` | Whether to display a vertical scrollbar when scrollback history exists. |
+| `scrollBarVisible` | `bool` | `true` | Whether to display a 1-column vertical scrollbar (and reserve `width - 1` child PTY columns) when scrollback history exists. |
 | `allowTitleChanges` | `bool` | `true` | Whether child process title changes via OSC escape sequences update `title`. |
 | `allowClipboardWrite` | `bool` | `false` | Whether child process OSC 52 clipboard write requests emit `clipboardWriteRequested`. |
 | `allowNotifications` | `bool` | `false` | Whether child process OSC notification requests emit `notificationRequested`. |
@@ -88,10 +88,15 @@ with `QMLTUI_ENABLE_PTYVIEW=ON` (supported on Linux and macOS, linked via
 
 By default, PtyView initializes its inherited [Item](item.md) properties to
 `focusPolicy: Qt.StrongFocus` and `clip: true`. While a PtyView has active focus,
-it forwards printable keys, `Tab`, `Q`, and `Escape` directly into the child PTY
-stream; use global [Shortcut](shortcut.md) bindings (for example `"Ctrl+Q"` or
-`"F6"`) or `Keys.priority: Keys.BeforeItem` to move focus out of the terminal pane
-or quit the host application.
+it forwards printable keys, `Tab`, `Q`, `Escape`, and SGR mouse events (when the
+child enables mouse reporting) directly into the child PTY stream, while handling
+`Shift+PageUp`, `Shift+PageDown`, `Shift+Up`, `Shift+Down`, and `Shift+Wheel` (or
+plain mouse wheel when child mouse reporting is off) as local scrollback navigation.
+When `scrollBarVisible` is `true` and `scrollbackSize > 0` (for `width > 2`), PtyView
+reserves the rightmost column for the scrollbar and resizes the child PTY to
+`width - 1` columns. Use global [Shortcut](shortcut.md) bindings (for example
+`"Ctrl+Q"` or `"F6"`) or `Keys.priority: Keys.BeforeItem` to move focus out of the
+terminal pane or quit the host application.
 
 Programs and arguments are passed directly to the child process. QmlTui never
 implicitly invokes a shell or expands shell syntax. The child receives

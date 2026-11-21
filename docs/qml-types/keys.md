@@ -31,7 +31,8 @@ Provides attached properties and signals for handling keyboard input. [More...](
 
 | Signal | Description |
 | :--- | :--- |
-| `pressed(KeyEvent event)` | Emitted when any key is pressed while the item has active focus. |
+| `pressed(KeyEvent event)` | Emitted when any key is pressed (or auto-repeated) while the item has active focus. |
+| `released(KeyEvent event)` | Emitted when a key is released on terminals supporting Kitty keyboard event-type reporting (`CSI > 3 u`). |
 | `returnPressed(KeyEvent event)` | Emitted when Return or Enter is pressed. |
 | `escapePressed(KeyEvent event)` | Emitted when Escape is pressed. |
 | `spacePressed(KeyEvent event)` | Emitted when Spacebar is pressed. |
@@ -53,13 +54,15 @@ Provides attached properties and signals for handling keyboard input. [More...](
 Keys provides attached properties and signal handlers for intercepting keyboard
 input delivered to focused items or the root [Terminal](terminal.md).
 
-For an item to receive key events via Keys, it must have `focus: true` and active focus.
+For an item to receive key events via Keys, it must accept focus (`focusPolicy` set to `Qt.StrongFocus`, `Qt.TabFocus`, or `Qt.ClickFocus`—interactive controls set `Qt.StrongFocus` automatically, while plain [Item](item.md) and [Rectangle](rectangle.md) default to `Qt.NoFocus`), set `focus: true`, and hold active focus.
 Specific signals such as `onReturnPressed`, `onEscapePressed`, and `onSpacePressed`
 provide convenient hooks for standard terminal navigation keys, while `onPressed`
-catches all key events via a [KeyEvent](keyevent.md) object.
+and `onReleased` catch key presses, repeats (`event.isAutoRepeat`), and releases
+via a [KeyEvent](keyevent.md) object (`onReleased` and `isAutoRepeat` require a
+terminal that supports the Kitty keyboard protocol).
 
 Key events can be forwarded to other items by adding them to the `forwardTo` list.
-Once an event handler sets `event.accepted = true`, event propagation terminates.
+All Keys signal handlers (including specific-key signals such as `onReturnPressed` and `onEscapePressed`) start with `event.accepted = false`; set `event.accepted = true` explicitly to terminate propagation up the parent chain.
 
 ### Example
 

@@ -41,10 +41,13 @@ TerminalCapabilities TerminalCapabilities::detect(const QProcessEnvironment& env
     const QString colorTerm = environment.value(QStringLiteral("COLORTERM")).trimmed().toLower();
     const QString program = capabilities.termProgram.trimmed().toLower();
 
+    const bool legacyMonoTerm = term == QLatin1String("dumb") || term == QLatin1String("vt100") ||
+                                term == QLatin1String("vt102") || term == QLatin1String("vt52");
+
     // Colour depth, first match wins; QMLTUI_COLOR_DEPTH is applied last as an override.
     if (!environment.value(QStringLiteral("NO_COLOR")).isEmpty()) {
         capabilities.colorDepth = ColorDepth::Mono;
-    } else if (term == QLatin1String("dumb")) {
+    } else if (legacyMonoTerm) {
         capabilities.colorDepth = ColorDepth::Mono;
     } else if (colorTerm == QLatin1String("truecolor") || colorTerm == QLatin1String("24bit") ||
                term.endsWith(QLatin1String("-direct"))) {
@@ -67,13 +70,17 @@ TerminalCapabilities TerminalCapabilities::detect(const QProcessEnvironment& env
         capabilities.colorDepth = ColorDepth::TrueColor;
     } else if (term.contains(QLatin1String("256color"))) {
         capabilities.colorDepth = ColorDepth::Indexed256;
+    } else if (term == QLatin1String("linux") || term == QLatin1String("vt220") ||
+               term == QLatin1String("ansi") || term == QLatin1String("rxvt") ||
+               term == QLatin1String("xterm-color") || term.endsWith(QLatin1String("-16color"))) {
+        capabilities.colorDepth = ColorDepth::Basic16;
     } else {
         capabilities.colorDepth = ColorDepth::TrueColor; // previous unconditional behaviour
     }
 
-    // Synchronized output: unknown private modes are ignored by terminals, so
-    // it is on unless the output is not a terminal at all.
-    capabilities.syncOutput = stdoutIsTty && term != QLatin1String("dumb");
+    // Synchronized output: unknown private modes are ignored by modern terminals,
+    // so it is on unless output is non-interactive or a legacy monochrome terminal.
+    capabilities.syncOutput = stdoutIsTty && !legacyMonoTerm;
 
     // Terminals that implement the kitty graphics protocol, and therefore parse
     // APC strings instead of printing them. Konsole and kitty do not set

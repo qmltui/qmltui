@@ -18,7 +18,14 @@ namespace qmltui {
 // code points and multi-byte escape sequences across decode() calls.
 class InputDecoder {
 public:
+    enum class KeyAction : uint8_t {
+        Press,
+        Repeat,
+        Release,
+    };
     using KeyCallback = std::function<void(int qtKey, const QString& text, int modifiers)>;
+    using KeyEventCallback =
+        std::function<void(int qtKey, const QString& text, int modifiers, KeyAction action)>;
     using PasteCallback = std::function<void(const QString& text)>;
     struct MouseInput {
         int button = 3;
@@ -69,6 +76,7 @@ public:
     ~InputDecoder();
 
     void setKeyCallback(KeyCallback cb);
+    void setKeyEventCallback(KeyEventCallback cb);
     void setPasteCallback(PasteCallback cb);
     void setDetailedMouseCallback(DetailedMouseCallback cb);
     void setFocusCallback(FocusCallback cb);
@@ -96,7 +104,9 @@ public:
 private:
     void processBuffer();
     void dispatchSequence(const ControlSequence& sequence);
-    bool dispatchKittyKey(const ControlSequence& sequence);
+    bool dispatchKittyKey(const ControlSequence& sequence, KeyAction action);
+    void emitKey(int qtKey, const QString& text, int modifiers,
+                 KeyAction action = KeyAction::Press);
 
     ReplyCallback m_replyCallback;
     std::function<void()> m_clipboardErrorCallback;
@@ -104,6 +114,7 @@ private:
     int m_discardKind = 0; // 1: CSI/SS3, 2: APC/DCS, 3: OSC
     bool m_discardEscape = false;
     KeyCallback m_keyCallback;
+    KeyEventCallback m_keyEventCallback;
     PasteCallback m_pasteCallback;
     DetailedMouseCallback m_detailedMouseCallback;
     FocusCallback m_focusCallback;

@@ -23,7 +23,10 @@ public:
     Terminal* terminal() const { return m_terminal; }
 
     // Dispatches a key or bracketed-paste event; returns true if accepted.
-    bool routeKey(int key, const QString& text, int modifiers, bool paste = false);
+    bool routeKey(int key, const QString& text, int modifiers, bool paste = false,
+                  bool autoRepeat = false);
+    // Dispatches a key-release event along the active focus chain; returns true if accepted.
+    bool routeKeyRelease(int key, const QString& text, int modifiers);
     // Updates hover state and dispatches press, release, drag, or wheel events.
     void routeMouse(int button, int x, int y, bool release, bool motion = false, int modifiers = 0,
                     int wheelDeltaX = 0, int wheelDeltaY = 0);

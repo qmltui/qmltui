@@ -204,6 +204,7 @@ public:
     void setBottomPadding(int p);
 
     virtual void keyPressEvent(class KeyEvent* event);
+    virtual void keyReleaseEvent(class KeyEvent* event);
     // Returns true when unmodified printable keystrokes should be delivered to
     // this item instead of triggering single-key Shortcuts (e.g. editable
     // TextInput/TextArea or running PtyView).

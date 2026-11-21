@@ -79,6 +79,9 @@ Evaluates `when` conditions on the item's declarative `states`.
 #### `virtual void keyPressEvent(KeyEvent *event)`
 Called when a key is pressed while the item has active focus. Call `event->setAccepted(true)` to stop propagation.
 
+#### `virtual void keyReleaseEvent(KeyEvent *event)`
+Called when a key is released while the item has active focus on terminals supporting Kitty keyboard event-type reporting. Call `event->setAccepted(true)` to stop propagation.
+
 #### `virtual void mousePressEvent(MouseEvent *event)`
 #### `virtual void mouseReleaseEvent(MouseEvent *event)`
 #### `virtual void mouseMoveEvent(MouseEvent *event)`

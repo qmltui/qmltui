@@ -164,7 +164,7 @@ cmake --build build-release
 | `QMLTUI_SCROLLBACK_QUEUE_LIMIT` | bytes (`>= 0`, default `1048576`) | Max pending `Scrollback` ANSI/UTF-8 bytes queued in the session before submissions are rejected |
 | `QMLTUI_SCROLLBACK_HISTORY_ROWS` | integer `>= 0` (default `5000`) | Max committed `Inline` scrollback rows retained in memory |
 | `QMLTUI_ESCAPE_TIMEOUT_MS` | ms (default `50`) | Timeout before a lone `ESC` byte dispatches as `Qt::Key_Escape` |
-| `QMLTUI_QUERY_TIMEOUT_MS` | ms (default `100`) | Timeout for terminal capability and OSC color queries |
+| `QMLTUI_QUERY_TIMEOUT_MS` | ms (default `100`, `0` = disable queries) | Timeout for terminal capability and OSC color queries (`0` suppresses startup/resize escape queries) |
 | `QMLTUI_SYNC_OUTPUT` | `0`, `1` | Force-disable (`0`) or force-enable (`1`) DEC mode 2026 synchronized output |
 | `QMLTUI_KITTY_KEYBOARD` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty keyboard protocol negotiation |
 | `QMLTUI_KITTY_GRAPHICS` | `0`, `1` | Opt out (`0`/`false`/`off`) of Kitty graphics protocol detection |

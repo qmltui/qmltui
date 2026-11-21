@@ -56,8 +56,8 @@
 - A simple application may handle Q and Escape at the root and mark the event
   accepted. Preserve contextual Escape behavior: close a modal, cancel an
   operation, or clear input first, and quit only when nothing consumes Escape.
-- Examples and applications conditionally link `qmltui::runner` into their normal
-  executable with `if(BUILD_TESTING AND TARGET qmltui::runner)` and register
+- Examples and applications conditionally link `QmlTui::Runner` into their normal
+  executable with `if(BUILD_TESTING AND TARGET QmlTui::Runner)` and register
   scenarios against that target. Do not duplicate executable or QML-module
   targets for Runner. Normal startup must remain independent from scenarios
   unless requested through the Runner environment variables. Build with

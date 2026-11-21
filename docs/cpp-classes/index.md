@@ -22,7 +22,7 @@ QmlTui exposes C++ classes for bootstrapping terminal sessions, writing custom v
 - [Subpixel Helpers](subpixel.md): Compile-time constants and UTF-8 glyph helpers for `2x4` Braille and `1x2` half-block sub-character rendering.
 - [KeyEvent, MouseEvent, Shortcut & InputScope](input-events.md): Keyboard, mouse, global shortcut, and modal overlay input-routing types.
 - [MouseArea](mousearea.md): Invisible interaction item that captures terminal mouse presses, releases, clicks, wheel events, and opt-in hover motion.
-- [PtyView](ptyview.md): Embedded Unix PTY terminal item (`qmltui::pty_view`, gated on `QMLTUI_ENABLE_PTYVIEW=ON`) backed by `libvterm`.
+- [PtyView](ptyview.md): Embedded Unix PTY terminal item (`QmlTui::PtyView`, gated on `QMLTUI_ENABLE_PTYVIEW=ON`) backed by `libvterm`.
 - [Image, AnimatedSprite & Core Item Headers](image-items.md): C++ classes for `qmltui::Image`, `qmltui::AnimatedSprite`, and the full index of installed `<QmlTui/Core/Items/*.h>` headers.
 
 ## Custom Image Providers

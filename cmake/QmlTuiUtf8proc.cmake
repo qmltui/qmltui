@@ -1,4 +1,4 @@
-# Provides the `utf8proc` target qmltui::core links for Unicode width and
+# Provides the `utf8proc` target QmlTui::Core links for Unicode width and
 # grapheme handling: the system library when QMLTUI_USE_SYSTEM_UTF8PROC is on
 # (CMake config first, pkg-config second), otherwise a pinned FetchContent
 # checkout built as part of this tree.

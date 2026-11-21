@@ -4,7 +4,7 @@
 
 - **Header**: `<QmlTui/Core/Items/Item.h>`
 - **Inherits**: `QObject`
-- **Target**: `qmltui::core`
+- **Target**: `QmlTui::Core`
 
 ## Properties (`Q_PROPERTY`)
 

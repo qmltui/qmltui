@@ -6,16 +6,16 @@ qt_add_qml_module(qmltui_custom_cpp_item_demo
     URI CustomItemDemo
     SOURCES progressbar.h progressbar.cpp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core
+    DEPENDENCIES TARGET QmlTui::Core
 )
-target_link_libraries(qmltui_custom_cpp_item_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(qmltui_custom_cpp_item_demo PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_custom_cpp_item_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_custom_cpp_item_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_custom_cpp_item_demo PRIVATE QmlTui::Runner)
     qmltui_add_scenario(
         NAME custom_cpp_item_smoke
         TARGET qmltui_custom_cpp_item_demo

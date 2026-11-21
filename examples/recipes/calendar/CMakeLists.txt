@@ -16,18 +16,18 @@ qt_add_qml_module(qmltui_calendar_demo
         "${CMAKE_CURRENT_BINARY_DIR}/StatusBadge.qml"
         Main.qml
 
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
+    DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
 )
 
-target_link_libraries(qmltui_calendar_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
+target_link_libraries(qmltui_calendar_demo PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_calendar_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
 
-    target_link_libraries(qmltui_calendar_demo PRIVATE qmltui::runner)
+    target_link_libraries(qmltui_calendar_demo PRIVATE QmlTui::Runner)
 
     qmltui_add_scenario(
         NAME calendar_smoke

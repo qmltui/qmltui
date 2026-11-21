@@ -1,4 +1,4 @@
-# A QmlTui application without QML. qmltui::core links Qt6::Qml for its type
+# A QmlTui application without QML. QmlTui::Core links Qt6::Qml for its type
 # registrations. A JavaScript engine is created only for requested Runner sessions.
 qt_add_executable(qmltui_cpp_only_demo
     main.cpp
@@ -8,7 +8,7 @@ qt_add_executable(qmltui_cpp_only_demo
 
 target_link_libraries(qmltui_cpp_only_demo PRIVATE
     Qt6::Core
-    qmltui::core
+    QmlTui::Core
 )
 
 if(COMMAND qmltui_wasm_app)
@@ -16,8 +16,8 @@ if(COMMAND qmltui_wasm_app)
 endif()
 
 # A C++-created Terminal needs an explicit environment-driven Runner hook.
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_cpp_only_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_cpp_only_demo PRIVATE QmlTui::Runner)
     target_compile_definitions(qmltui_cpp_only_demo PRIVATE QMLTUI_CPP_ONLY_RUNNER)
     qmltui_add_scenario(
         NAME cpp_only_dashboard

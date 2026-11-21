@@ -183,7 +183,7 @@ void TestTerminalColors::toastAndTooltipOverrides() {
     Terminal terminal;
     Item target(&terminal);
     target.setHeight(1);
-    controls::ToolTip tip(&target);
+    ToolTip tip(&target);
     tip.setText("Tip");
     tip.setVisible(true);
     Popup* popup = nullptr;

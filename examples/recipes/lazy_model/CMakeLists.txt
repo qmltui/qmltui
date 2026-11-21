@@ -6,16 +6,16 @@ qt_add_qml_module(qmltui_lazy_model_demo
     URI LazyModelDemo
     QML_FILES Main.qml
     SOURCES LazyDirectoryModel.h LazyDirectoryModel.cpp
-    DEPENDENCIES TARGET qmltui::core
+    DEPENDENCIES TARGET QmlTui::Core
 )
-target_link_libraries(qmltui_lazy_model_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(qmltui_lazy_model_demo PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_lazy_model_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_lazy_model_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_lazy_model_demo PRIVATE QmlTui::Runner)
     qmltui_add_scenario(
         NAME lazy_model_smoke
         TARGET qmltui_lazy_model_demo

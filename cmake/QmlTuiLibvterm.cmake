@@ -1,4 +1,4 @@
-# Provides the `qmltui_libvterm` target the optional qmltui::pty_view module
+# Provides the `qmltui_libvterm` target the optional QmlTui::PtyView module
 # links for its embedded terminal emulator: the system libvterm through
 # pkg-config when QMLTUI_USE_SYSTEM_LIBVTERM is on, otherwise the pinned 0.3.3
 # release tarball compiled as a static library inside this tree. PtyView

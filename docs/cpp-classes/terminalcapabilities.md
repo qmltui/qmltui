@@ -3,7 +3,7 @@
 `qmltui::TerminalCapabilities` is a `Q_GADGET` value struct describing the features detected from the host terminal environment and asynchronous VT query replies. Alongside `qmltui::ColorDepth`, it controls how `TextGridBuffer` and `TerminalEngine` encode colors, frame synchronization, keyboard disambiguation, and image protocols.
 
 - **Header**: `<QmlTui/Core/Primitives/TerminalCapabilities.h>`
-- **Target**: `qmltui::core`
+- **Target**: `QmlTui::Core`
 - **QML Value Type**: [`terminalCapabilities`](../qml-types/terminalcapabilities.md) (exposed on `Terminal.capabilities`)
 
 ## `ColorDepth`

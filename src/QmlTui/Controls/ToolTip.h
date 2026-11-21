@@ -8,18 +8,13 @@
 #include <QQmlEngine>
 #include <QPointer>
 namespace qmltui {
-class ClockTimer;
-}
 
-namespace qmltui {
+class ClockTimer;
 class Item;
 class Terminal;
 class Popup;
 class Text;
 class Rectangle;
-} // namespace qmltui
-
-namespace qmltui::controls {
 
 // Attached tooltip overlay (`ToolTip.text`, `ToolTip.visible`, `ToolTip.delay`,
 // `ToolTip.timeout`) that automatically opens a non-modal Popup near the target
@@ -126,6 +121,6 @@ private:
     bool m_explicitVisible = false;
 };
 
-} // namespace qmltui::controls
+} // namespace qmltui
 
-QML_DECLARE_TYPEINFO(qmltui::controls::ToolTip, QML_HAS_ATTACHED_PROPERTIES)
+QML_DECLARE_TYPEINFO(qmltui::ToolTip, QML_HAS_ATTACHED_PROPERTIES)

@@ -4,7 +4,7 @@
 
 - **Header**: `<QmlTui/Core/Primitives/TerminalBackend.h>`
 - **Inherits**: `QObject`
-- **Target**: `qmltui::core` (`Qt6::Core` only; platform headers stay inside implementation files)
+- **Target**: `QmlTui::Core` (`Qt6::Core` only; platform headers stay inside implementation files)
 
 ## Built-In Implementations
 
@@ -55,7 +55,7 @@ qmltui::TerminalBackend::setFactory([](int) {
 });
 ```
 
-See [`MemoryTerminalBackend`](memoryterminalbackend.md) in `qmltui::runner` for an in-memory reference implementation used in unit tests.
+See [`MemoryTerminalBackend`](memoryterminalbackend.md) in `QmlTui::Runner` for an in-memory reference implementation used in unit tests.
 
 ## Windows Notes
 

@@ -6,7 +6,7 @@ that class's base for Qt Quick, so QmlTui keeps its own registry on the QML engi
 
 - **Header**: `<QmlTui/Image/ImageProvider.h>` (`src/QmlTui/Image/ImageProvider.h`)
 - **Inherits**: `QObject`
-- **Target**: `qmltui::image` (`QmlTui::Image`)
+- **Target**: `QmlTui::Image`
 
 ## `ImageProvider` Public Functions
 

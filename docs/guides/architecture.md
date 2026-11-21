@@ -56,22 +56,22 @@ Visual elements inherit from `qmltui::Item`. Each `Item` tracks integer cell geo
 
 ## Module Boundaries
 
-QmlTui separates the core scene graph (`qmltui::core`) from interactive controls (`qmltui::controls`) and optional OS/GUI integrations (`qmltui::image` and `qmltui::pty_view`; see [Build Configuration and Installation](../build-configuration.md) for CMake targets and flags).
+QmlTui separates the core scene graph (`QmlTui::Core`) from interactive controls (`QmlTui::Controls`) and optional OS/GUI integrations (`QmlTui::Image` and `QmlTui::PtyView`; see [Build Configuration and Installation](../build-configuration.md) for CMake targets and flags).
 
 ```mermaid
 flowchart LR
-    QtCore["Qt6::Core + Qt6::Qml<br/>(+ optional Qt6::QmlPrivate)"] --> Core["qmltui::core<br/>import QmlTui · utf8proc"]
-    Core --> Controls["qmltui::controls<br/>import QmlTui.Controls"]
-    Core --> Image["qmltui::image (optional)<br/>import QmlTui.Image"]
+    QtCore["Qt6::Core + Qt6::Qml<br/>(+ optional Qt6::QmlPrivate)"] --> Core["QmlTui::Core<br/>import QmlTui · utf8proc"]
+    Core --> Controls["QmlTui::Controls<br/>import QmlTui.Controls"]
+    Core --> Image["QmlTui::Image (optional)<br/>import QmlTui.Image"]
     QtGui["Qt6::Gui + Qt6::Network"] --> Image
-    Core --> Pty["qmltui::pty_view (optional)<br/>import QmlTui.PtyView · Unix"]
+    Core --> Pty["QmlTui::PtyView (optional)<br/>import QmlTui.PtyView · Unix"]
     VTerm["libvterm"] --> Pty
-    Core --> Runner["qmltui::runner (test-only)<br/>BUILD_TESTING · qmltui-runner"]
+    Core --> Runner["QmlTui::Runner (test-only)<br/>BUILD_TESTING · qmltui-runner"]
 ```
 
 `QmlTui.Controls` only admits controls that need engine knowledge an application cannot reproduce in QML (such as `ToolTip` overlay positioning or grapheme measurement) or that are standard across terminal toolkits. Domain-specific widgets (`Calendar`, `StatusBadge`, `BigText`, syntax highlighters) live as copyable recipes under [`examples/recipes/`](../../examples/recipes/).
 
-Because `qmltui::core` includes `Rectangle`, `Text`, `TextInput`, `MouseArea`, `Keys`, and layouts, an application can link only `qmltui::core` and define its own controls in QML:
+Because `QmlTui::Core` includes `Rectangle`, `Text`, `TextInput`, `MouseArea`, `Keys`, and layouts, an application can link only `QmlTui::Core` and define its own controls in QML:
 
 ```qml
 pragma ComponentBehavior: Bound

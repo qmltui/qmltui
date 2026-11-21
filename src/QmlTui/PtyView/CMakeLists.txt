@@ -26,7 +26,7 @@ target_include_directories(QmlTuiPtyView
 )
 
 target_link_libraries(QmlTuiPtyView
-    PUBLIC qmltui::core
+    PUBLIC QmlTui::Core
     PRIVATE qmltui_libvterm
 )
 
@@ -41,9 +41,6 @@ if(qmltui_pty_view_library_type STREQUAL "STATIC_LIBRARY")
 else()
     target_compile_definitions(QmlTuiPtyView PRIVATE QMLTUI_PTYVIEW_LIBRARY)
 endif()
-add_library(qmltui::pty_view ALIAS QmlTuiPtyView)
-add_library(qmltui::ptyview ALIAS QmlTuiPtyView)
-add_library(qmltui::PtyView ALIAS QmlTuiPtyView)
 add_library(QmlTui::PtyView ALIAS QmlTuiPtyView)
 set_target_properties(QmlTuiPtyView PROPERTIES EXPORT_NAME PtyView)
 set_target_properties(QmlTuiPtyViewplugin PROPERTIES EXPORT_NAME PtyViewPlugin)

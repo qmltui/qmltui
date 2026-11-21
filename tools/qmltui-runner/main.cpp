@@ -505,7 +505,7 @@ int main(int argc, char** argv) {
         child.waitForFinished(10);
     }
     if (!activated && failure.isEmpty())
-        failure = "Runner did not activate. Link a handshake-capable qmltui::runner, call its "
+        failure = "Runner did not activate. Link a handshake-capable QmlTui::Runner, call its "
                   "environment "
                   "hook for C++ terminals, or increase --startup-timeout-ms for slow startup.";
     if (!failure.isEmpty()) {

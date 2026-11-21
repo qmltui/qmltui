@@ -56,7 +56,7 @@ option(QMLTUI_USE_SYSTEM_UTF8PROC "Use system utf8proc library" OFF)
 option(QMLTUI_USE_SYSTEM_LIBVTERM  "Use system libvterm library (PtyView only)" OFF)
 include(cmake/QmlTuiUtf8proc.cmake)
 include(cmake/QmlTuiLibvterm.cmake)
-qmltui_provide_utf8proc()   # qmltui::core links it; PtyView provides libvterm itself
+qmltui_provide_utf8proc()   # QmlTui::Core links it; PtyView provides libvterm itself
 
 set(qt_required_components Core Qml)
 
@@ -193,7 +193,7 @@ else()
 endif()
 
 add_subdirectory(src/QmlTui)
-if(TARGET qmltui::runner AND NOT EMSCRIPTEN)
+if(TARGET QmlTui::Runner AND NOT EMSCRIPTEN)
     add_subdirectory(tools/qmltui-runner)
 endif()
 
@@ -230,7 +230,7 @@ write_basic_package_version_file(
 unset(_qmltui_version_compat)
 install(EXPORT QmlTuiTargets
     FILE QmlTuiTargets.cmake
-    NAMESPACE qmltui::
+    NAMESPACE QmlTui::
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
 )
 install(FILES

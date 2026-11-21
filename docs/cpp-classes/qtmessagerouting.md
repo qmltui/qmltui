@@ -3,7 +3,7 @@
 `QtMessageRouting` routes Qt diagnostics (`qDebug`, `qInfo`, `qWarning`, `qCritical`, `qFatal`) in QmlTui applications. It separates immediate diagnostic logging (such as writing to a log file) from terminal screen presentation so `stderr` output does not overwrite an active alternate-screen session.
 
 - **Header**: `<QmlTui/Core/Engine/QtMessageRouting.h>`
-- **Target**: `qmltui::core` (`Qt6::Core` only; no QML dependency)
+- **Target**: `QmlTui::Core` (`Qt6::Core` only; no QML dependency)
 
 Scope:
 - Intercepts messages sent through Qt's global message handler (`qInstallMessageHandler`).

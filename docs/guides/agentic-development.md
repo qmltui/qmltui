@@ -46,15 +46,15 @@ This adds two domain skills that teach coding agents QmlTui's rules and verifica
 - **[`qmltui-qml`](../../.agents/skills/qmltui-qml/SKILL.md)**: Enforces allowed imports (no `QtQuick`), `pragma ComponentBehavior: Bound`, required-property delegates, `AltScreen` vs. `Inline` mode, integer cell geometry, border insets, and contextual quit paths.
 - **[`qmltui-dev-loop`](../../.agents/skills/qmltui-dev-loop/SKILL.md)**: Bundles the build/lint/probe workflow plus on-demand references for the complete [`app.*` Runner facade](../cpp-classes/runner.md#javascript-app-runner-facade-reference), visual and performance audit checklists, and CMake/subsystem configuration.
 
-### Link `qmltui::runner` into Your Application Target
+### Link `QmlTui::Runner` into Your Application Target
 
-Link [`qmltui::runner`](../cpp-classes/runner.md) conditionally under `BUILD_TESTING` in `CMakeLists.txt` (see [CMake and CTest Integration](testing.md#3-cmake-and-ctest-integration) and [Editor Setup](editor-setup.md)). Normal interactive startup is unaffected unless launched via [`qmltui-runner`](testing.md#2-run-scenarios-with-the-qmltui-runner-cli) or `QMLTUI_RUNNER_*` environment variables (see the [Runner Reference](../cpp-classes/runner.md)), and production builds (`-DBUILD_TESTING=OFF`) omit `qmltui::runner` entirely:
+Link [`QmlTui::Runner`](../cpp-classes/runner.md) conditionally under `BUILD_TESTING` in `CMakeLists.txt` (see [CMake and CTest Integration](testing.md#3-cmake-and-ctest-integration) and [Editor Setup](editor-setup.md)). Normal interactive startup is unaffected unless launched via [`qmltui-runner`](testing.md#2-run-scenarios-with-the-qmltui-runner-cli) or `QMLTUI_RUNNER_*` environment variables (see the [Runner Reference](../cpp-classes/runner.md)), and production builds (`-DBUILD_TESTING=OFF`) omit `QmlTui::Runner` entirely:
 
 ```cmake
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(ops_console PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(ops_console PRIVATE QmlTui::Runner)
     qmltui_scenario_editor_support()
 endif()
 ```

@@ -3,7 +3,7 @@
 `Cell` and `TextAttribute` represent a single character-grid position in `TextGridBuffer`. A `Cell` stores the UTF-8 bytes of one grapheme cluster, its display column width, a continuation flag for wide characters, 32-bit ARGB foreground and background colors, and SGR formatting attributes.
 
 - **Header**: `<QmlTui/Core/Primitives/Cell.h>`
-- **Target**: `qmltui::core`
+- **Target**: `QmlTui::Core`
 
 ## Storage Model
 

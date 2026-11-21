@@ -158,7 +158,7 @@ Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` /
 **Exit codes**:
 - `0`: Scenario passed (`result.json` `status: "passed"`).
 - `1`: Assertion failure, uncaught JS/render error (`status: "failed"`, `failure.txt` written), or `dirtyDuringPaintTotal > 0` during a probe run.
-- `2`: Invalid CLI args (including non-empty `--artifacts`), handshake timeout (target missing `qmltui::runner` link or C++ `startFromEnvironment` call), or process crash.
+- `2`: Invalid CLI args (including non-empty `--artifacts`), handshake timeout (target missing `QmlTui::Runner` link or C++ `startFromEnvironment` call), or process crash.
 
 **Engine diagnostic environment variables**:
 - `QMLTUI_DEBUG_PAINT_DIRTY=1`: Warns on `stderr` whenever an `Item` calls `markDirty()` inside `paint()`.

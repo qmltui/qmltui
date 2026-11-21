@@ -8,7 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # the exported targets reference.
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
-find_package(QmlTui 0.6 REQUIRED)
+find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls)
+if(TARGET qmltui::core OR TARGET qmltui::controls)
+    message(FATAL_ERROR "Legacy lowercase qmltui:: aliases must not be exported")
+endif()
 
 if(NOT DEFINED QMLTUI_PUBLIC_HEADERS)
     message(FATAL_ERROR "QMLTUI_PUBLIC_HEADERS (the generated list of installed headers) was not provided")
@@ -28,9 +31,9 @@ target_compile_definitions(qmltui_installed_custom_item_consumer PRIVATE
 target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE
     Qt6::Core
     Qt6::Qml
-    qmltui::core
-    qmltui::controls
+    QmlTui::Core
+    QmlTui::Controls
 )
-if(TARGET qmltui::image)
-    target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE qmltui::image)
+if(TARGET QmlTui::Image)
+    target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE QmlTui::Image)
 endif()

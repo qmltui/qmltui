@@ -1,4 +1,4 @@
-# Tests for qmltui::controls.
+# Tests for QmlTui::Controls.
 
 add_qmltui_test(test_popup test_popup.cpp)
 add_qmltui_test(test_indicators test_indicators.cpp)
@@ -8,7 +8,7 @@ add_qmltui_test(test_controls_behaviour test_controls_behaviour.cpp)
 
 # The colour fixture reuses the Runner fixture's main() with its own QML.
 add_executable(qmltui_terminal_colors_fixture ../Runner/main.cpp)
-target_link_libraries(qmltui_terminal_colors_fixture PRIVATE qmltui::core qmltui::controls qmltui::runner)
+target_link_libraries(qmltui_terminal_colors_fixture PRIVATE QmlTui::Core QmlTui::Controls QmlTui::Runner)
 target_compile_definitions(qmltui_terminal_colors_fixture PRIVATE
     QMLTUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/TerminalColorsFixture.qml"
 )
@@ -22,7 +22,7 @@ qmltui_add_scenario(
 
 # Tooltip delay and timeout stepped on the virtual clock.
 add_executable(qmltui_tooltip_clock_fixture ../Runner/main.cpp)
-target_link_libraries(qmltui_tooltip_clock_fixture PRIVATE qmltui::core qmltui::controls qmltui::runner)
+target_link_libraries(qmltui_tooltip_clock_fixture PRIVATE QmlTui::Core QmlTui::Controls QmlTui::Runner)
 target_compile_definitions(qmltui_tooltip_clock_fixture PRIVATE
     QMLTUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/ToolTipClockFixture.qml"
 )
@@ -37,7 +37,7 @@ qmltui_add_scenario(
 
 # The default look of the button-like controls, as styled snapshots.
 add_executable(qmltui_button_look_fixture ../Runner/main.cpp)
-target_link_libraries(qmltui_button_look_fixture PRIVATE qmltui::core qmltui::controls qmltui::runner)
+target_link_libraries(qmltui_button_look_fixture PRIVATE QmlTui::Core QmlTui::Controls QmlTui::Runner)
 target_compile_definitions(qmltui_button_look_fixture PRIVATE
     QMLTUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/ButtonLookFixture.qml"
 )
@@ -51,7 +51,7 @@ qmltui_add_scenario(
 
 # Popup frames scenario covering transparency, occlusion, nesting, resize, and dialogs.
 add_executable(qmltui_popup_frames_fixture ../Runner/main.cpp)
-target_link_libraries(qmltui_popup_frames_fixture PRIVATE qmltui::core qmltui::controls qmltui::runner)
+target_link_libraries(qmltui_popup_frames_fixture PRIVATE QmlTui::Core QmlTui::Controls QmlTui::Runner)
 target_compile_definitions(qmltui_popup_frames_fixture PRIVATE
     QMLTUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/PopupFramesFixture.qml"
 )

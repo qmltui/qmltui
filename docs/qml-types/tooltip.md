@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: 
-cpp: qmltui::controls::ToolTip
+cpp: qmltui::ToolTip
 category: overlays and navigation
 summary: An attached property that shows a short text box next to an item while it is hovered or focused.
 ---

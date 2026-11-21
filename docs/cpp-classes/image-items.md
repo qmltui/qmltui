@@ -1,6 +1,6 @@
 # Image, AnimatedSprite, and Core Item Headers
 
-In addition to [`Item`](item.md), [`Rectangle`](rectangle.md), [`Text`](text.md), [`MouseArea`](mousearea.md), and [`PtyView`](ptyview.md), QmlTui installs public C++ headers for the raster image module (`qmltui::image`) and all built-in Core visual items (`qmltui::core`).
+In addition to [`Item`](item.md), [`Rectangle`](rectangle.md), [`Text`](text.md), [`MouseArea`](mousearea.md), and [`PtyView`](ptyview.md), QmlTui installs public C++ headers for the raster image module (`QmlTui::Image`) and all built-in Core visual items (`QmlTui::Core`).
 
 ## `qmltui::Image` and `qmltui::AnimatedSprite`
 
@@ -9,7 +9,7 @@ In addition to [`Item`](item.md), [`Rectangle`](rectangle.md), [`Text`](text.md)
   - `<QmlTui/Image/AnimatedSprite.h>`
   - `<QmlTui/Image/ImageProvider.h>` (documented in [ImageProvider](imageprovider.md))
 - **CMake Option**: `-DQMLTUI_ENABLE_IMAGE=ON`
-- **Target**: `qmltui::image` (`QmlTui::Image`)
+- **Target**: `QmlTui::Image`
 
 ### `qmltui::Image`
 
@@ -37,7 +37,7 @@ See the [AnimatedSprite QML type reference](../qml-types/animatedsprite.md).
 
 ## Installed `QmlTui/Core/Items` Headers
 
-Every Core visual item header below is installed under `<QmlTui/Core/Items/...>` and exported by `qmltui::core`:
+Every Core visual item header below is installed under `<QmlTui/Core/Items/...>` and exported by `QmlTui::Core`:
 
 | Header | Class | QML Type Reference |
 | :--- | :--- | :--- |

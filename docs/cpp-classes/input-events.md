@@ -7,7 +7,7 @@ These headers define the keyboard, mouse, global shortcut, and modal input-scope
   - `<QmlTui/Core/Engine/MouseEvent.h>`
   - `<QmlTui/Core/Engine/Shortcut.h>`
   - `<QmlTui/Core/Engine/InputScope.h>`
-- **Target**: `qmltui::core` (`QmlTui::Core`)
+- **Target**: `QmlTui::Core`
 
 ## `qmltui::KeyEvent`
 

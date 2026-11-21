@@ -9,17 +9,17 @@ qt_add_qml_module(qmltui_text_area_highlighting_demo
         Main.qml
         QmlHighlighter.qml
 
-    DEPENDENCIES TARGET qmltui::core
+    DEPENDENCIES TARGET QmlTui::Core
 )
 
-target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_text_area_highlighting_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_text_area_highlighting_demo PRIVATE QmlTui::Runner)
     qmltui_add_scenario(NAME text_area_highlighting_smoke TARGET qmltui_text_area_highlighting_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_smoke.js"
         COLUMNS 120 ROWS 40 CLOCK VIRTUAL)

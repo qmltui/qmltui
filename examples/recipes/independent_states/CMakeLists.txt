@@ -5,17 +5,17 @@ qt_add_qml_module(qmltui_independent_states_demo
     QML_FILES
         Main.qml
     DEPENDENCIES TARGET
-        qmltui::core
+        QmlTui::Core
 )
 
-target_link_libraries(qmltui_independent_states_demo PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(qmltui_independent_states_demo PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_independent_states_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_independent_states_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_independent_states_demo PRIVATE QmlTui::Runner)
     qmltui_add_scenario(NAME independent_states_scenario TARGET qmltui_independent_states_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_independent_states.js"
         COLUMNS 80 ROWS 24 CLOCK VIRTUAL)

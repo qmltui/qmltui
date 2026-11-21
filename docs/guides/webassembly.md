@@ -31,9 +31,9 @@ qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
+    DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
 )
-target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
+target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(my_app)
@@ -150,7 +150,7 @@ Host OS facilities are unavailable inside the browser sandbox: `QProcess`, `/pro
 | :--- | :--- |
 | Configure error mentioning the Emscripten version | Your Qt kit pins a specific `emcc` version. Activate that exact version in `emsdk` and `source emsdk_env.sh`. |
 | `-std=c99 not allowed with C++` while building `utf8proc` | `CMAKE_AUTOMOC` leaked into a C target. Avoid setting `CMAKE_AUTOMOC ON` globally before `FetchContent_MakeAvailable(QmlTui)`. |
-| Blank terminal; console says `module "QmlTui" is not installed` | Static QML plugin was not linked. Verify `DEPENDENCIES TARGET qmltui::core` on `qt_add_qml_module()` so `qmlimportscanner` links `QmlTuiCoreplugin`. |
+| Blank terminal; console says `module "QmlTui" is not installed` | Static QML plugin was not linked. Verify `DEPENDENCIES TARGET QmlTui::Core` on `qt_add_qml_module()` so `qmlimportscanner` links `QmlTuiCoreplugin`. |
 | Blank terminal with no console error | `qmltuiOnOutput` was attached after calling the module factory, or `qmltuiResize` was not called before `callMain`. |
 | Console logs `Terminating since we don't have asyncify` then `Aborted()` | Normal behavior when the app calls `Qt.quit()`. Handle `onAbort` in your host page and reset `xterm.js`. |
 | Out of memory on startup | Pass `-DQMLTUI_WASM_INITIAL_MEMORY=96MB` at configure time (growth remains enabled). |

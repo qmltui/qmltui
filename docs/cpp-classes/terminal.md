@@ -6,7 +6,7 @@
 
 - **Header**: `<QmlTui/Core/Items/Terminal.h>`
 - **Inherits**: `qmltui::Item`, `QQmlParserStatus`
-- **Target**: `qmltui::core`
+- **Target**: `QmlTui::Core`
 
 ## Enumerations
 
@@ -64,7 +64,7 @@ In addition to the property notify signals above, `Terminal` emits `clipboardCop
 - `Item *focusedItem() const` / `void setFocusedItem(Item *item)` — returns or changes the item holding active keyboard focus.
 - `void setHoveredItem(Item *item)` — updates the item under the mouse pointer (`hoveredItem` is read-only from QML).
 - `void setMouseMotionRequested(QObject *requester, bool requested)` — registers or unregisters `requester` as needing passive any-motion mouse tracking (`?1003h`).
-- `static void registerRunnerHook(RunnerHook hook)` — installs the startup hook used when `qmltui::runner` is linked.
+- `static void registerRunnerHook(RunnerHook hook)` — installs the startup hook used when `QmlTui::Runner` is linked.
 
 ## C++ Example
 

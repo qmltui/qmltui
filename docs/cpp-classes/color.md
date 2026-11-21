@@ -5,7 +5,7 @@ and as the constructible QML value type `color`; QML string assignments to QmlTu
 color properties continue to work.
 
 - **Header**: `<QmlTui/Core/Primitives/Color.h>`
-- **Target**: `qmltui::core` (`QmlTui::Core`)
+- **Target**: `QmlTui::Core`
 - **QML Value Type**: `color` (`QML_VALUE_TYPE(color)`)
 
 A default-constructed `Color()` (or `Color::Default` / `Color::defaultColor()`)

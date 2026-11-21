@@ -21,15 +21,15 @@ set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 function(gallery_add_executable target uri main_source)
     qt_add_executable(${target} ${main_source})
-    set(gallery_dependencies TARGET qmltui::core TARGET qmltui::controls)
-    set(gallery_link_libraries Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
+    set(gallery_dependencies TARGET QmlTui::Core TARGET QmlTui::Controls)
+    set(gallery_link_libraries Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
     if(QMLTUI_ENABLE_IMAGE)
-        list(APPEND gallery_dependencies TARGET qmltui::image)
-        list(APPEND gallery_link_libraries qmltui::image)
+        list(APPEND gallery_dependencies TARGET QmlTui::Image)
+        list(APPEND gallery_link_libraries QmlTui::Image)
     endif()
     if(QMLTUI_ENABLE_PTYVIEW)
-        list(APPEND gallery_dependencies TARGET qmltui::pty_view)
-        list(APPEND gallery_link_libraries qmltui::pty_view)
+        list(APPEND gallery_dependencies TARGET QmlTui::PtyView)
+        list(APPEND gallery_link_libraries QmlTui::PtyView)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
@@ -55,7 +55,7 @@ function(gallery_add_executable target uri main_source)
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})
     foreach(plugin_target IN ITEMS
             QmlTuiCoreplugin QmlTuiControlsplugin QmlTuiImageplugin QmlTuiPtyViewplugin
-            qmltui::corePlugin qmltui::controlsPlugin qmltui::imagePlugin qmltui::pty_viewPlugin)
+            QmlTui::CorePlugin QmlTui::ControlsPlugin QmlTui::ImagePlugin QmlTui::PtyViewPlugin)
         if(TARGET ${plugin_target})
             add_dependencies(${target} ${plugin_target})
         endif()
@@ -68,8 +68,8 @@ if(COMMAND qmltui_wasm_app)   # browser build, see docs/guides/webassembly.md
     qmltui_wasm_app(qmltui_gallery)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_gallery PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_gallery PRIVATE QmlTui::Runner)
     file(GLOB gallery_scenario_files CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/scenarios/*.js")
     qt_add_resources(qmltui_gallery "qmltui_gallery_scenarios"
         PREFIX "/qt/qml/Gallery/scenarios"

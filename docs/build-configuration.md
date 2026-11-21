@@ -4,15 +4,15 @@ This reference covers QmlTui module targets, consuming an installed package with
 
 ## QML Modules and CMake Targets
 
-`qmltui::core` and `qmltui::controls` require only `Qt6::Core` and `Qt6::Qml`. Use CMake cache options to enable optional modules and tooling:
+`QmlTui::Core` and `QmlTui::Controls` require only `Qt6::Core` and `Qt6::Qml`. Use CMake cache options to enable optional modules and tooling:
 
 | QML Import / Tool | CMake Target | CMake Option & Default | Dependencies | Guide & Reference |
 | :--- | :--- | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | Always built (`QMLTUI_ENABLE_PRIVATE_QT=ON` auto-enables `Behavior` when `Qt6::QmlPrivate` is present) | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | [Architecture](guides/architecture.md), [Animation & States](guides/animation-and-states.md) |
-| `import QmlTui.Controls` | `qmltui::controls` | Always built | `qmltui::core` | [QML Types](qml-types/index.md) |
-| `import QmlTui.Image` | `qmltui::image` | `-DQMLTUI_ENABLE_IMAGE=ON` (default `OFF`) | `qmltui::core`, `Qt6::Gui`, `Qt6::Network` | [Image](qml-types/image.md), [AnimatedSprite](qml-types/animatedsprite.md) |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | `-DQMLTUI_ENABLE_PTYVIEW=ON` (default `OFF`, Linux/macOS) | `qmltui::core`, `libvterm` | [Embedded PTY Shells](guides/pty-view.md), [PtyView](qml-types/ptyview.md) |
-| `Runner` & `qmltui-runner` | `qmltui::runner` | `-DQMLTUI_ENABLE_RUNNER=ON` (default `ON` top-level or when `BUILD_TESTING=ON`) | `qmltui::core` | [Testing with Runner](guides/testing.md), [Runner](cpp-classes/runner.md) |
+| `import QmlTui` | `QmlTui::Core` | Always built (`QMLTUI_ENABLE_PRIVATE_QT=ON` auto-enables `Behavior` when `Qt6::QmlPrivate` is present) | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | [Architecture](guides/architecture.md), [Animation & States](guides/animation-and-states.md) |
+| `import QmlTui.Controls` | `QmlTui::Controls` | Always built | `QmlTui::Core` | [QML Types](qml-types/index.md) |
+| `import QmlTui.Image` | `QmlTui::Image` | `-DQMLTUI_ENABLE_IMAGE=ON` (default `OFF`) | `QmlTui::Core`, `Qt6::Gui`, `Qt6::Network` | [Image](qml-types/image.md), [AnimatedSprite](qml-types/animatedsprite.md) |
+| `import QmlTui.PtyView` | `QmlTui::PtyView` | `-DQMLTUI_ENABLE_PTYVIEW=ON` (default `OFF`, Linux/macOS) | `QmlTui::Core`, `libvterm` | [Embedded PTY Shells](guides/pty-view.md), [PtyView](qml-types/ptyview.md) |
+| `Runner` & `qmltui-runner` | `QmlTui::Runner` | `-DQMLTUI_ENABLE_RUNNER=ON` (default `ON` top-level or when `BUILD_TESTING=ON`) | `QmlTui::Core` | [Testing with Runner](guides/testing.md), [Runner](cpp-classes/runner.md) |
 | `qmltui_wasm_app(<target>)` | *(CMake helper)* | Automatic under Emscripten (`EMSCRIPTEN`) | Qt for WebAssembly `wasm_singlethread` | [Qt for WebAssembly](guides/webassembly.md) |
 
 ### Qt Version Compatibility and Private Qt ABI
@@ -59,8 +59,8 @@ qt_add_qml_module(hello_qmltui
 target_link_libraries(hello_qmltui PRIVATE
     Qt6::Core
     Qt6::Qml
-    qmltui::core
-    qmltui::controls
+    QmlTui::Core
+    QmlTui::Controls
 )
 ```
 
@@ -79,8 +79,8 @@ QML_IMPORT_PATH=/your/prefix/lib/qml ./build/hello_qmltui
 
 ### In-Tree (`FetchContent` / `add_subdirectory`) vs. Installed (`find_package`)
 
-- **`DEPENDENCIES TARGET` ordering**: In `FetchContent` and `add_subdirectory` builds, pass `DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls` (plus `TARGET qmltui::image` or `TARGET qmltui::pty_view` when used) to `qt_add_qml_module()` so QmlTui's `.qmltypes` and `qmldir` build before `qmlcachegen` and `qmllint`. Omit `DEPENDENCIES TARGET` in `find_package(QmlTui)` builds because Qt rejects `IMPORTED` targets there; `find_package(QmlTui)` appends `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically.
-- **Target aliases**: Both source and installed builds export `qmltui::core` (`QmlTui::Core`), `qmltui::controls` (`QmlTui::Controls`), `qmltui::image` (`QmlTui::Image`), `qmltui::pty_view` (`QmlTui::PtyView`), and `qmltui::runner` (`QmlTui::Runner`).
+- **`DEPENDENCIES TARGET` ordering**: In `FetchContent` and `add_subdirectory` builds, pass `DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls` (plus `TARGET QmlTui::Image` or `TARGET QmlTui::PtyView` when used) to `qt_add_qml_module()` so QmlTui's `.qmltypes` and `qmldir` build before `qmlcachegen` and `qmllint`. Omit `DEPENDENCIES TARGET` in `find_package(QmlTui)` builds because Qt rejects `IMPORTED` targets there; `find_package(QmlTui)` appends `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically.
+- **Exported targets and `COMPONENTS`**: Both source and installed builds provide `QmlTui::Core`, `QmlTui::Controls`, `QmlTui::Image`, `QmlTui::PtyView`, and `QmlTui::Runner` (with `find_package(QmlTui COMPONENTS Core Controls ...)` matching component names directly).
 - **Windows DLL lookup**: Set `set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")` before `FetchContent_MakeAvailable(QmlTui)` so `QmlTui*.dll` land next to your `.exe`, and add your Qt kit's `bin` directory to `PATH` (or run `windeployqt`).
 
 ### Multi-File QML Modules and Singletons
@@ -105,7 +105,7 @@ Register additional `.qml` components and singletons on the same `qt_add_qml_mod
   qt_add_qml_module(my_app
       URI MyApp
       QML_FILES Main.qml Theme.qml
-      DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
+      DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
   )
   ```
 
@@ -144,7 +144,7 @@ cmake --build build-release
 | `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Enable `Behavior` and binding-aware `PropertyChanges` via `Qt6::QmlPrivate` (warns if missing unless `OFF`) |
 | `QMLTUI_ENABLE_IMAGE` | `OFF` | Build `QmlTui.Image` (`Qt6::Gui`, `Qt6::Network`) |
 | `QMLTUI_ENABLE_PTYVIEW` | `OFF` | Build Unix `QmlTui.PtyView` (Linux/macOS) |
-| `QMLTUI_ENABLE_RUNNER` | `ON` (top-level or `BUILD_TESTING=ON`) | Build and install `qmltui::runner` and `qmltui-runner` |
+| `QMLTUI_ENABLE_RUNNER` | `ON` (top-level or `BUILD_TESTING=ON`) | Build and install `QmlTui::Runner` and `qmltui-runner` |
 | `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument targets for Clang source-based coverage |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install path for QmlTui QML modules |
 | `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` instead of `FetchContent` |

@@ -3,7 +3,7 @@
 `qmltui::UnicodeText` and `qmltui::GraphemeIterator` segment `QStringView` text into extended Unicode grapheme clusters, measure terminal column display widths (`0`, `1`, or `2` columns per cluster via `utf8proc`), elide strings to a column budget, and encode clusters to UTF-8 without heap allocation.
 
 - **Header**: `<QmlTui/Core/Primitives/UnicodeText.h>`
-- **Target**: `qmltui::core` (`QmlTui::Core`)
+- **Target**: `QmlTui::Core`
 
 ## `GraphemeRef` and `GraphemeIterator`
 

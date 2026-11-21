@@ -31,8 +31,6 @@ if(qmltui_runner_library_type STREQUAL "STATIC_LIBRARY")
 else()
     target_compile_definitions(QmlTuiRunner PRIVATE QMLTUI_RUNNER_LIBRARY)
 endif()
-add_library(qmltui::runner ALIAS QmlTuiRunner)
-add_library(qmltui::Runner ALIAS QmlTuiRunner)
 add_library(QmlTui::Runner ALIAS QmlTuiRunner)
 set_target_properties(QmlTuiRunner PROPERTIES EXPORT_NAME Runner)
 
@@ -42,7 +40,7 @@ target_include_directories(QmlTuiRunner PUBLIC
 )
 
 target_link_libraries(QmlTuiRunner PUBLIC
-    qmltui::core
+    QmlTui::Core
 )
 
 # The auto-hook (Runner.cpp's file-scope RunnerAutoHook) sits in a
@@ -54,16 +52,16 @@ target_link_libraries(QmlTuiRunner PUBLIC
 # every consumer at generate time.
 if(MSVC)
     target_link_options(QmlTuiRunner INTERFACE
-        $<$<LINK_LANGUAGE:CXX>:/WHOLEARCHIVE:$<TARGET_FILE:qmltui::runner>>
+        $<$<LINK_LANGUAGE:CXX>:/WHOLEARCHIVE:$<TARGET_FILE:QmlTui::Runner>>
     )
 elseif(APPLE)
     # ld64 has no --whole-archive; -force_load takes the archive path directly.
     target_link_options(QmlTuiRunner INTERFACE
-        $<$<LINK_LANGUAGE:CXX>:SHELL:-Wl,-force_load,$<TARGET_FILE:qmltui::runner>>
+        $<$<LINK_LANGUAGE:CXX>:SHELL:-Wl,-force_load,$<TARGET_FILE:QmlTui::Runner>>
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_link_options(QmlTuiRunner INTERFACE
-        $<$<LINK_LANGUAGE:CXX>:SHELL:-Wl,--whole-archive $<TARGET_FILE:qmltui::runner> -Wl,--no-whole-archive>
+        $<$<LINK_LANGUAGE:CXX>:SHELL:-Wl,--whole-archive $<TARGET_FILE:QmlTui::Runner> -Wl,--no-whole-archive>
     )
 endif()
 

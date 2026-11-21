@@ -16,7 +16,7 @@ Draws a raster image into terminal cells, with real pixels where the terminal su
 | | |
 | :--- | :--- |
 | **Import Statement** | `import QmlTui.Image` |
-| **CMake Option** | `-DQMLTUI_ENABLE_IMAGE=ON` (`qmltui::image`, requires `Qt6::Gui` and `Qt6::Network`) |
+| **CMake Option** | `-DQMLTUI_ENABLE_IMAGE=ON` (`QmlTui::Image`, requires `Qt6::Gui` and `Qt6::Network`) |
 | **Since** | QmlTui 0.4 |
 | **Inherits** | [Item](item.md) |
 

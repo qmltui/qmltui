@@ -8,16 +8,16 @@ qt_add_qml_module(qmltui_live_image_demo
     URI LiveImageDemo
     SOURCES ${live_image_sources}
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls TARGET qmltui::image
+    DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls TARGET QmlTui::Image
 )
-target_link_libraries(qmltui_live_image_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml qmltui::core qmltui::controls qmltui::image)
+target_link_libraries(qmltui_live_image_demo PRIVATE Qt6::Core Qt6::Gui Qt6::Qml QmlTui::Core QmlTui::Controls QmlTui::Image)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_live_image_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_live_image_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_live_image_demo PRIVATE QmlTui::Runner)
     qmltui_add_scenario(
         NAME live_image_smoke
         TARGET qmltui_live_image_demo
@@ -36,6 +36,6 @@ endif()
 
 if(QMLTUI_BUILD_TESTS)
     qt_add_executable(test_live_image_provider test_frameprovider.cpp frameprovider.cpp frameprovider.h)
-    target_link_libraries(test_live_image_provider PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Test qmltui::image)
+    target_link_libraries(test_live_image_provider PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Test QmlTui::Image)
     add_test(NAME live_image_provider COMMAND test_live_image_provider)
 endif()

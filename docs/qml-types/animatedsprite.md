@@ -16,7 +16,7 @@ Plays a frame-grid animation from a single sprite sheet. [More...](#detailed-des
 | | |
 | :--- | :--- |
 | **Import Statement** | `import QmlTui.Image` |
-| **CMake Option** | `-DQMLTUI_ENABLE_IMAGE=ON` (`qmltui::image`, requires `Qt6::Gui` and `Qt6::Network`) |
+| **CMake Option** | `-DQMLTUI_ENABLE_IMAGE=ON` (`QmlTui::Image`, requires `Qt6::Gui` and `Qt6::Network`) |
 | **Since** | QmlTui 0.5 |
 | **Inherits** | [Image](image.md) |
 

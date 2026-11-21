@@ -15,7 +15,7 @@ qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core TARGET qmltui::controls
+    DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
 )
 ```
 
@@ -47,11 +47,11 @@ cmake --build build --target my_app_qmllint
 
 ## `Runner` Scenario Autocomplete (`qmltui-runner.d.ts`)
 
-When writing JavaScript or ES module scenario tests for [`qmltui::Runner`](testing.md), call `qmltui_scenario_editor_support()` inside your `if(BUILD_TESTING AND TARGET qmltui::runner)` block:
+When writing JavaScript or ES module scenario tests for [`qmltui::Runner`](testing.md), call `qmltui_scenario_editor_support()` inside your `if(BUILD_TESTING AND TARGET QmlTui::Runner)` block:
 
 ```cmake
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(my_app PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(my_app PRIVATE QmlTui::Runner)
     qmltui_scenario_editor_support()
 endif()
 ```

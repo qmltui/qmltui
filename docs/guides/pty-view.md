@@ -14,17 +14,17 @@ cmake -S . -B build \
   -DQMLTUI_USE_SYSTEM_LIBVTERM=OFF
 ```
 
-Link `qmltui::pty_view` (aliased as `QmlTui::PtyView`) in CMake and import `QmlTui.PtyView` in QML:
+Link `QmlTui::PtyView` in CMake and import `QmlTui.PtyView` in QML:
 
 ```cmake
 qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
     DEPENDENCIES
-        TARGET qmltui::core
-        TARGET qmltui::pty_view
+        TARGET QmlTui::Core
+        TARGET QmlTui::PtyView
 )
-target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::pty_view)
+target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::PtyView)
 ```
 
 ## Process Configuration

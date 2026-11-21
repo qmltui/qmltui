@@ -3,7 +3,7 @@
 `<QmlTui/Core/Primitives/Subpixel.h>` provides compile-time constants and zero-allocation UTF-8 glyph helpers for custom C++ items that render sub-character graphics using Unicode Braille (`2x4` dots per cell) or vertical half-block (`1x2` subpixels per cell) encodings.
 
 - **Header**: `<QmlTui/Core/Primitives/Subpixel.h>`
-- **Target**: `qmltui::core` (`QmlTui::Core`)
+- **Target**: `QmlTui::Core`
 
 ## `qmltui::braille` (`2x4` Dot Matrix)
 

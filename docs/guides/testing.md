@@ -2,7 +2,7 @@
 
 `qmltui::Runner` drives a QmlTui `Terminal` application headlessly for automated tests, interactive debugging, and Asciinema v2 `.cast` recordings. It feeds keyboard and mouse input through `InputDecoder`, advances animations and timers on a virtual clock, asserts committed terminal frames (`TextGridBuffer`), and writes structured artifacts (`result.json`, `final.txt`, `failure.txt`).
 
-When an executable links `qmltui::runner`, QML-created `Terminal` roots automatically install a startup hook. Normal interactive startup is unchanged unless you launch the binary through `qmltui-runner` or set `QMLTUI_RUNNER_*` environment variables. (If you construct `qmltui::Terminal` in C++ without QML, call `qmltui::Runner::startFromEnvironment(&engine, terminal)` after creating the root.)
+When an executable links `QmlTui::Runner`, QML-created `Terminal` roots automatically install a startup hook. Normal interactive startup is unchanged unless you launch the binary through `qmltui-runner` or set `QMLTUI_RUNNER_*` environment variables. (If you construct `qmltui::Terminal` in C++ without QML, call `qmltui::Runner::startFromEnvironment(&engine, terminal)` after creating the root.)
 
 > [!TIP]
 > Building with AI coding agents? See [Agentic Development Loop with Runner](agentic-development.md) for a step-by-step build, capture, and verification workflow plus ready-to-copy `AGENTS.md` instructions and bundled skills.
@@ -99,7 +99,7 @@ function main(app) {
 
 ## 2. Run Scenarios with the `qmltui-runner` CLI
 
-The `qmltui-runner` command-line tool (built by default in top-level builds or when `-DQMLTUI_ENABLE_RUNNER=ON` is set) launches any `qmltui::runner`-linked executable, manages the activation handshake and timeouts, and verifies the resulting `result.json`.
+The `qmltui-runner` command-line tool (built by default in top-level builds or when `-DQMLTUI_ENABLE_RUNNER=ON` is set) launches any `QmlTui::Runner`-linked executable, manages the activation handshake and timeouts, and verifies the resulting `result.json`.
 
 ### Common CLI Workflows
 
@@ -206,7 +206,7 @@ Example `result.json` emitted when a scenario fails:
 
 ## 3. CMake and CTest Integration
 
-To run scenarios automatically in CTest, link `qmltui::runner` conditionally into your application target and register each scenario with `qmltui_add_scenario()`. You do not need a separate test executable.
+To run scenarios automatically in CTest, link `QmlTui::Runner` conditionally into your application target and register each scenario with `qmltui_add_scenario()`. You do not need a separate test executable.
 
 ### Register Scenarios in `CMakeLists.txt`
 
@@ -218,13 +218,13 @@ qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
     DEPENDENCIES
-        TARGET qmltui::core
-        TARGET qmltui::controls
+        TARGET QmlTui::Core
+        TARGET QmlTui::Controls
 )
-target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
+target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(my_app PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(my_app PRIVATE QmlTui::Runner)
 
     # Enable IDE autocomplete (.qmltui/qmltui-runner.d.ts and jsconfig.json):
     qmltui_scenario_editor_support()
@@ -252,7 +252,7 @@ if(BUILD_TESTING AND TARGET qmltui::runner)
 endif()
 ```
 
-For production builds, configure CMake with `-DBUILD_TESTING=OFF` (and `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_ENABLE_RUNNER=OFF` when building QmlTui from source) so `qmltui::runner` is not linked into the shipped executable.
+For production builds, configure CMake with `-DBUILD_TESTING=OFF` (and `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_ENABLE_RUNNER=OFF` when building QmlTui from source) so `QmlTui::Runner` is not linked into the shipped executable.
 
 ### Run and Update Scenarios with CTest
 

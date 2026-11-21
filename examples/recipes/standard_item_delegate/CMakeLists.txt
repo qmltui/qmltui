@@ -16,17 +16,17 @@ qt_add_qml_module(qmltui_standard_item_delegate_demo
         Main.qml
         StandardItemDelegate.qml
     SOURCES ReleaseChecklistModel.h ReleaseChecklistModel.cpp
-    DEPENDENCIES TARGET qmltui::core
+    DEPENDENCIES TARGET QmlTui::Core
 )
 target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE
-    Qt6::Core Qt6::Gui Qt6::Qml qmltui::core)
+    Qt6::Core Qt6::Gui Qt6::Qml QmlTui::Core)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(qmltui_standard_item_delegate_demo)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(qmltui_standard_item_delegate_demo PRIVATE QmlTui::Runner)
     qmltui_add_scenario(
         NAME standard_item_delegate_smoke
         TARGET qmltui_standard_item_delegate_demo

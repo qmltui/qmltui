@@ -35,7 +35,7 @@ cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
 cmake --build build --target <target>_qmllint <target>
 
 # Standalone consumer application (FetchContent or find_package(QmlTui)):
-# Call include(CTest) BEFORE FetchContent_MakeAvailable(QmlTui) so qmltui::runner builds by default.
+# Call include(CTest) BEFORE FetchContent_MakeAvailable(QmlTui) so QmlTui::Runner builds by default.
 cmake -S . -B build -G Ninja
 cmake --build build --target my_app_qmllint my_app
 ```
@@ -91,11 +91,11 @@ Define `function main(app) { ... }` in `.js` or `export function main(app) { ...
 
 ## 5. Integrate Scenarios & Run CTest Suites
 
-Link `qmltui::runner` into the normal application target (do not duplicate executable or QML-module targets; see `examples/recipes/status_badge/CMakeLists.txt` in the QmlTui repo, `examples/recipes/cpp_only/main.cpp` for C++-created `Terminal`s, and `tests/Runner/main.cpp` for `EMBEDDED` runners):
+Link `QmlTui::Runner` into the normal application target (do not duplicate executable or QML-module targets; see `examples/recipes/status_badge/CMakeLists.txt` in the QmlTui repo, `examples/recipes/cpp_only/main.cpp` for C++-created `Terminal`s, and `tests/Runner/main.cpp` for `EMBEDDED` runners):
 
 ```cmake
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(my_app PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(my_app PRIVATE QmlTui::Runner)
     qmltui_scenario_editor_support()
     qmltui_add_scenario(
         NAME my_app_smoke

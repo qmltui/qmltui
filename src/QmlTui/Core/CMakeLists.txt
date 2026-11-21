@@ -216,8 +216,6 @@ if(QMLTUI_ENABLE_PRIVATE_QT)
     target_compile_definitions(QmlTuiCore PRIVATE QMLTUI_ENABLE_PRIVATE_QT)
 endif()
 
-add_library(qmltui::core ALIAS QmlTuiCore)
-add_library(qmltui::Core ALIAS QmlTuiCore)
 add_library(QmlTui::Core ALIAS QmlTuiCore)
 set_target_properties(QmlTuiCore PROPERTIES EXPORT_NAME Core)
 set_target_properties(QmlTuiCoreplugin PROPERTIES EXPORT_NAME CorePlugin)

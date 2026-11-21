@@ -4,7 +4,7 @@
 
 - **Header**: `<QmlTui/PtyView/PtyView.h>`
 - **Inherits**: `qmltui::Item`, `QQmlParserStatus`
-- **Target**: `qmltui::pty_view` (`QMLTUI_ENABLE_PTYVIEW=ON`, Linux and macOS)
+- **Target**: `QmlTui::PtyView` (`QMLTUI_ENABLE_PTYVIEW=ON`, Linux and macOS)
 - **QML Import**: `import QmlTui.PtyView`
 
 ## `ProcessState`

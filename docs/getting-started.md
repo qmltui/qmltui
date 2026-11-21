@@ -12,11 +12,11 @@ For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlT
 
 ## Step 1: Create a Standalone Application
 
-A standalone QmlTui project uses `QCoreApplication` (rather than `QGuiApplication`), `QQmlApplicationEngine`, and Qt's standard `qt_add_qml_module()`. Create a new directory with the following three files (for a minimal `qmltui::core`-only starter template without `QmlTui.Controls`, see [`examples/helloworld/`](../examples/helloworld/)).
+A standalone QmlTui project uses `QCoreApplication` (rather than `QGuiApplication`), `QQmlApplicationEngine`, and Qt's standard `qt_add_qml_module()`. Create a new directory with the following three files (for a minimal `QmlTui::Core`-only starter template without `QmlTui.Controls`, see [`examples/helloworld/`](../examples/helloworld/)).
 
 ### 1. `CMakeLists.txt`
 
-With `FetchContent`, CMake downloads and builds QmlTui alongside your executable target. Calling `include(CTest)` enables `BUILD_TESTING` by default so `qmltui::runner` is built and ready for Step 3 (`-DBUILD_TESTING=OFF` omits it for production builds):
+With `FetchContent`, CMake downloads and builds QmlTui alongside your executable target. Calling `include(CTest)` enables `BUILD_TESTING` by default so `QmlTui::Runner` is built and ready for Step 3 (`-DBUILD_TESTING=OFF` omits it for production builds):
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -44,14 +44,14 @@ qt_add_qml_module(hello_qmltui
     URI HelloQmlTui
     QML_FILES Main.qml
     DEPENDENCIES
-        TARGET qmltui::core
-        TARGET qmltui::controls
+        TARGET QmlTui::Core
+        TARGET QmlTui::Controls
 )
 target_link_libraries(hello_qmltui PRIVATE
     Qt6::Core
     Qt6::Qml
-    qmltui::core
-    qmltui::controls
+    QmlTui::Core
+    QmlTui::Controls
 )
 ```
 
@@ -213,8 +213,8 @@ qt_add_qml_module(hello_qmltui
     SOURCES AppController.h
     QML_FILES Main.qml
     DEPENDENCIES
-        TARGET qmltui::core
-        TARGET qmltui::controls
+        TARGET QmlTui::Core
+        TARGET QmlTui::Controls
 )
 ```
 
@@ -308,8 +308,8 @@ function main(app) {
 Append the `Runner` block to the end of `CMakeLists.txt`:
 
 ```cmake
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(hello_qmltui PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(hello_qmltui PRIVATE QmlTui::Runner)
     qmltui_scenario_editor_support()
     qmltui_add_scenario(
         NAME hello_qmltui_smoke

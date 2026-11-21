@@ -5,10 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # When built in-tree (`cmake -S . -B build -DQMLTUI_BUILD_EXAMPLES=ON`),
-# `qmltui::core` is already provided by the root project.
+# `QmlTui::Core` is already provided by the root project.
 # When built as a standalone project (`cmake -S examples/helloworld -B build`),
 # acquire QmlTui using either Option 1 (`FetchContent`) or Option 2 (`find_package`).
-if(NOT TARGET qmltui::core)
+if(NOT TARGET QmlTui::Core)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
     qt_standard_project_setup(REQUIRES 6.8)
     include(CTest)
@@ -39,9 +39,9 @@ set(QT_QML_GENERATE_QMLLS_INI ON)
 # from source; find_package(QmlTui) provides IMPORTED targets and configures
 # QT_QML_IMPORT_PATH automatically instead.
 set(_hello_qml_dependencies)
-get_target_property(_qmltui_imported qmltui::core IMPORTED)
+get_target_property(_qmltui_imported QmlTui::Core IMPORTED)
 if(NOT _qmltui_imported)
-    list(APPEND _hello_qml_dependencies DEPENDENCIES TARGET qmltui::core)
+    list(APPEND _hello_qml_dependencies DEPENDENCIES TARGET QmlTui::Core)
 endif()
 unset(_qmltui_imported)
 
@@ -52,14 +52,14 @@ qt_add_qml_module(hello_qmltui
     ${_hello_qml_dependencies}
 )
 unset(_hello_qml_dependencies)
-target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(hello_qmltui PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 
 if(COMMAND qmltui_wasm_app)
     qmltui_wasm_app(hello_qmltui)
 endif()
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(hello_qmltui PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(hello_qmltui PRIVATE QmlTui::Runner)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test_helloworld.js")
         enable_testing()
         qmltui_add_scenario(

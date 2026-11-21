@@ -1,4 +1,4 @@
-# Tests for qmltui::runner: the fixture application and one scenario per
+# Tests for QmlTui::Runner: the fixture application and one scenario per
 # runner contract (success, timeouts, artifacts, snapshots, environment modes).
 
 add_qmltui_test(test_runner_declarations test_runner_declarations.cpp)
@@ -46,8 +46,8 @@ add_executable(qmltui_runner_fixture main.cpp)
 target_link_libraries(qmltui_runner_fixture PRIVATE
     Qt6::Core
     Qt6::Qml
-    qmltui::core
-    qmltui::runner
+    QmlTui::Core
+    QmlTui::Runner
 )
 target_compile_definitions(qmltui_runner_fixture PRIVATE
     QMLTUI_RUNNER_FIXTURE_QML="${CMAKE_CURRENT_SOURCE_DIR}/Fixture.qml"

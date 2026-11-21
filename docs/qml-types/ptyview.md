@@ -84,7 +84,7 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 PtyView is a QML item that hosts an external terminal application inside
 a Unix pseudo-terminal (PTY) using libvterm. It is available when QmlTui is built
 with `QMLTUI_ENABLE_PTYVIEW=ON` (supported on Linux and macOS, linked via
-`qmltui::pty_view`).
+`QmlTui::PtyView`).
 
 By default, PtyView initializes its inherited [Item](item.md) properties to
 `focusPolicy: Qt.StrongFocus` and `clip: true`. While a PtyView has active focus,

@@ -5,7 +5,7 @@
 New cells and default foreground arguments use `0x00000000` (the terminal default foreground). Pass `0xFFFFFFFF` or `Color("white")` for literal RGB white. Zero-alpha backgrounds (`0x00000000` or `Color("transparent")`) preserve the existing cell background underneath.
 
 - **Header**: `<QmlTui/Core/Primitives/TextGridBuffer.h>`
-- **Target**: `qmltui::core`
+- **Target**: `QmlTui::Core`
 
 ## `AnsiEncodeOptions`
 

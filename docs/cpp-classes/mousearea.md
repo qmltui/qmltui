@@ -4,7 +4,7 @@
 
 - **Header**: `<QmlTui/Core/Items/MouseArea.h>`
 - **Inherits**: `qmltui::Item`
-- **Target**: `qmltui::core`
+- **Target**: `QmlTui::Core`
 
 ## Properties (`Q_PROPERTY`)
 

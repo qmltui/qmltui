@@ -4,10 +4,10 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 
 | QML Import | CMake Target | Notes |
 | :--- | :--- | :--- |
-| `import QmlTui` | `qmltui::core` | Core session, item tree, layouts, text inputs, virtualized views, input events, states, animations, and sub-cell canvas. |
-| `import QmlTui.Controls` | `qmltui::controls` | Interactive buttons, selectors, indicators, panels, dialogs, tooltips, tabs, and page stacks. |
-| `import QmlTui.Image` | `qmltui::image` | Raster images and sprite sheets via Kitty, Sixel, or Unicode fallback (`-DQMLTUI_ENABLE_IMAGE=ON`). |
-| `import QmlTui.PtyView` | `qmltui::pty_view` | Embedded Unix pseudo-terminal on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`). |
+| `import QmlTui` | `QmlTui::Core` | Core session, item tree, layouts, text inputs, virtualized views, input events, states, animations, and sub-cell canvas. |
+| `import QmlTui.Controls` | `QmlTui::Controls` | Interactive buttons, selectors, indicators, panels, dialogs, tooltips, tabs, and page stacks. |
+| `import QmlTui.Image` | `QmlTui::Image` | Raster images and sprite sheets via Kitty, Sixel, or Unicode fallback (`-DQMLTUI_ENABLE_IMAGE=ON`). |
+| `import QmlTui.PtyView` | `QmlTui::PtyView` | Embedded Unix pseudo-terminal on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`). |
 
 ## `QmlTui`: Core and Terminal
 

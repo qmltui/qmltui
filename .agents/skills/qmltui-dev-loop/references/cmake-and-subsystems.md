@@ -1,10 +1,10 @@
 # CMake Integration, Demo Recording, and Optional Subsystems
 
-Reference patterns for wiring `qmltui::runner` across consumer and in-tree CMake projects, recording deterministic Asciinema `.cast` / `.gif` demos, and verifying specialized QmlTui subsystems.
+Reference patterns for wiring `QmlTui::Runner` across consumer and in-tree CMake projects, recording deterministic Asciinema `.cast` / `.gif` demos, and verifying specialized QmlTui subsystems.
 
 ## 1. Consumer vs. In-Repo CMake Setup
 
-Link `qmltui::runner` conditionally on the **existing** executable under `if(BUILD_TESTING AND TARGET qmltui::runner)`—never duplicate the executable or QML module target for tests. Production builds (`-DBUILD_TESTING=OFF`) omit Runner automatically.
+Link `QmlTui::Runner` conditionally on the **existing** executable under `if(BUILD_TESTING AND TARGET QmlTui::Runner)`—never duplicate the executable or QML module target for tests. Production builds (`-DBUILD_TESTING=OFF`) omit Runner automatically.
 
 In consumer projects supporting both `find_package(QmlTui)` (`IMPORTED` targets) and `FetchContent` (`DEPENDENCIES TARGET`), call `include(CTest)` **before** `FetchContent_MakeAvailable(QmlTui)` (so `BUILD_TESTING=ON` enables `QMLTUI_ENABLE_RUNNER` automatically) and branch on `IMPORTED` because Qt rejects `IMPORTED` targets inside `qt_add_qml_module(... DEPENDENCIES)`:
 
@@ -12,7 +12,7 @@ In consumer projects supporting both `find_package(QmlTui)` (`IMPORTED` targets)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
 
-# Must precede FetchContent_MakeAvailable(QmlTui) so qmltui::runner builds by default
+# Must precede FetchContent_MakeAvailable(QmlTui) so QmlTui::Runner builds by default
 # (passing -DBUILD_TESTING=OFF omits Runner cleanly for production builds).
 include(CTest)
 include(FetchContent)
@@ -24,7 +24,7 @@ FetchContent_MakeAvailable(QmlTui)
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
 set(app_qml_module_args)
-get_target_property(qmltui_is_imported qmltui::core IMPORTED)
+get_target_property(qmltui_is_imported QmlTui::Core IMPORTED)
 if(qmltui_is_imported)
     if(QmlTui_QML_IMPORT_PATH)
         list(APPEND app_qml_module_args IMPORT_PATH "${QmlTui_QML_IMPORT_PATH}")
@@ -32,8 +32,8 @@ if(qmltui_is_imported)
 else()
     list(APPEND app_qml_module_args
         DEPENDENCIES
-            TARGET qmltui::core
-            TARGET qmltui::controls
+            TARGET QmlTui::Core
+            TARGET QmlTui::Controls
     )
 endif()
 
@@ -47,10 +47,10 @@ qt_add_qml_module(my_app
     QML_FILES Main.qml
     ${app_qml_module_args}
 )
-target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core qmltui::controls)
+target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(my_app PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(my_app PRIVATE QmlTui::Runner)
     qmltui_scenario_editor_support()
     qmltui_add_scenario(
         NAME my_app_smoke
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 | Keyword | Default | Purpose |
 | :--- | :--- | :--- |
 | `NAME <name>` | Required | CTest name (artifacts write to `<binary-dir>/RunnerArtifacts/<NAME>` unless `ARTIFACT_DIR` is set). |
-| `TARGET <target>` | Required | Executable target linked with `qmltui::runner`. |
+| `TARGET <target>` | Required | Executable target linked with `QmlTui::Runner`. |
 | `SCRIPT <path>` | Required unless `EMBEDDED` | `.js`, `.mjs`, or `:/...` scenario script. |
 | `EMBEDDED` | Off | Target constructs `qmltui::Runner` directly in C++ (mutually exclusive with `SCRIPT`). |
 | `COLUMNS <n>`, `ROWS <n>` | `80`, `24` | Initial viewport size (`1..1000`). |
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
 ### C++-Created `Terminal` & `EMBEDDED` Runners
 
-- **C++-constructed `Terminal` (no QML root)**: QML-created `Terminal` items auto-register the environment hook when `qmltui::runner` is linked. If `main.cpp` constructs `qmltui::Terminal` directly in C++, call `qmltui::Runner::startFromEnvironment(&engine, terminal)` after creating the root (see `examples/recipes/cpp_only/main.cpp` in the QmlTui repository).
+- **C++-constructed `Terminal` (no QML root)**: QML-created `Terminal` items auto-register the environment hook when `QmlTui::Runner` is linked. If `main.cpp` constructs `qmltui::Terminal` directly in C++, call `qmltui::Runner::startFromEnvironment(&engine, terminal)` after creating the root (see `examples/recipes/cpp_only/main.cpp` in the QmlTui repository).
 - **Directly constructed `EMBEDDED` runner**: Call `qmltui::Runner::useEmbeddedScenario()` before QML loads (keeps terminal startup quiet unless `QMLTUI_RUNNER_LIVE=1`), construct `qmltui::Runner` with explicit `QQmlEngine*`, `Terminal*`, `:/...` resource script path, artifact dir, `QSize(cols, rows)`, and timeouts, then schedule `QTimer::singleShot(0, driver, &qmltui::Runner::start)` and register with `qmltui_add_scenario(... EMBEDDED)` (see `tests/Runner/main.cpp` in the QmlTui repository).
 
 ---

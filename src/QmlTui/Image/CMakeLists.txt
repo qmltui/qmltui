@@ -21,8 +21,6 @@ if(qmltui_image_library_type STREQUAL "STATIC_LIBRARY")
 else()
     target_compile_definitions(QmlTuiImage PRIVATE QMLTUI_IMAGE_LIBRARY)
 endif()
-add_library(qmltui::image ALIAS QmlTuiImage)
-add_library(qmltui::Image ALIAS QmlTuiImage)
 add_library(QmlTui::Image ALIAS QmlTuiImage)
 
 target_include_directories(QmlTuiImage
@@ -33,7 +31,7 @@ target_include_directories(QmlTuiImage
         ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
 
-target_link_libraries(QmlTuiImage PUBLIC qmltui::core Qt6::Gui PRIVATE Qt6::Network)
+target_link_libraries(QmlTuiImage PUBLIC QmlTui::Core Qt6::Gui PRIVATE Qt6::Network)
 
 set_target_properties(QmlTuiImage PROPERTIES EXPORT_NAME Image)
 set_target_properties(QmlTuiImageplugin PROPERTIES EXPORT_NAME ImagePlugin)

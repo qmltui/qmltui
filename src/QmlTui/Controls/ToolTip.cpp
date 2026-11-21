@@ -8,7 +8,7 @@
 #include <QmlTui/Core/Primitives/UnicodeText.h>
 #include <algorithm>
 
-namespace qmltui::controls {
+namespace qmltui {
 void ToolTip::setColor(Color color) {
     if (m_color == color) return;
     m_color = color;
@@ -395,4 +395,4 @@ void ToolTip::hide() {
     emit visibleChanged();
 }
 
-} // namespace qmltui::controls
+} // namespace qmltui

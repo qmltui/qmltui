@@ -33,8 +33,6 @@ if(qmltui_controls_library_type STREQUAL "STATIC_LIBRARY")
 else()
     target_compile_definitions(QmlTuiControls PRIVATE QMLTUI_CONTROLS_LIBRARY)
 endif()
-add_library(qmltui::controls ALIAS QmlTuiControls)
-add_library(qmltui::Controls ALIAS QmlTuiControls)
 add_library(QmlTui::Controls ALIAS QmlTuiControls)
 target_include_directories(QmlTuiControls
     PUBLIC
@@ -43,7 +41,7 @@ target_include_directories(QmlTuiControls
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}   # generated QML type registrations
 )
-target_link_libraries(QmlTuiControls PUBLIC qmltui::core)
+target_link_libraries(QmlTuiControls PUBLIC QmlTui::Core)
 set_target_properties(QmlTuiControls PROPERTIES EXPORT_NAME Controls)
 set_target_properties(QmlTuiControlsplugin PROPERTIES EXPORT_NAME ControlsPlugin)
 qmltui_set_install_rpath(QmlTuiControls "${CMAKE_INSTALL_LIBDIR}")

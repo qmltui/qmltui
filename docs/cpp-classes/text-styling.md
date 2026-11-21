@@ -6,7 +6,7 @@
   - `<QmlTui/Core/Primitives/TextStyle.h>`
   - `<QmlTui/Core/Primitives/Span.h>`
   - `<QmlTui/Core/Primitives/HighlightRange.h>`
-- **Target**: `qmltui::core` (`QmlTui::Core`)
+- **Target**: `QmlTui::Core`
 
 ## `qmltui::TextStyle`
 

@@ -2,13 +2,13 @@
 
 - **Header**: `<QmlTui/Runner/Runner.h>`
 - **Inherits**: `QObject`
-- **Target**: `qmltui::runner` (`QmlTui::Runner`)
+- **Target**: `QmlTui::Runner`
 
 ## Overview
 
 `qmltui::Runner` turns a running QmlTui `Terminal` application into a bounded, JavaScript-driven test harness and automation oracle. It loads a scenario from a filesystem or Qt resource path, invokes its `function main(app)` entry point with a driver facade, injects keyboard and mouse input, verifies committed terminal frames (`TextGridBuffer`), and writes machine-readable diagnostics (`result.json`, `final.txt`, `failure.txt`). A synchronous scenario succeeds when `main` returns normally; calling `app.finish()` is optional.
 
-The class is declared in `src/QmlTui/Runner/Runner.h` (installed as `<QmlTui/Runner/Runner.h>`) and implemented in `src/QmlTui/Runner/Runner.cpp`. Build and link `qmltui::runner` when `QMLTUI_ENABLE_RUNNER=ON` (default for top-level builds) or `QMLTUI_BUILD_TESTS=ON`. Its only build dependencies are `Qt6::Core`, `Qt6::Qml`, and `qmltui::core` (no `QtGui` required).
+The class is declared in `src/QmlTui/Runner/Runner.h` (installed as `<QmlTui/Runner/Runner.h>`) and implemented in `src/QmlTui/Runner/Runner.cpp`. Build and link `QmlTui::Runner` when `QMLTUI_ENABLE_RUNNER=ON` (default for top-level builds) or `QMLTUI_BUILD_TESTS=ON`. Its only build dependencies are `Qt6::Core`, `Qt6::Qml`, and `QmlTui::Core` (no `QtGui` required).
 
 `Runner` collaborates with three core types:
 
@@ -381,7 +381,7 @@ When armed with `--record <path>`, `qmltui_add_scenario(... RECORD <name>.cast)`
 
 ## `qmltui-runner` Command-Line Launcher
 
-`qmltui-runner` launches a `qmltui::runner`-linked executable from the shell without requiring CMake test registration:
+`qmltui-runner` launches a `QmlTui::Runner`-linked executable from the shell without requiring CMake test registration:
 
 ```bash
 qmltui-runner --script test.js -- ./myApp --config demo.json
@@ -443,13 +443,13 @@ When `qmltui-runner` starts a child process, it clears inherited `QMLTUI_RUNNER_
 
 ## CMake Integration (`qmltui_add_scenario`)
 
-`cmake/QmlTuiRunner.cmake` is included automatically when `qmltui::runner` is built or imported via `find_package(QmlTui)`. Guard linking and scenario registration with `BUILD_TESTING` (defined by `include(CTest)`) so production builds (`-DBUILD_TESTING=OFF`) do not force-load `qmltui::runner` into shipped binaries:
+`cmake/QmlTuiRunner.cmake` is included automatically when `QmlTui::Runner` is built or imported via `find_package(QmlTui)`. Guard linking and scenario registration with `BUILD_TESTING` (defined by `include(CTest)`) so production builds (`-DBUILD_TESTING=OFF`) do not force-load `QmlTui::Runner` into shipped binaries:
 
 ```cmake
 include(CTest)
 
-if(BUILD_TESTING AND TARGET qmltui::runner)
-    target_link_libraries(my_app PRIVATE qmltui::runner)
+if(BUILD_TESTING AND TARGET QmlTui::Runner)
+    target_link_libraries(my_app PRIVATE QmlTui::Runner)
     qmltui_scenario_editor_support()
 
     qmltui_add_scenario(
@@ -470,7 +470,7 @@ endif()
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
 | `NAME <test-name>` | Required | CTest test name. |
-| `TARGET <target>` | Required | Executable target linked against `qmltui::runner`. |
+| `TARGET <target>` | Required | Executable target linked against `QmlTui::Runner`. |
 | `SCRIPT <path>` | Required (unless `EMBEDDED`) | Path to the `.js`, `.mjs`, or `:/...` scenario script. |
 | `EMBEDDED` | Off | Run an executable that constructs `qmltui::Runner` directly in C++ instead of reading `QMLTUI_RUNNER_SCRIPT`. |
 | `COLUMNS <n>`, `ROWS <n>` | `80`, `24` | Initial terminal viewport dimensions. |
@@ -491,7 +491,7 @@ endif()
 
 ### Environment-Driven Startup (`Runner::startFromEnvironment`)
 
-When `qmltui::runner` is linked into an application, QML-created `Terminal` roots invoke `Runner::startFromEnvironment()` automatically on startup. If you construct `qmltui::Terminal` in C++ without QML, call `Runner::startFromEnvironment(&engine, terminal)` after creating the root. It returns `nullptr` when no `QMLTUI_RUNNER_*` request is present in the environment.
+When `QmlTui::Runner` is linked into an application, QML-created `Terminal` roots invoke `Runner::startFromEnvironment()` automatically on startup. If you construct `qmltui::Terminal` in C++ without QML, call `Runner::startFromEnvironment(&engine, terminal)` after creating the root. It returns `nullptr` when no `QMLTUI_RUNNER_*` request is present in the environment.
 
 `QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, and `QMLTUI_RUNNER_CAPTURE_AFTER_MS` are mutually exclusive:
 

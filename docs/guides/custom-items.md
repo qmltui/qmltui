@@ -110,7 +110,7 @@ void CustomBlock::keyPressEvent(qmltui::KeyEvent* event) {
 
 ## 3. CMake Registration and QML Usage
 
-List the header and source under `SOURCES` in `qt_add_qml_module()` and link `qmltui::core`:
+List the header and source under `SOURCES` in `qt_add_qml_module()` and link `QmlTui::Core`:
 
 ```cmake
 qt_add_executable(my_app main.cpp)
@@ -118,9 +118,9 @@ qt_add_qml_module(my_app
     URI MyApp
     SOURCES CustomBlock.h CustomBlock.cpp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET qmltui::core
+    DEPENDENCIES TARGET QmlTui::Core
 )
-target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml qmltui::core)
+target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 ```
 
 Instantiate `CustomBlock` directly in `Main.qml`:

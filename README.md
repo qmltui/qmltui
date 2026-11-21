@@ -25,6 +25,17 @@ QmlTui renders the item tree into a double-buffered character-cell grid, diffs c
 
 ![QmlTui Showcase Applications](docs/assets/casts/apps-showcase.gif)
 
+<p align="center">
+  <sub>Featured in <a href="https://github.com/qmltui/apps"><strong>qmltui/apps</strong></a>:
+  <a href="https://github.com/qmltui/apps/tree/main/apps/agent_stream">agent_stream</a> ·
+  <a href="https://github.com/qmltui/apps/tree/main/apps/qtop">qtop</a> ·
+  <a href="https://github.com/qmltui/apps/tree/main/apps/container_fleet">container_fleet</a> ·
+  <a href="https://github.com/qmltui/apps/tree/main/apps/file_manager">file_manager</a> ·
+  <a href="https://github.com/qmltui/apps/tree/main/apps/industrial_plc_hmi">industrial_plc_hmi</a> ·
+  <a href="https://github.com/qmltui/apps/tree/main/apps/audio_player">audio_player</a> ·
+  <a href="docs/examples.md#showcase-applications-qmltuiapps">all 12 apps →</a></sub>
+</p>
+
 ## Hello, World!
 
 From [`examples/helloworld/`](examples/helloworld/):
@@ -111,7 +122,7 @@ cmake --build build --target qmltui_gallery
 
 ![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
 
-To create a standalone 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`), follow the [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/). For browser builds in `xterm.js`, see the [WebAssembly guide](docs/guides/webassembly.md).
+To create a standalone 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`), follow the [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/). For browser builds in `xterm.js`, see the [WebAssembly guide](docs/guides/webassembly.md). Using Python? Host `QmlTui` and `QmlTui.Controls` directly from `PySide6` without custom C++ bindings—see [`examples/recipes/pyside6/`](examples/recipes/pyside6/).
 
 ## QML Modules and CMake Targets
 
@@ -121,8 +132,20 @@ To create a standalone 3-file project (`CMakeLists.txt`, `main.cpp`, `Main.qml`)
 | `import QmlTui.Controls` | `QmlTui::Controls` | `QmlTui::Core` | `Button`, `CheckBox`, `RadioButton`, `ComboBox`, `SpinBox`, `Slider`, `ProgressBar`, `BusyIndicator`, `Sparkline`, `TabBar`, `StackView`, `Panel`, `Dialog`, `ToolTip` |
 | `import QmlTui.Image` | `QmlTui::Image` | `QmlTui::Core`, `Qt6::Gui`, `Qt6::Network` | `Image` and `AnimatedSprite` via Kitty, Sixel, or Unicode half-blocks (`-DQMLTUI_ENABLE_IMAGE=ON`) |
 | `import QmlTui.PtyView` | `QmlTui::PtyView` | `QmlTui::Core`, `libvterm` | Embedded Unix pseudo-terminal (`PtyView`) on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`) |
+| *(C++ / CLI)* | `QmlTui::Runner` | `QmlTui::Core` | Headless scenario driver ([`qmltui::Runner`](docs/cpp-classes/runner.md) and `qmltui-runner`) with virtual clock, snapshots, style/paint audits, and `.cast` recording |
 
 See [Build Configuration and Installation](docs/build-configuration.md) for `FetchContent`, `find_package(QmlTui)`, CMake options, and environment variables.
+
+## Headless Testing
+
+Link `QmlTui::Runner` under `BUILD_TESTING` to drive your unmodified executable headlessly on `QCoreApplication`—sweeping viewports with 0-based `(x, y)` rulers, inspecting `#RRGGBBAA` / SGR styles, stepping animations on a virtual clock, checking idle repaint budgets, and recording deterministic `.cast` replays:
+
+```sh
+./build/tools/qmltui-runner/qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled \
+  -- ./build/examples/helloworld/hello_qmltui
+```
+
+See [Testing with Runner](docs/guides/testing.md) and [Agentic Development Loop](docs/guides/agentic-development.md).
 
 ## Performance and Memory
 

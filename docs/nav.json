@@ -30,7 +30,6 @@
         { "text": "Custom C++ Items", "link": "/guides/custom-items" },
         { "text": "Testing with Runner", "link": "/guides/testing" },
         { "text": "Agentic Loop with Runner", "link": "/guides/agentic-development" },
-        { "text": "Editor & IDE Setup", "link": "/guides/editor-setup" },
         { "text": "Qt for WebAssembly", "link": "/guides/webassembly" }
       ]
     },

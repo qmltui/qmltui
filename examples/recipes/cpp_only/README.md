@@ -17,16 +17,19 @@ engine during normal startup: `QCoreApplication`, a `Terminal` subclass, and one
 
 - **Rows** are built by `addRow()`, the C++ counterpart of a delegate: a `Row`
   of three `Text` items parented to a `Column`. `ListView` and `Repeater`
-  take a `QQmlComponent` delegate, so they need a QML engine and are not used.
+  take a `QQmlComponent` delegate, so they need a QML engine and are not used
+  (`TableView` and `TreeView` can also render C++ `QAbstractItemModel`s directly
+  without a QML delegate).
 - **State** is two written properties, `m_services` and `m_filterText`, and one
   binding, `m_visibleServices`. `QBindable<QString>(textInput, "text")` adapts
   the ordinary `Q_PROPERTY` so the binding can depend on it. A
   `QPropertyNotifier` rebuilds the rows when the binding changes.
 - **Keys** reach the root `Terminal` only after the focused widget declined
   them. The filter accepts every printable character, so `q` is text; `Ctrl+Q`
-  and `Escape` are handled in `keyPressEvent`. A `Shortcut` is matched *before*
-  the focused item and ignores modifiers, so a `Shortcut` on `Qt::Key_Q` would
-  steal the letter from the text field.
+  and contextual `Escape` are handled in `keyPressEvent`. (`Shortcut` matches
+  *before* non-text-consuming items while editable text inputs suppress
+  unmodified printable single-key shortcuts, so handling both `Ctrl+Q` and
+  `Escape` in `keyPressEvent` keeps quit logic in one place.)
 
 ```bash
 cmake --build build --target qmltui_cpp_only_demo

@@ -56,7 +56,7 @@ Visible-behavior tests should assert the committed terminal frame rather than in
   - `app.region(0, 0, 80, 3).expectText("Header")` restricts text checks, snapshots, and clicks to a cell rectangle `[x, y, width, height]`.
   - `app.item("sidebar").clickText("Logs")` and `app.item("sidebar").expectText("Logs")` scope operations to the viewport bounds of the visible QML item whose `objectName` is `"sidebar"`.
 - **Cell style assertions**:
-  - `app.expectStyle(2, 1, { character: "●", foreground: "green", bold: true })` checks the glyph, resolved `#RRGGBBAA` or named color (`"default"`, `"cyan"`, etc.), and SGR attributes (`bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, `strikethrough`) at cell `(x, y)`. Unrecognized style property keys fail immediately.
+  - `app.expectStyle(2, 1, { character: "●", foreground: "green", bold: true })` checks the glyph, resolved `#RRGGBBAA` or named color (`"default"`, `"cyan"`, etc.), and SGR attributes (`bold`, `dim`, `italic`, `underline`, `reversed` / `reverse`, `blink`, `conceal`, `strikethrough`) at cell `(x, y)`. Unrecognized style property keys fail immediately.
 - **Golden snapshots**:
   - `app.expectSnapshot("snapshots/initial.txt")` compares normalized UTF-8 frame text against a baseline file resolved relative to the scenario script.
   - `app.expectStyled("snapshots/initial_styled.txt")` compares both frame text and per-run `#RRGGBBAA` colors and SGR attributes. On mismatch, Runner writes `snapshots/<name>.actual.txt` and a unified `snapshots/<name>.diff` into the artifact directory.
@@ -187,7 +187,7 @@ Example `result.json` emitted when a scenario fails:
   "clock": "virtual",
   "viewport": { "columns": 80, "rows": 24 },
   "finalViewport": { "columns": 80, "rows": 24 },
-  "message": "expectText: text \"Status: Clicked!\" not found in committed frame",
+  "message": "Expected frame to contain \"Status: Clicked!\"",
   "operation": {
     "index": 2,
     "name": "expectText",
@@ -195,7 +195,7 @@ Example `result.json` emitted when a scenario fails:
   },
   "artifacts": {
     "directory": "/tmp/qmltui-runner-XXXXXX",
-    "result": "/tmp/qmltui-runner-XXXXXX/result.json",
+    "result": "result.json",
     "captures": [],
     "updatedSnapshots": [],
     "casts": [],

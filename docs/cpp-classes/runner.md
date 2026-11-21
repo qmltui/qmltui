@@ -257,7 +257,7 @@ Fails unless the bounding box `[x, y, width, height]` in the next committed fram
 
 #### `void expectStyle(int x, int y, const QJSValue &expectedStyle, int timeoutMs = -1)`
 
-Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, and `strikethrough`. Unknown keys in `expectedStyle` fail the scenario immediately so misspelled attribute names never pass silently.
+Fails unless the cell at `(x, y)` matches all properties specified in `expectedStyle`: `character`, `foreground`, `background` (color string or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed` (or `reverse`, matching `styledText()`), `blink`, `conceal`, and `strikethrough`. Unknown keys in `expectedStyle` fail the scenario immediately so misspelled attribute names never pass silently.
 
 ```javascript
 app.expectStyle(0, 0, { character: "A", foreground: "cyan", bold: true, strikethrough: false });
@@ -423,7 +423,7 @@ Launcher flags fall into three groups:
 - **Probe modifiers** (`--sweep`, `--sizes`, `--idle-ms`, `--scrollback`): synthesize an inline `EVAL` scenario instead of requiring a script file. They cannot be combined with `--script` (exit `2`), but compose cleanly with `--eval` and `--capture-after-ms`. Any probe modifier also enables `QMLTUI_DEBUG_PAINT_DIRTY=1` (unless already set) and fails the run with exit code `1` if `frameStats.dirtyDuringPaintTotal > 0`.
 - **Output flags** (`--print`, `--ruler`, `--styled`): not standalone modes—pair them with a base mode or probe modifier. `--ruler` implies `--print`, works with `--script`, and enables `QMLTUI_DEBUG_PAINT_DIRTY=1`; both `--print` and `--ruler` are incompatible with `--live`.
   - `--ruler` adds 0-based `(x, y)` column/row rulers to `stdout` only; saved files in `--artifacts` (`frame_<WxH>.txt`, `final.txt`, `capture.txt`, snapshots) remain plain un-ruled UTF-8 frames.
-  - `--styled` writes `frame_<WxH>_styled.txt` (or `capture_styled.txt`, plus `scrollback_styled.txt` with `--scrollback`) containing logical `TextGridBuffer` `#RRGGBBAA`/SGR runs. By itself it does not print to `stdout`—pair it with `--print` or `--ruler` to print the `--- Styles ---` section.
+  - `--styled` writes `frame_<WxH>_styled.txt` (or `capture_styled.txt`, `final_styled.txt` / `failure_styled.txt` with `--script` or `--eval`, plus `scrollback_styled.txt` with `--scrollback`) containing logical `TextGridBuffer` `#RRGGBBAA`/SGR runs. By itself it does not print to `stdout`—pair it with `--print` or `--ruler` to print the `--- Styles ---` section.
 
 When probe modifiers are active (for example `--sweep --idle-ms 300 --styled`), `qmltui-runner` launches the target at the first viewport (`60x18` for `--sweep`) and synthesizes:
 

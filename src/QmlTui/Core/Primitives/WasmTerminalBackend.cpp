@@ -1,5 +1,7 @@
 #include <QmlTui/Core/Primitives/WasmTerminalBackend.h>
 
+#include <QCoreApplication>
+
 #include <emscripten.h>
 #include <emscripten/bind.h>
 
@@ -32,7 +34,97 @@ EM_JS(void, qmltui_wasm_js_output, (const char* data, int length), {
     if (Module['qmltuiOnOutput']) Module['qmltuiOnOutput'](HEAPU8.slice(data, data + length));
 });
 
+// Work around a Qt for WebAssembly QEventDispatcherWasm bug: updateNativeTimer()
+// truncates QTimerInfoList::timerWait() from nanoseconds to milliseconds, and
+// onTimer() only re-arms the native timer when activateTimers() > 0. Whenever
+// window.setTimeout fires even a fraction of a millisecond before the nanosecond
+// deadline (guaranteed whenever the sub-millisecond remainder is non-zero, or
+// when browser timers fire slightly early), activateTimers() returns 0 and the
+// native timer is dropped until an unrelated event wakes the dispatcher.
+//
+// Guard Qt's QWasmTimer callbacks so they never run before performance.now()
+// passes (start + delay + 1ms), guaranteeing steady_clock::now() reaches the
+// nanosecond deadline without affecting non-Qt page timers.
+// clang-format off
+EM_JS(void, qmltui_wasm_install_timer_guard, (), {
+    var g = typeof window !== 'undefined' ? window : globalThis;
+    if (!g || typeof g.setTimeout !== 'function' || typeof g.clearTimeout !== 'function') return;
+
+    var qtModules = g.__qmltuiQtModules || (g.__qmltuiQtModules = []);
+    if (!Module['__qmltuiQtTimerRegistered']) {
+        Module['__qmltuiQtTimerRegistered'] = true;
+        qtModules.push(function() { return Module['qtSuspendResumeControl']; });
+    }
+
+    if (g.__qmltuiQtTimerGuardInstalled) return;
+    g.__qmltuiQtTimerGuardInstalled = true;
+
+    var origSetTimeout = g.setTimeout.bind(g);
+    var origClearTimeout = g.clearTimeout.bind(g);
+    var now = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+        ? function() { return performance.now(); }
+        : function() { return Date.now(); };
+
+    function isQtHandler(fn) {
+        if (typeof fn !== 'function') return false;
+        for (var i = 0; i < qtModules.length; ++i) {
+            var ctrl = qtModules[i]();
+            var handlers = ctrl && ctrl.eventHandlers;
+            if (!handlers) continue;
+            for (var k in handlers) {
+                if (handlers[k] === fn) return true;
+            }
+        }
+        return false;
+    }
+
+    var nextId = 0x40000000;
+    var active = new Map();
+
+    g.setTimeout = function(fn, delay) {
+        var extraArgs = arguments.length > 2 ? Array.prototype.slice.call(arguments, 2) : null;
+        if (!isQtHandler(fn)) {
+            return extraArgs
+                ? origSetTimeout.apply(null, [fn, delay].concat(extraArgs))
+                : origSetTimeout(fn, delay);
+        }
+
+        var d = Number(delay);
+        if (!Number.isFinite(d) || d < 0) d = 0;
+        var id = nextId++;
+        if (nextId >= 0x7fffffff) nextId = 0x40000000;
+        var deadline = now() + d + 1.0;
+
+        function attempt() {
+            if (!active.has(id)) return;
+            var remaining = deadline - now();
+            if (remaining > 0) {
+                active.set(id, origSetTimeout(attempt, Math.ceil(remaining)));
+                return;
+            }
+            active.delete(id);
+            if (extraArgs) fn.apply(null, extraArgs);
+            else fn();
+        }
+
+        active.set(id, origSetTimeout(attempt, Math.ceil(d + 1)));
+        return id;
+    };
+
+    g.clearTimeout = function(id) {
+        var realId = active.get(id);
+        if (realId !== undefined) {
+            active.delete(id);
+            origClearTimeout(realId);
+            return;
+        }
+        origClearTimeout(id);
+    };
+});
+// clang-format on
+
 WasmTerminalBackend::WasmTerminalBackend(QObject* parent) : TerminalBackend(parent) {
+    qmltui_wasm_install_timer_guard();
     // The engine reads terminal capabilities from the environment, and the
     // browser has none. The page is an xterm.js-class emulator, so describe
     // it as one unless the host set something else (Module.ENV is not
@@ -98,3 +190,9 @@ EMSCRIPTEN_BINDINGS(qmltui_wasm_bridge) {
 }
 
 } // namespace qmltui
+
+static void qmltuiInstallWasmTimerGuard() {
+    qmltui::qmltui_wasm_install_timer_guard();
+}
+
+Q_COREAPP_STARTUP_FUNCTION(qmltuiInstallWasmTimerGuard)

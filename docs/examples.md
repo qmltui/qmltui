@@ -103,6 +103,14 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | :--- | :--- | :--- | :--- |
 | **Standalone Hello World** | [`examples/helloworld/`](../examples/helloworld/) | `hello_qmltui` (`hello_world` Runner scenario) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) starter project supporting `FetchContent`, `find_package(QmlTui)`, and `qmltui_wasm_app()`. |
 
+## Official Add-on Modules
+
+Opinionated higher-level UI toolkits built on `QmlTui` and `QmlTui.Controls` live in standalone repositories consumable via CMake `FetchContent`:
+
+| Module | Repository & Target | Showcase App | Description |
+| :--- | :--- | :--- | :--- |
+| **`QmlTui.TVision`** | [`qmltui/tvision`](https://github.com/qmltui/tvision) (`QmlTui::TVision`) | [`turbo_hex`](https://github.com/qmltui/apps/tree/main/apps/turbo_hex) | Borland Turbo Vision-inspired Multi-Document Interface (`TvDesktop`, draggable/resizable `TvWindow`s, `TvMenuBar` mnemonics, `TvDialog`, 3D beveled `TvButton`, per-file `TvPalette` themes, and glyph-preserving `TvDropShadow`). |
+
 ## Showcase Applications (`qmltui/apps`)
 
 Complete, multi-panel terminal applications built with QmlTui live in the companion [qmltui/apps](https://github.com/qmltui/apps) repository:
@@ -115,6 +123,7 @@ Complete, multi-panel terminal applications built with QmlTui live in the compan
 | **container_fleet** | [`apps/container_fleet`](https://github.com/qmltui/apps/tree/main/apps/container_fleet) | Fleet dashboard with `TableView` sorting, `TabBar` status filters, live search, and streaming log drawer. |
 | **file_manager** | [`apps/file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager) | Miller-column browser with syntax-highlighted code/Markdown previews, `Image` rendering, and an embedded `PtyView` shell drawer. |
 | **markdown_viewer** | [`apps/markdown_viewer`](https://github.com/qmltui/apps/tree/main/apps/markdown_viewer) | AST-driven Markdown reader (`md4qt`) with Unicode box tables, heading navigation, search highlights, and live style editor. |
+| **turbo_hex** | [`apps/turbo_hex`](https://github.com/qmltui/apps/tree/main/apps/turbo_hex) | Multi-window Hex & Binary Inspector built on [`QmlTui.TVision`](https://github.com/qmltui/tvision) with `BoundedSelfPaint` Hex + ASCII views, Little/Big-Endian Data Inspector, and ELF/PNG/ZIP/WASM header & string span highlighting. |
 | **audio_player** | [`apps/audio_player`](https://github.com/qmltui/apps/tree/main/apps/audio_player) | Terminal audio player with 24-band FFT spectrum analyzer, `Canvas.Braille` stereo oscilloscope, playlist, and ANSI skins. |
 | **plotting_dashboard** | [`apps/plotting_dashboard`](https://github.com/qmltui/apps/tree/main/apps/plotting_dashboard) | Real-time `Canvas.Braille` waveform oscilloscope and XY Lissajous phase orbits. |
 | **industrial_plc_hmi** | [`apps/industrial_plc_hmi`](https://github.com/qmltui/apps/tree/main/apps/industrial_plc_hmi) | SCADA/PLC operator console with telemetry gauges, trend chart, alarm log, hardware diagnostics, and safety interlocks. |

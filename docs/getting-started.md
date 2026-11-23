@@ -333,7 +333,7 @@ ctest --test-dir build --output-on-failure
 
 ## Explore the Component Gallery (Optional)
 
-Browse all 45 built-in controls, data views, layouts, and canvas primitives directly in your browser in the [Component Gallery](https://qmltui.github.io/website/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/website/playground.html).
+Browse all 45 built-in controls, data views, layouts, and canvas primitives directly in your browser in the [Component Gallery](https://qmltui.github.io/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/playground.html).
 
 To build and run `qmltui_gallery` locally in your terminal:
 

@@ -20,7 +20,7 @@ Linux, macOS, Windows Terminal, and WebAssembly (`xterm.js`).
 
 - **Automatic QML import paths and exported CLI**: `find_package(QmlTui 0.6)` configures `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically, sets relative `$ORIGIN` / `@loader_path` `INSTALL_RPATH` entries on installed libraries and plugins, and exports `QmlTui::qmltui-runner`.
 - **Live `AltScreen` logging**: Stream `console.log()`, `qDebug()`, and QML warnings unbuffered during alternate-screen sessions with `QMLTUI_LOG_FILE=<path>` or `2> debug.log`.
-- **Documentation portal and showcase**: Interactive VitePress documentation and browser playground live in [`qmltui/website`](https://github.com/qmltui/website), alongside 12 full-scale applications in [`qmltui/apps`](https://github.com/qmltui/apps).
+- **Documentation portal and showcase**: Interactive VitePress documentation and browser playground live in [`qmltui/qmltui.github.io`](https://github.com/qmltui/qmltui.github.io), alongside 12 full-scale applications in [`qmltui/apps`](https://github.com/qmltui/apps).
 
 ## Earlier Releases
 

@@ -18,10 +18,10 @@
 </p>
 
 <p align="center">
-  <a href="https://qmltui.github.io/website/"><strong>Documentation</strong></a> ·
-  <a href="https://qmltui.github.io/website/playground.html"><strong>Live Playground (Wasm)</strong></a> ·
-  <a href="https://qmltui.github.io/website/playground.html?mode=gallery"><strong>Component Gallery</strong></a> ·
-  <a href="https://qmltui.github.io/website/showcase.html"><strong>App Showcase</strong></a>
+  <a href="https://qmltui.github.io/"><strong>Documentation</strong></a> ·
+  <a href="https://qmltui.github.io/playground.html"><strong>Live Playground (Wasm)</strong></a> ·
+  <a href="https://qmltui.github.io/playground.html?mode=gallery"><strong>Component Gallery</strong></a> ·
+  <a href="https://qmltui.github.io/showcase.html"><strong>App Showcase</strong></a>
 </p>
 
 ![QmlTui Showcase Applications](docs/assets/casts/apps-showcase.gif)
@@ -150,7 +150,7 @@ cmake --build build --target qmltui_gallery
 
 - **Standalone C++ / CMake (`FetchContent` or `find_package(QmlTui)`)**: Follow the 3-file [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/).
 - **Python (`PySide6`)**: Host `QmlTui` and `QmlTui.Controls` directly on `QCoreApplication` without custom C++ bindings—see [`examples/recipes/pyside6/`](examples/recipes/pyside6/).
-- **WebAssembly (`xterm.js`)**: Cross-compile with Qt for WebAssembly (`wasm_singlethread`) and `qmltui_wasm_app()`—see the [WebAssembly guide](docs/guides/webassembly.md) or try QmlTui in your browser in the [Live Playground](https://qmltui.github.io/website/playground.html).
+- **WebAssembly (`xterm.js`)**: Cross-compile with Qt for WebAssembly (`wasm_singlethread`) and `qmltui_wasm_app()`—see the [WebAssembly guide](docs/guides/webassembly.md) or try QmlTui in your browser in the [Live Playground](https://qmltui.github.io/playground.html).
 
 ## QML Modules and CMake Targets
 

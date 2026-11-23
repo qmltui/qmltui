@@ -44,8 +44,24 @@ int peer(const QStringList& args) {
         return 0;
     }
     if (behavior == "crash") std::abort();
-    const QString result =
-        QDir(qEnvironmentVariable("QMLTUI_RUNNER_ARTIFACT_DIR")).filePath("result.json");
+    const QDir artifactDir(qEnvironmentVariable("QMLTUI_RUNNER_ARTIFACT_DIR"));
+    const QString result = artifactDir.filePath("result.json");
+    if (behavior == "crlf-artifacts") {
+        writeFile(artifactDir.filePath("final.txt"), "CRLF ROW\r\n");
+        writeFile(artifactDir.filePath("final_styled.txt"),
+                  "CRLF ROW\r\n--- styles\r\ny=0 x=0-7 fg=#7FDBCAFF bg=default\r\n");
+        writeFile(artifactDir.filePath("scrollback.txt"), "CRLF HISTORY\r\n");
+        writeFile(artifactDir.filePath("scrollback_styled.txt"),
+                  "CRLF HISTORY\r\n--- styles\r\ny=0 x=0-11 fg=#F1FA8CFF bg=default bold\r\n");
+        writeFile(result, QJsonDocument(
+                              QJsonObject{{"schemaVersion", 1},
+                                          {"mode", "eval"},
+                                          {"status", "passed"},
+                                          {"exitCode", 0},
+                                          {"artifacts", QJsonObject{{"finalFrame", "final.txt"}}}})
+                              .toJson());
+        return 0;
+    }
     if (behavior == "missing") return 0;
     if (behavior == "malformed") {
         writeFile(result, "not json");
@@ -266,6 +282,19 @@ private slots:
         QVERIFY2(result.code == 0, result.err.constData());
         QVERIFY(result.out.contains("--- Styles ---"));
         QVERIFY(result.out.contains("fg=#"));
+
+        const auto crlf =
+            run({"--eval=x", "--ruler", "--styled", "--scrollback", "--artifacts",
+                 temporary.filePath("crlf"), "--", QCoreApplication::applicationFilePath(),
+                 "--peer", "crlf-artifacts"});
+        QVERIFY2(crlf.code == 0, crlf.err.constData());
+        const QString normalizedCrlfOut =
+            QString::fromUtf8(crlf.out).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        QVERIFY(!normalizedCrlfOut.contains(QLatin1Char('\r')));
+        QVERIFY(normalizedCrlfOut.contains(QStringLiteral("00 \u2502CRLF ROW\n")));
+        QVERIFY(normalizedCrlfOut.contains(QStringLiteral("fg=#7FDBCAFF")));
+        QVERIFY(normalizedCrlfOut.contains(
+            QStringLiteral("--- Scrollback Styles ---\ny=0 x=0-11 fg=#F1FA8CFF bg=default bold")));
     }
 
     void probeSweepAndCleanArtifacts() {
@@ -290,6 +319,7 @@ private slots:
         QVERIFY(first.out.contains("=== Viewport 80x24 ==="));
         QVERIFY(first.out.contains("=== Viewport 120x36 ==="));
         QVERIFY(first.out.contains("--- Styles (60x18) ---"));
+        QVERIFY(first.out.contains("fg=#"));
         QVERIFY(first.out.contains("00 \xe2\x94\x82"));
 
         auto second = run({"--clock", "virtual", "--sizes", "70x14,90x20", "--ruler",

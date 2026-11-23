@@ -25,8 +25,9 @@ QJsonObject readObject(const QString& path) {
 }
 
 QString readTextFile(const QString& path) {
+    // Runner writes text artifacts with QIODevice::Text (CRLF on Windows).
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return {};
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
     return QString::fromUtf8(file.readAll());
 }
 

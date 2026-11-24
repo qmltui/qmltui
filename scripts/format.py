@@ -16,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 CPP_EXTENSIONS = {".cpp", ".h", ".hpp"}
 QML_EXTENSIONS = {".qml"}
 ALL_SCAN_DIRS = ("src", "tests", "examples", "tools")
+PRUNED_DIR_NAMES = {".git", ".venv", "venv", "node_modules", "__pycache__", ".qt", ".rcc"}
 
 
 def is_executable(path: str | Path) -> bool:
@@ -41,12 +42,15 @@ def find_clang_format() -> str | None:
 
     candidates = [
         "clang-format",
+        "clang-format-23",
+        "clang-format-22",
+        "clang-format-21",
         "clang-format-20",
         "clang-format-19",
         "clang-format-18",
         "clang-format-17",
-        "/usr/bin/clang-format-18",
         "/usr/bin/clang-format",
+        "/usr/bin/clang-format-18",
         "/opt/homebrew/bin/clang-format",
         "/usr/local/bin/clang-format",
         "C:/Program Files/LLVM/bin/clang-format.exe",
@@ -67,12 +71,15 @@ def find_git_clang_format() -> str | None:
 
     candidates = [
         "git-clang-format",
+        "git-clang-format-23",
+        "git-clang-format-22",
+        "git-clang-format-21",
         "git-clang-format-20",
         "git-clang-format-19",
         "git-clang-format-18",
         "git-clang-format-17",
-        "/usr/bin/git-clang-format-18",
         "/usr/bin/git-clang-format",
+        "/usr/bin/git-clang-format-18",
         "/opt/homebrew/bin/git-clang-format",
         "/usr/local/bin/git-clang-format",
     ]
@@ -159,7 +166,7 @@ def print_usage(exit_code: int = 0) -> int:
 def require_clang_format(clang_format_bin: str | None) -> str:
     if not clang_format_bin:
         print(
-            "Error: clang-format not found. Please install clang-format (e.g. clang-format-18).",
+            "Error: clang-format not found. Install clang-format==23.1.3 (matching CI, e.g. `pipx install clang-format==23.1.3`).",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -272,7 +279,11 @@ def collect_files_in_dirs(dirs: list[Path], extensions: set[str]) -> list[Path]:
         abs_dir = REPO_ROOT / d if not d.is_absolute() else d
         if not abs_dir.is_dir():
             continue
-        for root, _, filenames in os.walk(abs_dir):
+        for root, dirnames, filenames in os.walk(abs_dir):
+            dirnames[:] = [
+                dn for dn in dirnames
+                if dn not in PRUNED_DIR_NAMES and not dn.startswith("build")
+            ]
             for name in filenames:
                 p = Path(root) / name
                 if p.suffix in extensions:

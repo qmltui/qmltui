@@ -1,5 +1,5 @@
 #!/bin/bash
-# Usage: tests/tools/sample_stacks.sh <build>/tests/benchmark_view_phases <View> <delegate> [samples]
+# Usage: tests/tools/sample_stacks.sh <build>/tests/Core/benchmark_view_phases <View> <delegate> [samples]
 # Needs gdb and a RelWithDebInfo build; the benchmark opts in to ptrace with PR_SET_PTRACER.
 # Set QML2_IMPORT_PATH=<build>/qml when running from a tree without generated qt.conf.
 # Poor man's sampling profiler: $1 = benchmark binary, $2 = view, $3 = delegate, $4 = samples

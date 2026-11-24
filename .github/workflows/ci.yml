@@ -25,12 +25,12 @@ concurrency:
 
 jobs:
   linux:
-    name: linux / Behavior ${{ matrix.behavior }}
+    name: linux / Private Qt ${{ matrix.private_qt }}
     runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "linux"]') || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
-        behavior: ['ON', 'OFF']
+        private_qt: ['ON', 'OFF']
     steps:
       - uses: actions/checkout@v4
 
@@ -57,7 +57,7 @@ jobs:
           -DQMLTUI_BUILD_TESTS=ON
           -DQMLTUI_BUILD_EXAMPLES=ON
           -DQMLTUI_ENABLE_RUNNER=ON
-          -DQMLTUI_ENABLE_PRIVATE_QT=${{ matrix.behavior }}
+          -DQMLTUI_ENABLE_PRIVATE_QT=${{ matrix.private_qt }}
           -DQMLTUI_ENABLE_IMAGE=ON
           -DQMLTUI_ENABLE_PTYVIEW=ON
 
@@ -70,7 +70,7 @@ jobs:
         run: ctest --test-dir build -LE Demo --output-on-failure
 
       - name: Check formatting, docs, and skills
-        if: matrix.behavior == 'ON'
+        if: matrix.private_qt == 'ON'
         run: |
           export QMLTUI_QT_LINUX="${QMLTUI_QT_LINUX:-${{ steps.install-qt.outputs.qt-root-dir }}}"
           if [ "${RUNNER_ENVIRONMENT:-}" != "self-hosted" ]; then
@@ -225,7 +225,7 @@ jobs:
           rm -rf "$badge_dir"
 
   windows:
-    name: windows / Behavior ON
+    name: windows / Private Qt ON
     runs-on: ${{ (vars.QMLTUI_SELF_HOSTED == '1' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "windows"]') || 'windows-2022' }}
     steps:
       - uses: actions/checkout@v4
@@ -278,7 +278,7 @@ jobs:
           ctest --test-dir build -LE Demo --output-on-failure
 
   macos:
-    name: macos / Behavior ON
+    name: macos / Private Qt ON
     # On public repositories, hosted macos-latest runs on every push and pull request.
     # On private forks/mirrors, macOS runs on workflow_dispatch and release tags only.
     if: ${{ !github.event.repository.private || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') }}

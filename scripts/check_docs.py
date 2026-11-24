@@ -32,6 +32,13 @@ FENCE_OPEN_RE = re.compile(r"^(\s*)(`{3,}|~{3,})([^\n]*)$")
 IMPORT_RE = re.compile(r"^\s*import\s+([A-Za-z0-9_.]+)", re.MULTILINE)
 INLINE_CODE_RE = re.compile(r"`+[^`\n]*`+")
 MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+HEADING_RE = re.compile(r"^\s*#{1,6}\s+(.*?)\s*#*\s*$")
+HTML_ID_RE = re.compile(r"""\b(?:id|name)\s*=\s*["']([^"']+)["']""")
+CPP_TYPE_DECL_RE = re.compile(
+    r"^\s*(?:(?:class|struct)\s+(?:[A-Z0-9_]+_EXPORT\s+)?([A-Za-z_][A-Za-z0-9_]*)\b|using\s+([A-Za-z_][A-Za-z0-9_]*)\s*=)",
+    re.MULTILINE,
+)
+FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 
 
 def cache_value(build_dir: Path, name: str) -> str | None:
@@ -106,12 +113,15 @@ def discover_qmllint(build_dir: Path, explicit: Path | None) -> Path | None:
     return None
 
 
-def iter_doc_files(include_historical: bool = False) -> list[Path]:
+def iter_doc_files(include_historical: bool = False, include_extra_md: bool = False) -> list[Path]:
     files = [
         REPO_ROOT / "README.md",
         REPO_ROOT / "CONTRIBUTING.md",
         REPO_ROOT / "AGENTS.md",
     ]
+    if include_extra_md:
+        for extra_name in ("LICENSE.md", "THIRD-PARTY.md", "SECURITY.md", "CLA.md", "CODE_OF_CONDUCT.md"):
+            files.append(REPO_ROOT / extra_name)
     docs_dir = REPO_ROOT / "docs"
     for md_path in sorted(docs_dir.rglob("*.md")):
         rel = md_path.relative_to(REPO_ROOT).as_posix()
@@ -123,6 +133,18 @@ def iter_doc_files(include_historical: bool = False) -> list[Path]:
             if re.match(r"^docs/changes/0\.\d+\.md$", rel):
                 continue
         files.append(md_path)
+    if include_extra_md:
+        examples_dir = REPO_ROOT / "examples"
+        if examples_dir.is_dir():
+            for md_path in sorted(examples_dir.rglob("README.md")):
+                rel = md_path.relative_to(REPO_ROOT).as_posix()
+                if "/.venv/" in rel or "/node_modules/" in rel:
+                    continue
+                files.append(md_path)
+        github_dir = REPO_ROOT / ".github"
+        if github_dir.is_dir():
+            for md_path in sorted(github_dir.glob("*.md")):
+                files.append(md_path)
     return [p for p in files if p.is_file()]
 
 
@@ -150,10 +172,56 @@ def strip_fenced_blocks(text: str) -> str:
     return "\n".join(out_lines)
 
 
+def github_slug(heading_text: str) -> str:
+    # Strip markdown links [label](target) -> label and inline HTML/formatting.
+    text = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", heading_text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.replace("`", "").replace("*", "").replace("~", "")
+    text = text.strip().lower()
+    out: list[str] = []
+    for ch in text:
+        if ch.isalnum() or ch in (" ", "-", "_"):
+            out.append("-" if ch == " " else ch)
+    return "".join(out)
+
+
+def collect_markdown_anchors(md_path: Path, cache: dict[Path, set[str]]) -> set[str]:
+    resolved = md_path.resolve()
+    if resolved in cache:
+        return cache[resolved]
+    anchors: set[str] = set()
+    if not resolved.is_file():
+        cache[resolved] = anchors
+        return anchors
+    scrubbed = strip_fenced_blocks(resolved.read_text(encoding="utf-8", errors="replace"))
+    seen_counts: dict[str, int] = {}
+    for line in scrubbed.splitlines():
+        for html_id in HTML_ID_RE.findall(line):
+            anchors.add(html_id.strip().lower())
+        match = HEADING_RE.match(line)
+        if not match:
+            continue
+        raw_heading = match.group(1)
+        custom_id = re.search(r"\s*\{#([A-Za-z0-9_.-]+)\}\s*$", raw_heading)
+        if custom_id:
+            anchors.add(custom_id.group(1).lower())
+            raw_heading = raw_heading[: custom_id.start()]
+        slug = github_slug(raw_heading)
+        if not slug:
+            continue
+        count = seen_counts.get(slug, 0)
+        seen_counts[slug] = count + 1
+        anchors.add(slug if count == 0 else f"{slug}-{count}")
+    cache[resolved] = anchors
+    return anchors
+
+
 def check_markdown_links(errors: list[str]) -> int:
     checked = 0
     docs_root = REPO_ROOT / "docs"
-    for md_path in iter_doc_files(include_historical=False):
+    anchor_cache: dict[Path, set[str]] = {}
+    for md_path in iter_doc_files(include_historical=True, include_extra_md=True):
         raw_text = md_path.read_text(encoding="utf-8")
         scrubbed = strip_fenced_blocks(raw_text)
         for line_no, line in enumerate(scrubbed.splitlines(), start=1):
@@ -162,29 +230,77 @@ def check_markdown_links(errors: list[str]) -> int:
                 target = raw_target.strip().strip("<>")
                 if " " in target and (target.endswith('"') or target.endswith("'")):
                     target = target.split()[0]
-                target = target.split("#", 1)[0].split("?", 1)[0]
                 if not target or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", target):
                     continue
+                path_part, _, fragment = target.partition("#")
+                path_part = path_part.split("?", 1)[0]
+                fragment = unquote(fragment).strip().lower()
+                if not path_part and not fragment:
+                    continue
                 checked += 1
-                decoded = unquote(target)
-                if decoded.startswith("/"):
-                    rel_doc = decoded.lstrip("/")
-                    candidates = [
-                        docs_root / rel_doc,
-                        docs_root / f"{rel_doc}.md",
-                        docs_root / rel_doc / "index.md",
-                    ]
+                if not path_part:
+                    resolved_target = md_path
                 else:
-                    base = (md_path.parent / decoded).resolve()
-                    candidates = [
-                        base,
-                        base.with_suffix(".md") if not base.suffix else base,
-                        base / "index.md",
-                    ]
-                if not any(c.exists() for c in candidates):
-                    errors.append(
-                        f"broken link in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target}"
-                    )
+                    decoded = unquote(path_part)
+                    if decoded.startswith("/"):
+                        rel_doc = decoded.lstrip("/")
+                        candidates = [
+                            docs_root / rel_doc,
+                            docs_root / f"{rel_doc}.md",
+                            docs_root / rel_doc / "index.md",
+                        ]
+                    else:
+                        base = (md_path.parent / decoded).resolve()
+                        candidates = [
+                            base,
+                            base.with_suffix(".md") if not base.suffix else base,
+                            base / "index.md",
+                        ]
+                    resolved_target = next((c for c in candidates if c.exists()), None)
+                    if resolved_target is None:
+                        errors.append(
+                            f"broken link in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target}"
+                        )
+                        continue
+                if fragment and resolved_target.is_file() and resolved_target.suffix == ".md":
+                    anchors = collect_markdown_anchors(resolved_target, anchor_cache)
+                    if fragment not in anchors:
+                        errors.append(
+                            f"broken anchor in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target}"
+                        )
+    return checked
+
+
+def check_frontmatter_cpp_types(errors: list[str]) -> int:
+    declared: set[str] = {"QObject"}
+    src_root = REPO_ROOT / "src/QmlTui"
+    for header in src_root.rglob("*.h"):
+        text = header.read_text(encoding="utf-8", errors="replace")
+        for match in CPP_TYPE_DECL_RE.finditer(text):
+            name = match.group(1) or match.group(2)
+            if name:
+                declared.add(name)
+
+    checked = 0
+    for md_path in sorted((REPO_ROOT / "docs/qml-types").glob("*.md")):
+        if md_path.name == "index.md":
+            continue
+        raw = md_path.read_text(encoding="utf-8")
+        fm = FRONTMATTER_RE.match(raw)
+        if not fm:
+            continue
+        cpp_match = re.search(r"^cpp:\s*([^\n#]+)", fm.group(1), re.MULTILINE)
+        if not cpp_match:
+            continue
+        cpp_val = cpp_match.group(1).strip().strip('"').strip("'")
+        if not cpp_val or cpp_val.lower() in ("null", "none", "~"):
+            continue
+        checked += 1
+        short_name = cpp_val.split("::")[-1]
+        if short_name not in declared:
+            errors.append(
+                f"invalid frontmatter cpp type in {md_path.relative_to(REPO_ROOT)}: {cpp_val!r} not declared under src/QmlTui/"
+            )
     return checked
 
 
@@ -286,6 +402,14 @@ def check_qml_snippets(build_dir: Path, explicit_qmllint: Path | None, errors: l
     pending: list[tuple[Path, int, str]] = []
     for md_path in iter_doc_files(include_historical=False):
         for start_line, code in extract_qml_snippets(md_path):
+            if re.search(r"^\s*Terminal\s*\{", code, re.MULTILINE):
+                has_quit = bool(
+                    re.search(r"\b(Qt\.quit\s*\(|Keys\.|Shortcut\s*\{)", code)
+                )
+                if not has_quit:
+                    errors.append(
+                        f"complete Terminal QML snippet in {md_path.relative_to(REPO_ROOT)}:{start_line} is missing a keyboard quit path"
+                    )
             imports = set(IMPORT_RE.findall(code))
             if "QmlTui.Image" in imports and not has_image:
                 continue
@@ -408,6 +532,7 @@ def main() -> int:
     links = check_markdown_links(errors)
     nav_links = check_nav_manifest(errors)
     gallery_count, recipe_count = check_examples_coverage(errors)
+    cpp_frontmatter = check_frontmatter_cpp_types(errors)
     snippets = check_qml_snippets(build_dir, args.qmllint, errors)
 
     if errors:
@@ -416,9 +541,9 @@ def main() -> int:
         return 1
 
     print(
-        f"Documentation checks passed: {links} links, {nav_links} nav entries, "
+        f"Documentation checks passed: {links} links/anchors, {nav_links} nav entries, "
         f"{gallery_count} gallery examples, {recipe_count} recipes, "
-        f"and {snippets} QML snippets verified with qmllint."
+        f"{cpp_frontmatter} frontmatter C++ symbols, and {snippets} QML snippets verified with qmllint."
     )
     return 0
 

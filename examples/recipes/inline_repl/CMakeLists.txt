@@ -17,5 +17,5 @@ if(BUILD_TESTING AND TARGET QmlTui::Runner)
         COLUMNS 80 ROWS 24 CLOCK VIRTUAL)
     qmltui_add_scenario(NAME inline_repl_demo TARGET qmltui_inline_repl_demo
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_demo.js"
-        COLUMNS 84 ROWS 20 CLOCK REAL RECORD components/inline_mode.cast)
+        COLUMNS 84 ROWS 20 CLOCK VIRTUAL RECORD components/inline_mode.cast)
 endif()

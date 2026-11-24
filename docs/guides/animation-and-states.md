@@ -14,11 +14,11 @@ Because `Qt6::QmlPrivate` does not guarantee binary compatibility across Qt mino
 | `StateGroup` | Supported | Supported |
 | Map-based `PropertyChanges { properties: ({ ... }) }` | Supported | Supported |
 | Direct assignment syntax `PropertyChanges { target.prop: val }` | Not available | Supported |
-| `PropertyChanges.explicit` | Ignored | Supported (`false` default reactive) |
+| `PropertyChanges.explicit` | Supported for map-based properties | Supported (`false` default reactive) |
 | Value restoration | Snapshot-based | Binding-aware & snapshot-based |
 | Binding preservation across states (A → B → base) | Restores value | Restores original bindings |
 | `restoreEntryValues: false` | Supported | Supported |
-| Independent groups & atomic collision preflight | Supported | Supported |
+| Independent groups & atomic collision preflight | Supported (direct property ownership) | Supported (resolves QML aliases to target) |
 | Zero-duration (`duration: 0`) synchronous execution | Supported | Supported |
 | Endpoint equality write suppression | Supported | Supported |
 | Interrupted transition starts from displayed value | Supported | Supported |
@@ -137,20 +137,21 @@ Inside an `Item`, omitting `target` defaults to the enclosing item. Inside a `St
 
 ## Binding and Restoration Lifecycle
 
-When built with `QMLTUI_ENABLE_PRIVATE_QT=ON`, entering a state suspends preexisting bindings on modified properties rather than overwriting them, and exiting to the base state (or transitioning through chained states `A -> B -> base`) with `restoreEntryValues: true` (the default) restores the original base binding or value. When built with `QMLTUI_ENABLE_PRIVATE_QT=OFF`, state exit restores the snapshotted entry value via `setProperty()`, which replaces prior QML bindings on that property with a static value. Setting `restoreEntryValues: false` on a `State` leaves modified properties at their state values upon exit.
+When built with `QMLTUI_ENABLE_PRIVATE_QT=ON`, entering a state suspends preexisting bindings on modified properties rather than overwriting them, and exiting to the base state (or transitioning through chained states `A -> B -> base`) with `restoreEntryValues: true` (the default) restores the original base binding or value. When built with `QMLTUI_ENABLE_PRIVATE_QT=OFF`, state exit restores the snapshotted entry value via `setProperty()`, which replaces prior QML bindings on that property with a static value. Setting `restoreEntryValues: false` on a `PropertyChanges` leaves its modified properties at their state values upon exit.
 
 ## Independent State Controllers
 
-Combine `Item.states` with one or more [`StateGroup`](../qml-types/stategroup.md) instances for orthogonal state machines. Each `Item` and `StateGroup` tracks the properties it currently owns (resolving QML property aliases to their underlying target property). Before applying a state change, the controller checks whether another active controller already owns any target property; on a collision, it logs a warning and rejects the activation atomically without partially mutating the scene.
+Combine `Item.states` with one or more [`StateGroup`](../qml-types/stategroup.md) instances for orthogonal state machines. Each `Item` and `StateGroup` tracks the properties it currently owns (under `QMLTUI_ENABLE_PRIVATE_QT=ON`, QML property aliases are resolved to their underlying target property; under `QMLTUI_ENABLE_PRIVATE_QT=OFF`, collision checks compare direct `(object, property)` pairs). Before applying a state change, the controller checks whether another active controller already owns any target property; on a collision, it logs a warning and rejects the activation atomically without partially mutating the scene.
 
 ## Transition Semantics on the Cell Grid
 
 - Geometry animations (`NumberAnimation` on `x`, `y`, `width`, `height`) step through integer character cells.
 - `easing` is a direct enum property on animations (for example, `easing: Easing.OutQuad`, rather than Qt Quick's grouped `easing.type`), and `loops: Animation.Infinite` repeats indefinitely.
+- Matching `Transition`s animate both forward state entries and property reversions back to the base state (`""`), restoring suspended bindings on completion under `QMLTUI_ENABLE_PRIVATE_QT=ON`.
 - QmlTui suppresses redundant writes when an animated property's destination equals its current displayed value.
 - Setting `duration: 0` applies the destination value synchronously without scheduling timer ticks.
-- Interrupting a running transition starts the new transition from the currently displayed value.
-- When both an active `Transition` and a `Behavior` cover the same property, the `Transition` takes precedence.
+- Interrupting a running transition (including mid-revert) starts the new transition from the currently displayed value while preserving original base-state restoration records.
+- When both an active `Transition` and a `Behavior` cover the same property (as on `card.width` above), the `Transition` takes precedence during state changes while `Behavior` animates imperative writes.
 
 See [`examples/recipes/independent_states/`](../../examples/recipes/independent_states/), the gallery examples [`States.qml`](../../examples/gallery/examples/States.qml), [`Animation.qml`](../../examples/gallery/examples/Animation.qml), and [`Behavior.qml`](../../examples/gallery/examples/Behavior.qml), and the [`State`](../qml-types/state.md), [`StateGroup`](../qml-types/stategroup.md), and [`PropertyChanges`](../qml-types/propertychanges.md) references.
 

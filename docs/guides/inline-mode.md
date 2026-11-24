@@ -4,7 +4,7 @@ By default, `Terminal.mode` is `Terminal.AltScreen`, which switches to the termi
 
 ## Minimal Inline Prompt
 
-In `Terminal.Inline` mode, the root `Terminal` sizes its height from its visible children (capped at `terminalRows - 1`). Give the root layout a finite implicit or explicit height and use `Scrollback` to commit completed lines above the live prompt:
+In `Terminal.Inline` mode, the root `Terminal` sizes its height from its visible children (capped at `terminalHeight - 1`). Give the root layout a finite implicit or explicit height and use `Scrollback` to commit completed lines above the live prompt:
 
 ```qml
 pragma ComponentBehavior: Bound
@@ -95,6 +95,13 @@ import QmlTui
 Terminal {
     id: root
     mode: Terminal.Inline
+
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Escape) {
+            Qt.quit();
+            event.accepted = true;
+        }
+    }
 
     ListModel {
         id: messageLog
@@ -202,7 +209,20 @@ flowchart TD
 - **Content-driven height and shrinking**: Do not set `anchors.fill: parent` or `height: parent.height` on the top-level child of an inline `Terminal`. Size the live region from its content (`Column`, explicit `height`, etc.). Hidden children (`visible: false`) do not contribute to inline height. When the live region grows and later shrinks (for example, after dismissing an inline completion list or confirmation box), `InlineRenderer` moves the cursor to the previous top row, redraws the shorter live region, and emits `CSI J` (`\033[J`) to erase leftover rows below it.
 - **Cursor origin (`CSI 6 n`) and terminal resize**: Because inline output begins at whatever row the shell cursor occupied when the process started, `InlineRenderer` queries the cursor row with `CSI 6 n` (`\033[6n`) to map terminal mouse coordinates to the live region's screen origin. Whenever the prompt height changes, scrollback rows are committed, or the terminal is resized, the cached mouse origin is invalidated and re-queried automatically.
 - **Switching between `Terminal.Inline` and `Terminal.AltScreen`**: You can toggle `root.mode` at runtime (for example, switching to `Terminal.AltScreen` to open a full-screen diff or pager and returning to `Terminal.Inline` afterward). Leaving `Terminal.Inline` erases the live inline region cleanly with `\033[J`.
+- **Mouse reporting defaults to `false`**: Unlike `Terminal.AltScreen` (which defaults `mouseReporting` to `true`), `Terminal.Inline` disables mouse tracking by default so the host terminal's native text selection and scrollback wheel remain usable. Set `mouseReporting: true` on `Terminal` if your inline prompt contains clickable controls (users can still hold `Shift` in most terminals to select text).
 - **Scrollback queue limit**: Pending scrollback output (plain UTF-8 text from `print(string)` and ANSI/SGR-encoded rows from delegates or styled spans) is buffered in a session ANSI/UTF-8 byte queue (`1 MiB` by default, configurable via `QMLTUI_SCROLLBACK_QUEUE_LIMIT` or `TerminalEngine::setScrollbackQueueLimit`) and held while temporarily in `Terminal.AltScreen` mode, then flushed when `Terminal.Inline` resumes or the session exits. If a producer exceeds the queue limit, `print()` returns `false` and `Scrollback` emits `outputRejected(reason)`.
+
+## Logging & `stderr` in Inline Mode
+
+`QtMessageRouting` defers interactive TTY `stderr` diagnostics only while an `AltScreen` session is active. In `Terminal.Inline` mode, `stderr` writes are emitted immediately while raw mode has output post-processing (`OPOST`) disabled, which can cause staircase line breaks or interleave with the live prompt. For clean diagnostics in inline applications, either redirect `stderr` (`./my_cli 2> debug.log`), set `QMLTUI_LOG_FILE=/tmp/my_cli.log` alongside a file-only sink, or install a custom `QtMessageRouting::install(fileSink)` handler from C++ without writing to `stderr` (see [QtMessageRouting](../cpp-classes/qtmessagerouting.md)).
+
+## Inline Edge Cases
+
+- **Live-region height cap**: `InlineRenderer` caps the live region at `terminalHeight - 1` rows. If your visible root children exceed that height, bottom rows clip silently—keep inline prompts compact or scroll inner content inside a bounded `ScrollView` / `ListView`.
+- **`Ctrl+C` in focused text inputs**: When `TextInput` or `TextArea` has active focus and a text selection, `Ctrl+C` copies the selection and accepts the event. When nothing is selected, `Ctrl+C` bubbles up to ancestor `Keys.onPressed` handlers and `Shortcut` items so inline REPLs can clear input or exit on `Ctrl+C`.
+- **Commit-time width and terminal resize**: Rows written through `Scrollback` are rendered at the terminal width active when they are committed and become native terminal scrollback. Subsequent terminal resizes re-layout the live bottom region, while already-committed rows follow the host terminal emulator's own reflow behavior.
+- **`print()` wrapping vs. delegates**: `Scrollback.print()` writes strings and span arrays verbatim without word wrapping. Pre-wrap long text before calling `print()`, or use a `Scrollback.delegate` containing a `Text` item with `wrapMode: Text.WordWrap`.
+- **`append()` dispatch and `DelegateChooser`**: When `Scrollback.delegate` is unset, `append({ text, color, ... })` delegates directly to `print()`. When `delegate` is set, `append(data)` instantiates the delegate with `data` bound to its properties (use `print()` or `QmlTui.span(...)` for unstyled/styled span literals). `Scrollback.delegate` also supports `DelegateChooser` to pick different row layouts per entry type.
 
 See [`examples/recipes/inline_repl/`](../../examples/recipes/inline_repl/), the full-scale [`agent_stream`](https://github.com/qmltui/apps/tree/main/apps/agent_stream) and [`package_manager`](https://github.com/qmltui/apps/tree/main/apps/package_manager) showcase applications in `qmltui/apps`, and the [`Terminal`](../qml-types/terminal.md) and [`Scrollback`](../qml-types/scrollback.md) references.
 

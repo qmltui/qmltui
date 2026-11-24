@@ -6,7 +6,7 @@ QmlTui is a retained-mode layout and rendering engine for terminal applications 
 
 Execution runs on the standard Qt event loop (`QCoreApplication`). `TerminalEngine` bridges the event loop and the terminal device.
 
-The root `Terminal` initializes its engine after QML component completion, when parentage and presentation mode are known. C++ applications can initialize it earlier via `engine()`; otherwise initialization runs on the next event-loop turn. The engine connects the rendering lifecycle to terminal I/O and survives presentation-mode switches.
+The root `Terminal` initializes its engine after QML component completion, when parentage and presentation mode are known. C++ applications can trigger eager initialization via `Terminal::engine()`; otherwise initialization runs on the next event-loop turn (in installed `find_package(QmlTui)` builds, `TerminalEngine` is a forward-declared internal type whose header is not installed). The engine connects the rendering lifecycle to terminal I/O and survives presentation-mode switches.
 
 ```mermaid
 flowchart TD
@@ -35,7 +35,7 @@ Because the component tree stays resident in memory, property bindings mark only
 
 `Terminal.mode` selects `AltScreen` or `Inline`; ordinary visible root children form the UI in either mode. `Scrollback` submits output to a bounded session queue independently of the active renderer. Inline commits combine pending scrollback output and the live region in a single write. `AltScreen` mode retains queued scrollback output until inline mode resumes or shutdown restores the normal screen.
 
-On each dirty frame, the engine runs a layout pass over the item tree, computes bounds and clip rectangles, and calls each item's `paint()` method to write fixed-size `Cell` values (UTF-8 grapheme bytes, foreground/background colors, and SGR attributes) into `TextGridBuffer`. Grapheme clusters up to 11 bytes are stored inline inside each 24-byte `Cell`; longer clusters (such as multi-person ZWJ emoji sequences) are interned in a process-wide append-only table for the lifetime of the process.
+On each dirty frame, the engine runs a layout pass over the item tree, computes bounds and clip rectangles, and calls each item's `paint()` method to write fixed-size `Cell` values (UTF-8 grapheme bytes, foreground/background colors, and SGR attributes) into `TextGridBuffer`. Grapheme clusters up to 11 bytes are stored inline inside each 24-byte `Cell`; longer clusters (such as multi-person ZWJ emoji sequences, up to `Cell::MaxGraphemeBytes = 64` bytes) are interned in a bounded process-wide table (`Cell::MaxInternedGlyphs = 16384` entries) so pathological input cannot grow memory without bound.
 
 ## Signal Handling, Job Control, and Crash Recovery
 

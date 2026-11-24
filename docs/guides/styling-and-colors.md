@@ -69,14 +69,17 @@ component AppButton: Button {
     textColor: "cyan"
 }
 
-// 2. Or file-based AppButton.qml (import QmlTui and QmlTui.Controls):
+// 2. Or file-based AppButton.qml (pragma ComponentBehavior: Bound, import QtQml, QmlTui, QmlTui.Controls):
 Button {
+    id: control
+    textColor: "#ffffff"
     background: Rectangle {
         color: "#202830"
-        border.color: "cyan"
-        border.style: parent && parent.height >= 3 ? (parent.activeFocus ? Border.Double : Border.Single) : Border.None
+        border {
+            color: "cyan"
+            style: control.activeFocus ? Border.Double : Border.Single
+        }
     }
-    textColor: "#ffffff"
 }
 ```
 
@@ -87,20 +90,24 @@ Button {
 | Rectangle and Panel | `color`, `border.color` (`Panel` border slots take `Item`s styled via their own properties) |
 | Button | `textColor`, `color`, `borderColor` |
 | CheckBox, RadioButton, SpinBox | `textColor` |
-| Slider, ProgressBar | `color`, `trackColor`, `textColor` |
+| Slider | `color` (background), `textColor`, `border.color` |
+| ProgressBar | `color` (filled bar), `trackColor` (unfilled cells; unset `QmlTui.invalidColor` dims `color`) |
 | ComboBox | `textColor`, `color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
 | TabBar, TableView, TreeView | `textColor`, `selectedTextColor`, `selectionColor` (background; `TabBar` also has `color`) |
 | PtyView | `textColor`, `backgroundColor`, `palette` |
-| ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color`, `ToolTip.borderColor` |
+| ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color`, `ToolTip.border.color` (and `ToolTip.border.style`) |
 
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving
 its configured color. `Text.dim` also exposes this attribute directly. TextInput
 hints use the configured text color with dimming unless `placeholderColor` is
 set. Rich Text links use underline and inline code uses bold.
 
-TabBar and the built-in TableView/TreeView selection render with reverse video
-until selection colors are explicitly supplied. TextInput also supports explicit
+TabBar, ComboBox, and the built-in TableView/TreeView selection render with reverse video
+until selection colors are explicitly supplied. Their optional selection color properties
+default to `QmlTui.invalidColor` (`valid === false`, meaning "unset: use reverse video");
+setting `"default"` (`valid === true`) explicitly selects the terminal's default color and
+disables the reverse-video fallback. TextInput also supports explicit
 selection, selected-text, placeholder, and cursor colors. Custom delegates own
 their appearance, including selection styling.
 

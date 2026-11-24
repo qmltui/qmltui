@@ -11,20 +11,35 @@ Add `set(QT_QML_GENERATE_QMLLS_INI ON)` before `qt_add_executable()` in `CMakeLi
 ```cmake
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
+set(app_qml_dependencies)
+get_target_property(qmltui_imported QmlTui::Core IMPORTED)
+if(NOT qmltui_imported)
+    list(APPEND app_qml_dependencies DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls)
+endif()
+
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
+    ${app_qml_dependencies}
 )
 ```
 
-Configuring and building your project writes `.qmlls.ini` in the source directory, pointing Qt's QML Language Server (`qmlls`) at `build/qml` (for `FetchContent` / `add_subdirectory` builds) or `QmlTui_QML_IMPORT_PATH` (when consuming an installed package via `find_package(QmlTui)`).
+Configuring and building your project writes `.qmlls.ini` in the source directory, pointing Qt's QML Language Server (`qmlls`) at `build/qml` (for `FetchContent` / `add_subdirectory` builds) or `QmlTui_QML_IMPORT_PATH` (when consuming an installed package via `find_package(QmlTui)`). Because `.qmlls.ini` contains machine-specific absolute build paths, add `.qmlls.ini` to your project's `.gitignore`.
 
 ### 2. Configure Your Editor or IDE
 
-- **VS Code**: Install the official **Qt QML** extension (`theqtcompany.qt-qml`) and point it at your Qt 6.8+ installation (or `<Qt>/bin/qmlls`). Once `cmake --build build` has generated `.qmlls.ini` and QmlTui's `.qmltypes` metadata, completion and diagnostics resolve `QmlTui` and `QmlTui.Controls` types automatically. See [`examples/.vscode/settings.json`](../../examples/.vscode/settings.json) for a reference workspace configuration.
-- **Neovim / Zed / Helix**: Configure your LSP client to launch `<Qt>/bin/qmlls -E` from your Qt 6.8+ `bin/` directory (`-E` tells `qmlls` to read `.qmlls.ini` and build-directory import paths).
+- **VS Code**: Install the official **Qt QML** extension (`theqtcompany.qt-qml`) — and **CMake Tools** (`ms-vscode.cmake-tools`) if you configure CMake inside VS Code — and point it at your Qt 6.8+ installation (or `<Qt>/bin/qmlls`). Once `cmake --build build` has generated `.qmlls.ini` and QmlTui's `.qmltypes` metadata, completion and diagnostics resolve `QmlTui` and `QmlTui.Controls` types automatically. See [`examples/.vscode/settings.json`](../../examples/.vscode/settings.json) for a reference workspace configuration (standalone consumer projects only need `"${workspaceFolder}/build/qml"` instead of `"${workspaceFolder}/../build/qml"`).
+- **Neovim / Zed / Helix**: Configure your LSP client to launch `qmlls -E` (`-E` reads `.qmlls.ini` and build-directory import paths). On Linux distributions where Qt 6 tools are not on `PATH`, look in `/usr/lib/qt6/bin/qmlls` or `/usr/lib64/qt6/bin/qmlls` (sometimes named `qmlls6`); on macOS Homebrew use `$(brew --prefix qt)/bin/qmlls`. Example Neovim 0.11+ configuration:
+
+  ```lua
+  vim.lsp.config("qmlls", {
+      cmd = { "/usr/lib/qt6/bin/qmlls", "-E" }, -- or "qmlls" if on PATH
+      filetypes = { "qml" },
+      root_markers = { ".qmlls.ini", "CMakeLists.txt", ".git" },
+  })
+  vim.lsp.enable("qmlls")
+  ```
 - **CLion**: Configure `<Qt>/bin/qmlls` under QML Language Server settings after running an initial CMake build so `.qmlls.ini` and `build/qml` exist.
 - **Qt Creator**:
   1. Open **Edit -> Preferences -> Qt Quick -> QML/JS Editing** and enable **Use qmlls**.
@@ -58,11 +73,12 @@ endif()
 
 At configure time, CMake writes `.qmltui/qmltui-runner.d.ts` in your project directory and generates a `jsconfig.json` referencing it if neither `jsconfig.json` nor `tsconfig.json` already exists (if your project already maintains a custom `tsconfig.json`, add `".qmltui/qmltui-runner.d.ts"` to its `"include"` array).
 
-Annotate scenario entry points with JSDoc so VS Code, Neovim (`ts_ls` / `vtsls`), Zed, WebStorm/CLion, and Qt Creator provide method completion and parameter types on `app`:
+Annotate scenario entry points with JSDoc so VS Code, Neovim (`ts_ls` / `vtsls`), Zed, WebStorm/CLion, and Qt Creator provide method completion and parameter types on `app`. Use plain `function main(app)` in `.js` scenarios (use `export function main(app)` only in `.mjs` ES modules; `export` is a syntax error in `.js` files):
 
 ```javascript
+// test_smoke.js (use `export function main(app)` in .mjs ES module scenarios)
 /** @param {Runner} app */
-export function main(app) {
+function main(app) {
     app.waitForText("Ready");
     app.press("Enter");
     app.expectSnapshot("snapshots/after_enter.txt");

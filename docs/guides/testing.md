@@ -101,6 +101,9 @@ function main(app) {
 
 The `qmltui-runner` command-line tool (built by default in top-level builds or when `-DQMLTUI_ENABLE_RUNNER=ON` is set) launches any `QmlTui::Runner`-linked executable, manages the activation handshake and timeouts, and verifies the resulting `result.json`.
 
+> [!TIP]
+> When running from a local build tree instead of an installed `PATH`, invoke `./build/tools/qmltui-runner/qmltui-runner` (in-repo) or `./build/_deps/qmltui-build/tools/qmltui-runner/qmltui-runner` (`FetchContent`; `./build/bin/qmltui-runner` if `CMAKE_RUNTIME_OUTPUT_DIRECTORY` is set).
+
 ### Common CLI Workflows
 
 1. **Run a scenario script headlessly**:
@@ -143,21 +146,22 @@ The `qmltui-runner` command-line tool (built by default in top-level builds or w
 
 ### `qmltui-runner` Options Reference
 
-Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms`):
+Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`):
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | Run a `.js`, `.mjs`, or Qt resource (`:/...`) scenario file. |
 | `--eval <code>` | None | Evaluate an inline JavaScript snippet inside `function main(app)`. |
 | `--capture-after-ms <ms>` | None | Wait `0..30000` ms (`0` = first committed frame), then write `capture.txt` and `capture_styled.txt`. |
-| `--sizes <list>` / `--sweep` | None | Sweep comma-separated `<cols>x<rows>` viewports (`--sweep` = `60x18,80x24,120x36`), writing `frame_<WxH>.txt`. |
-| `--idle-ms <ms>` | None | Verify zero unscripted repaints across `1..30000` ms after capture. |
+| `--sizes <list>` / `--sweep` | None | Sweep comma-separated `<cols>x<rows>` viewports (`--sweep` = `60x18,80x24,120x36`), writing `frame_<WxH>.txt` (incompatible with `--script`). |
+| `--idle-ms <ms>` | None | Verify zero unscripted repaints across `1..30000` ms after capture (incompatible with `--script`). |
 | `--columns <n>`, `--rows <n>` | `80`, `24` | Initial terminal viewport dimensions (`1..1000` cells). |
 | `--clock <real\|virtual>` | `real` | Select wall-clock time (`real`) or synthetic stepped time (`virtual`). |
 | `--artifacts <dir>` | Retained temp dir | Output directory for `result.json`, `final.txt`, `failure.txt`, and captures (must be new or empty unless `--clean-artifacts` is set). |
 | `--clean-artifacts` | Off | Safely clear a prior Runner artifact directory (containing `result.json`) before running. |
 | `--print`, `--ruler` | Off | Print `frameStats` and captured frames to `stdout` (`--ruler` adds 0-based `(x, y)` coordinate rulers). |
-| `--styled`, `--scrollback` | Off | Include `--- styles` SGR runs and/or `Terminal.Inline` scrollback when probing or printing. |
+| `--styled` | Off | Include `--- styles` SGR run blocks in saved `*_styled.txt` artifacts (and on `stdout` when paired with `--print` or `--ruler`; works with `--script`). |
+| `--scrollback` | Off | Synthesizes a probe pass that captures `Terminal.Inline` scrollback rows (incompatible with `--script`; prints scrollback to `stdout` when paired with `--print` or `--ruler`). |
 | `--live` | Off | Forward live ANSI rendering to the terminal during the scenario. |
 | `--update-snapshots` | Off | Rewrite snapshot files from the committed frames instead of failing on mismatch. |
 | `--record <relative-path>` | None | Record terminal output as an asciicast v2 `.cast` file under the artifact directory (incompatible with `--live`). |
@@ -171,12 +175,12 @@ Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` 
 
 At the end of every run, `qmltui-runner` prints the artifact directory path to `stderr` and writes:
 
-- `result.json`: Schema v1 summary containing `status` (`"passed"` or `"failed"`), `exitCode`, `clock`, `viewport`, `finalViewport`, `operations` trace, `artifacts` paths, and `updatedSnapshots`.
+- `result.json`: Schema v1 summary containing `status` (`"passed"` or `"failed"`), `exitCode`, `clock`, `viewport`, `finalViewport`, `elapsedMs`, `virtualTimeMs`, `operations` trace, `frameStats`, and `artifacts` paths (including `artifacts.updatedSnapshots`).
 - `final.txt`: Normalized text of the final committed frame on success.
 - `failure.txt`: Normalized text of the last committed frame when a scenario fails.
 - `snapshots/<name>.actual.txt` and `snapshots/<name>.diff`: Written when a snapshot assertion mismatches.
 
-Example `result.json` emitted when a scenario fails:
+Example `result.json` excerpt emitted when a scenario fails (abbreviated; live runs also include `scenario`, `elapsedMs`, `virtualTimeMs`, `operations`, and `frameStats`):
 
 ```json
 {
@@ -213,13 +217,21 @@ To run scenarios automatically in CTest, link `QmlTui::Runner` conditionally int
 ```cmake
 include(CTest) # Enables BUILD_TESTING (and QMLTUI_ENABLE_RUNNER when using FetchContent)
 
+set(app_qml_dependencies)
+get_target_property(qmltui_imported QmlTui::Core IMPORTED)
+if(NOT qmltui_imported)
+    list(APPEND app_qml_dependencies
+        DEPENDENCIES
+            TARGET QmlTui::Core
+            TARGET QmlTui::Controls
+    )
+endif()
+
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
-    DEPENDENCIES
-        TARGET QmlTui::Core
-        TARGET QmlTui::Controls
+    ${app_qml_dependencies}
 )
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
 
@@ -239,14 +251,15 @@ if(BUILD_TESTING AND TARGET QmlTui::Runner)
         CLOCK VIRTUAL
     )
 
-    # Optional: register a demo asciicast recording (labeled 'Demo'):
+    # Optional: register a deterministic demo asciicast recording (labeled 'Demo';
+    # use CLOCK REAL only when capturing PtyView or real wall-clock worker timing):
     qmltui_add_scenario(
         NAME my_app_demo_cast
         TARGET my_app
         SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/test_record.js"
         COLUMNS 80
         ROWS 24
-        CLOCK REAL
+        CLOCK VIRTUAL
         RECORD my_demo.cast
     )
 endif()

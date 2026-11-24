@@ -27,11 +27,19 @@ Use Qt's **single-threaded** kit (`wasm_singlethread`), not `wasm_multithread`. 
 Both the QmlTui build tree and `find_package(QmlTui)` automatically include `cmake/QmlTuiWasm.cmake` when `EMSCRIPTEN` is true, providing `qmltui_wasm_app()`. In your `CMakeLists.txt`, call `qmltui_wasm_app(<target>)` in the same directory scope that creates `<target>`:
 
 ```cmake
+set(app_qml_dependencies)
+get_target_property(qmltui_imported QmlTui::Core IMPORTED)
+if(NOT qmltui_imported)
+    list(APPEND app_qml_dependencies
+        DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
+    )
+endif()
+
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls
+    ${app_qml_dependencies}
 )
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Controls)
 
@@ -40,12 +48,13 @@ if(COMMAND qmltui_wasm_app)
 endif()
 ```
 
-Configure with your WebAssembly kit's `qt-cmake` wrapper and build (for example, using [`examples/helloworld/`](../../examples/helloworld/)):
+Configure with your WebAssembly kit's `qt-cmake` wrapper and build (for example, using [`examples/helloworld/`](../../examples/helloworld/) against your local QmlTui checkout via `-DFETCHCONTENT_SOURCE_DIR_QMLTUI="$PWD"`, or omit that flag to fetch `qmltui/qmltui` from GitHub):
 
 ```bash
 source ~/emsdk/emsdk_env.sh
 ~/Qt/6.11.1/wasm_singlethread/bin/qt-cmake -S examples/helloworld -B build-wasm -G Ninja \
-  -DCMAKE_BUILD_TYPE=MinSizeRel
+  -DCMAKE_BUILD_TYPE=MinSizeRel \
+  -DFETCHCONTENT_SOURCE_DIR_QMLTUI="$PWD"
 cmake --build build-wasm --parallel
 python3 -m http.server -d build-wasm 8000
 ```
@@ -61,8 +70,8 @@ Open `http://localhost:8000/hello_qmltui.html` in a browser. Serve `.wasm` asset
    - `OUTPUT_DIRECTORY <dir>` (optional): sets `RUNTIME_OUTPUT_DIRECTORY` on `<target>` (defaulting to the target's existing `RUNTIME_OUTPUT_DIRECTORY` or `${CMAKE_CURRENT_BINARY_DIR}`, and copying `<target>.html` into `$<CONFIG>/` on multi-config generators).
    - `QMLTUI_WASM_INITIAL_MEMORY` (CMake cache string): when non-empty, sets `QT_WASM_INITIAL_MEMORY` on `<target>` (for example `-DQMLTUI_WASM_INITIAL_MEMORY=96MB`).
 3. **Resolves target and module factory names**: Respects the target's `OUTPUT_NAME` property for `.html`/`.js` filenames and `QT_WASM_EXPORT_NAME` (or Qt's `<sanitized_target>_entry` convention) for the JavaScript module factory.
-4. **Generates `<target>.html` alongside `<target>.js` and `<target>.wasm`**: Writes a self-contained `xterm.js` host page that:
-   - Loads `xterm.js`, `@xterm/addon-fit`, and `@xterm/addon-unicode-graphemes` (`15-graphemes`) so emoji and grapheme cluster widths match `UnicodeText`.
+4. **Generates `<target>.html` alongside `<target>.js` and `<target>.wasm`**: Writes a ready-to-open `xterm.js` host page (which loads `xterm.js`, addons, and JetBrains Mono from `cdn.jsdelivr.net` and `fonts.googleapis.com`; use [Embedding in a Custom Web Page](#embedding-in-a-custom-web-page) if you need offline or strict-CSP self-hosted assets) that:
+   - Loads `xterm.js` (`scrollback: 1000` for `Terminal.Inline` history), `@xterm/addon-fit`, and `@xterm/addon-unicode-graphemes` (`15-graphemes`) so emoji and grapheme cluster widths match `UnicodeText`.
    - Connects `qmltuiOnOutput`, `qmltuiFeedInput`, and `qmltuiResize`.
    - Replies to QmlTui's OSC 4/10/11 palette queries and forwards OSC 52 clipboard writes (`Clipboard.copy()`) to `navigator.clipboard.writeText()`.
    - Forwards repeatable `?arg=...` URL query parameters as `argc`/`argv` to `callMain(args)` (for example `my_app.html?arg=--help`).
@@ -70,7 +79,7 @@ Open `http://localhost:8000/hello_qmltui.html` in a browser. Serve `.wasm` asset
 
 Do not pass `-sMODULARIZE`, `-sEXPORT_NAME`, `-sEXPORTED_RUNTIME_METHODS`, or `-sASYNCIFY` manually; Qt's WebAssembly finalizer sets the required modularization flags, and Asyncify is not needed.
 
-When `EMSCRIPTEN` is active, QmlTui automatically defaults `QMLTUI_BUILD_TESTS`, `QMLTUI_BUILD_BENCHMARKS`, and `QMLTUI_ENABLE_RUNNER` to `OFF`. `QMLTUI_ENABLE_PRIVATE_QT` uses `Qt6::QmlPrivate` when the kit ships it (enabling `Behavior`) and falls back with a warning otherwise.
+When `EMSCRIPTEN` is active, QmlTui automatically defaults `QMLTUI_BUILD_EXAMPLES`, `QMLTUI_BUILD_TESTS`, `QMLTUI_BUILD_BENCHMARKS`, and `QMLTUI_ENABLE_RUNNER` to `OFF` (pass `-DQMLTUI_BUILD_EXAMPLES=ON` if configuring the root repository tree directly for Wasm). `QMLTUI_ENABLE_PRIVATE_QT` uses `Qt6::QmlPrivate` when the kit ships it (enabling `Behavior`) and falls back with a warning otherwise.
 
 ## Embedding in a Custom Web Page
 
@@ -142,7 +151,9 @@ try {
 
 ## Browser Constraints
 
-Host OS facilities are unavailable inside the browser sandbox: `QProcess`, `/proc`, D-Bus, raw TCP/UDP sockets (use WebSockets or `QNetworkAccessManager` over Fetch/CORS), and `QmlTui.PtyView`. `QFile` reads Emscripten's virtual in-memory filesystem and embedded Qt resources (`qrc:/...`), not the visitor's local disk.
+- **Sandbox limits**: Host OS facilities are unavailable inside the browser sandbox: `QProcess`, `/proc`, D-Bus, raw TCP/UDP sockets (use WebSockets or `QNetworkAccessManager` over Fetch/CORS), and `QmlTui.PtyView`. `QFile` reads Emscripten's virtual in-memory filesystem and embedded Qt resources (`qrc:/...`), not the visitor's local disk.
+- **Clipboard reads (`OSC 52 ?`)**: The generated `qmltui_wasm_app()` host page bridges OSC 52 clipboard *writes* (`Clipboard.copy()`) to `navigator.clipboard.writeText()`, but does not answer OSC 52 clipboard *reads* (`?`). Consequently, `Clipboard.requestText()` and `TextInput`/`TextArea` `Ctrl+V` time out after 2 seconds in the default page; use native browser paste (which `xterm.js` delivers via bracketed paste) or wire an OSC 52 `?` reply in a custom host page.
+- **Graphics protocols & Inline scrollback**: `xterm.js` in the generated page does not enable Kitty or Sixel graphics addons, so `QmlTui.Image` falls back to Unicode `HalfBlock` / `Braille` / `ASCII` rendering. `Terminal.Inline` + `Scrollback` works with the host page's `scrollback: 1000` line buffer.
 
 ## Troubleshooting
 
@@ -150,7 +161,7 @@ Host OS facilities are unavailable inside the browser sandbox: `QProcess`, `/pro
 | :--- | :--- |
 | Configure error mentioning the Emscripten version | Your Qt kit pins a specific `emcc` version. Activate that exact version in `emsdk` and `source emsdk_env.sh`. |
 | `-std=c99 not allowed with C++` while building `utf8proc` | `CMAKE_AUTOMOC` leaked into a C target. Avoid setting `CMAKE_AUTOMOC ON` globally before `FetchContent_MakeAvailable(QmlTui)`. |
-| Blank terminal; console says `module "QmlTui" is not installed` | Static QML plugin was not linked. Verify `DEPENDENCIES TARGET QmlTui::Core` on `qt_add_qml_module()` so `qmlimportscanner` links `QmlTuiCoreplugin`. |
+| Blank terminal; console says `module "QmlTui" is not installed` | Static QML plugin was not linked. In `FetchContent` / `add_subdirectory` builds, verify `DEPENDENCIES TARGET QmlTui::Core` on `qt_add_qml_module()`; in `find_package(QmlTui)` builds, link `QmlTui::Core` (whose static interface links `QmlTuiCoreplugin`). |
 | Blank terminal with no console error | `qmltuiOnOutput` was attached after calling the module factory, or `qmltuiResize` was not called before `callMain`. |
 | Console logs `Terminating since we don't have asyncify` then `Aborted()` | Normal behavior when the app calls `Qt.quit()`. Handle `onAbort` in your host page and reset `xterm.js`. |
 | Out of memory on startup | Pass `-DQMLTUI_WASM_INITIAL_MEMORY=96MB` at configure time (growth remains enabled). |

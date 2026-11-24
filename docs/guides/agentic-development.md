@@ -98,7 +98,7 @@ sequenceDiagram
     end
 ```
 
-Running that probe against `hello_qmltui`:
+Running that probe against `hello_qmltui` (substitute `./build/tools/qmltui-runner/qmltui-runner` when `qmltui-runner` is not installed on `PATH`; see [Section 5](#5-reference-locating-qmltui-runner)):
 
 ```bash
 qmltui-runner --clock virtual --sizes 60x13 --idle-ms 300 --ruler --styled \
@@ -167,7 +167,7 @@ qmltui-runner --clock virtual --columns 60 --rows 13 --ruler \
 }
 ```
 
-The agent reads `result.json` (`message` and `operation`) alongside the ruler frame in `failure.txt` (which shows `Interactions: 1` at row `07`), fixes the root cause, and re-runs without guessing.
+The agent reads `result.json` (`message` and `operation`) alongside the ruler frame printed to `stdout` (and the plain committed frame saved in `failure.txt`, showing `Interactions: 1` at row `07`), fixes the root cause, and re-runs without guessing.
 
 ## 3. The Five-Step Closed Verification Loop
 
@@ -214,7 +214,7 @@ qmltui-runner --clock virtual --columns 80 --rows 24 --ruler \
 - **[`Terminal.Inline`](inline-mode.md) scrollback**: Add `--scrollback` to inspect committed history alongside the live bottom prompt, or checkpoint rows in JS with `const mark = app.scrollbackRowCount()` and `app.expectScrollbackText("...")` (see [Testing and Recording with Runner](testing.md)):
 
 ```bash
-qmltui-runner --clock virtual --columns 60 --rows 10 --ruler --scrollback \
+qmltui-runner --clock virtual --columns 80 --rows 12 --ruler --scrollback \
   --eval 'app.typeText("help"); app.press("Enter"); app.expectScrollbackText("help");' \
   -- ./build/examples/recipes/inline_repl/qmltui_inline_repl_demo
 ```

@@ -22,9 +22,12 @@ FocusScope {
         }
 
         TextInput {
+            // Bordered Rectangles already add 1 cell of implicit padding on all
+            // four sides, so avoid vertical margins on a 3-row input box.
             anchors {
                 fill: parent
-                margins: 1
+                leftMargin: 1
+                rightMargin: 1
             }
             focus: true
         }
@@ -36,7 +39,7 @@ FocusScope {
 
 Attached [`Keys`](../qml-types/keys.md) handlers (`Keys.onPressed: event => { ... }`, `Keys.onReturnPressed`, `Keys.onEscapePressed`, `Keys.onUpPressed`) run on the item with `activeFocus`. Unlike Qt Quick, specific-key handlers (`Keys.onEscapePressed`, `Keys.onReturnPressed`, etc.) start with `event.accepted = false`. Set `event.accepted = true;` whenever a handler consumes the key; when `event.accepted` remains `false`, the event bubbles up through ancestor items to the root `Terminal`.
 
-Set `Keys.priority: Keys.BeforeItem` to intercept keys before an item's built-in C++ handler runs (for example, to catch a shortcut before `TextInput` or `PtyView` consumes the keystroke). Set `Keys.forwardTo: [targetItem]` to forward unhandled keys from a search field or container directly to another item such as a `ListView` or `TableView`.
+`Keys.priority` defaults to `Keys.BeforeItem`, so attached `Keys` handlers run *before* the item's built-in C++ handler (for example, letting you intercept a chord before `TextInput` or `PtyView` consumes the keystroke). Set `Keys.priority: Keys.AfterItem` when you want the item's built-in handler (such as `TextInput` or `ListView`) to run first and handle only keys it leaves unaccepted. Set `Keys.forwardTo: [targetItem]` to forward unhandled keys from a search field or container to another item such as a `ListView` or `TableView` (note that forwarded targets run their C++ `keyPressEvent()` and `Keys.onPressed` handler, not specific-key signals).
 
 ```mermaid
 flowchart TD

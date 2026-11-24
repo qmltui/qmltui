@@ -69,7 +69,7 @@ private:
 
 Override `paint(qmltui::TextGridBuffer& buffer, int absX, int absY, const qmltui::ClipRect& clipRect) const`. During each frame, the engine calls `paint()`, traverses visible children in stacking order with content offsets and clipping applied, and finally calls `paintOverlay()`. Child traversal is owned by the engine; custom items must not iterate or paint their children directly.
 
-Respect `clipRect` so clipped containers (`ScrollView`, `Popup`, `clip: true`) never bleed outside their bounds. Use `UnicodeText::forEachGrapheme()` with `TextGridBuffer::setGrapheme()` for clipped grapheme-aware writes:
+Respect `clipRect` so clipped containers (`ScrollView`, `Popup`, `clip: true`) never bleed outside their bounds. Use [`GraphemeIterator`](../cpp-classes/unicodetext.md) with [`TextGridBuffer::setGrapheme()`](../cpp-classes/textgridbuffer.md) for clipped grapheme-aware writes:
 
 ```cpp
 #include "CustomBlock.h"
@@ -77,21 +77,25 @@ Respect `clipRect` so clipped containers (`ScrollView`, `Popup`, `clip: true`) n
 void CustomBlock::paint(qmltui::TextGridBuffer& buffer, int absX, int absY,
                         const qmltui::ClipRect& clipRect) const {
     if (clipRect.isEmpty()) return;
+    const int clipRight = clipRect.x + clipRect.width;
+    const int clipBottom = clipRect.y + clipRect.height;
     const int row = absY + topPadding();
-    if (row < clipRect.minY || row >= clipRect.maxY) return;
+    if (row < clipRect.y || row >= clipBottom) return;
 
     int col = absX + leftPadding();
     const qmltui::TextAttribute attrs =
-        hasActiveFocus() ? qmltui::TextAttribute::Bold : qmltui::TextAttribute::None;
+        activeFocus() ? qmltui::TextAttribute::Bold : qmltui::TextAttribute::None;
 
-    qmltui::UnicodeText::forEachGrapheme(m_label, [&](const qmltui::GraphemeRef& g) {
-        if (g.width > 0 && col + g.width > clipRect.maxX) return;
-        if (col >= clipRect.minX) {
+    qmltui::GraphemeIterator it(m_label);
+    qmltui::GraphemeRef g;
+    while (it.next(g)) {
+        if (g.width > 0 && col + g.width > clipRight) break;
+        if (col >= clipRect.x) {
             buffer.setGrapheme(col, row, g.utf16, g.width, m_color, qmltui::Color::Default, attrs,
-                               clipRect.minX);
+                               clipRect.x);
         }
         col += g.width;
-    });
+    }
 }
 
 void CustomBlock::keyPressEvent(qmltui::KeyEvent* event) {
@@ -110,15 +114,21 @@ void CustomBlock::keyPressEvent(qmltui::KeyEvent* event) {
 
 ## 3. CMake Registration and QML Usage
 
-List the header and source under `SOURCES` in `qt_add_qml_module()` and link `QmlTui::Core`:
+List the header and source under `SOURCES` in `qt_add_qml_module()` and link `QmlTui::Core` (guard `DEPENDENCIES TARGET` on `NOT IMPORTED` so the same `CMakeLists.txt` works with both `FetchContent` and `find_package(QmlTui)`; see [In-Tree vs. Installed](../build-configuration.md#in-tree-fetchcontent--add_subdirectory-vs-installed-find_package)):
 
 ```cmake
+set(app_qml_dependencies)
+get_target_property(qmltui_imported QmlTui::Core IMPORTED)
+if(NOT qmltui_imported)
+    list(APPEND app_qml_dependencies DEPENDENCIES TARGET QmlTui::Core)
+endif()
+
 qt_add_executable(my_app main.cpp)
 qt_add_qml_module(my_app
     URI MyApp
     SOURCES CustomBlock.h CustomBlock.cpp
     QML_FILES Main.qml
-    DEPENDENCIES TARGET QmlTui::Core
+    ${app_qml_dependencies}
 )
 target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 ```
@@ -154,5 +164,5 @@ Terminal {
 ![BigText custom item recorded demo](../assets/casts/components/big_text.gif)
 
 - [`examples/recipes/custom_cpp_item/`](../../examples/recipes/custom_cpp_item/): Subclassing `qmltui::Rectangle` (`ProgressBar`), overriding `paint()`, registering with `QML_ELEMENT`, and instantiating from QML.
-- [`examples/recipes/big_text/`](../../examples/recipes/big_text/): Custom C++ item painting 3×5 block-pixel banner text into `TextGridBuffer`.
+- [`examples/recipes/big_text/`](../../examples/recipes/big_text/): Custom C++ item painting 3×3 block-pixel banner text into `TextGridBuffer`.
 - [`examples/recipes/cpp_only/`](../../examples/recipes/cpp_only/): Constructing and driving a `qmltui::Terminal` and `qmltui::Item` hierarchy directly in C++ without `.qml` files.

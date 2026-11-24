@@ -65,7 +65,7 @@ Terminal {
 }
 ```
 
-For C++ `QAbstractListModel`, `QAbstractTableModel`, and `QSortFilterProxyModel` implementations, see Qt's [Using C++ Models with Views](https://doc.qt.io/qt-6/qtquick-modelviewsdata-cppmodels.html) and [QAbstractTableModel Subclassing Reference](https://doc.qt.io/qt-6/qabstracttablemodel.html#subclassing), alongside the runnable QmlTui recipes in [`examples/recipes/table_view/`](../../examples/recipes/table_view/) (interactive column sorting and filtering) and [`examples/recipes/lazy_model/`](../../examples/recipes/lazy_model/) (on-demand hierarchical tree loading).
+For C++ `QAbstractListModel`, `QAbstractTableModel`, and `QSortFilterProxyModel` implementations, see Qt's [Using C++ Models with Views](https://doc.qt.io/qt-6/qtquick-modelviewsdata-cppmodels.html) and [QAbstractTableModel Subclassing Reference](https://doc.qt.io/qt-6/qabstracttablemodel.html#subclassing), alongside the runnable QmlTui recipes in [`examples/recipes/table_view/`](../../examples/recipes/table_view/) (interactive column sorting and filtering) and [`examples/recipes/lazy_model/`](../../examples/recipes/lazy_model/) (on-demand hierarchical tree loading). For Python models via PySide6, see [Python and PySide6](python-pyside6.md).
 
 ## Support matrix
 
@@ -106,7 +106,7 @@ declare `required property string color` to receive it.
 | `ListView` | `index`, `model`, named roles; attached `ListView.view` and `ListView.isCurrentItem` | Row value or role map | Cell-based scrolling and highlighting; `rootIndex` selects the level of a tree model |
 | `GridView` | `index`, `model`, named roles | Row value or role map | Fixed `cellWidth` and `cellHeight`; only the viewport's cells are instantiated; `rootIndex` as ListView |
 | `Repeater` | `index`, `model`, named roles | Row value or role map | Inserts delegates into its visual parent; `rootIndex` as ListView |
-| `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell value | One delegate instance per cell |
+| `TableView.delegate` | `row`, `column`, `index`, `current`, `selected`, `model`, named roles | Cell text (JS array models) or cell role map (C++ models with `roleNames()`) | One delegate instance per cell |
 | `TreeView` | `treeView`, `isTreeNode`, `row`, `column`, `current`, `selected`, `depth`, `expanded`, `hasChildren`, `model`, named roles | Node role map | Column 0 is the tree column |
 | `Scrollback` | `index`, `model`, named roles | Row role map | Appends rendered rows; existing output is not rewritten |
 
@@ -207,11 +207,12 @@ has not claimed the name itself in `roleNames()`:
 | `checkState` | `Qt.Unchecked`, `Qt.PartiallyChecked`, `Qt.Checked`, or `-1` when the item has no check state | `CheckStateRole` |
 | `decoration` | glyph string; images are dropped | `DecorationRole` when it is a string or character |
 | `enabled`, `checkable` | booleans | `flags()` |
-| `modelIndex` | the `QModelIndex`, for `setData()` calls from QML; present for checkable items | the view |
+| `modelIndex` | the `QModelIndex`, for `setData()` calls from QML; present for all valid C++ model rows | the view |
 
 A property is added when a delegate is created only if it carries a value:
-a set color, a non-left alignment, a check state, a glyph, a disabled or
-checkable item. Rows without styling cost nothing extra. When a row's data
+a set color, an explicit alignment (including `Qt::AlignLeft`, which publishes
+`"left"`), a check state, a glyph, a disabled or checkable item, or a valid
+`modelIndex`. Rows without styling cost nothing extra. When a row's data
 changes or a pooled delegate is rebound to another row, every name is
 published, including cleared ones, so read them with a fallback
 (`model.foreground || textColor`) rather than as required properties.

@@ -2,10 +2,10 @@
 
 # QML import root holding the installed QmlTui, QmlTui.Controls, ... modules.
 # qmltui_add_scenario_test() defaults QML_IMPORT_PATH to this, and consumers can
-# pass it to anything else needing a QML import path. This must be resolved
-# before any find_dependency() call below: PACKAGE_PREFIX_DIR is a plain
-# variable, so a nested package configuration file overwrites it with its own
-# prefix.
+# pass it to anything else needing a QML import path. Capture prefix paths before
+# any find_dependency() call below: PACKAGE_PREFIX_DIR is a plain variable, so a
+# nested package configuration file overwrites it with its own prefix.
+set(_qmltui_prefix_dir "${PACKAGE_PREFIX_DIR}")
 set(QmlTui_QML_IMPORT_PATH "@PACKAGE_QMLTUI_INSTALL_QMLDIR@")
 set(_qmltui_qml_import_paths $CACHE{QML_IMPORT_PATH} ${QML_IMPORT_PATH})
 list(REMOVE_DUPLICATES _qmltui_qml_import_paths)
@@ -17,15 +17,6 @@ endif()
 unset(_qmltui_qml_import_paths)
 if(NOT "${QmlTui_QML_IMPORT_PATH}" IN_LIST QT_QML_IMPORT_PATH)
     list(APPEND QT_QML_IMPORT_PATH "${QmlTui_QML_IMPORT_PATH}")
-endif()
-
-# Scenario API declarations for editor completion; consumed by
-# qmltui_scenario_editor_support(). Resolved here for the same
-# PACKAGE_PREFIX_DIR reason as the QML import path above.
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
-    set(QMLTUI_RUNNER_DECLARATIONS
-        "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/QmlTui/Runner/qmltui-runner.d.ts"
-        CACHE INTERNAL "Installed location of the Runner scenario API declarations" FORCE)
 endif()
 
 include(CMakeFindDependencyMacro)
@@ -63,18 +54,15 @@ if(APPLE)
     unset(_qmltui_created_wrap_opengl)
     unset(_qmltui_had_opengl_gl)
 endif()
-if(@QMLTUI_ENABLE_IMAGE@)
-    # Gui is reached by QmlTui::Image (QImage in its public interface); Network
-    # is in its link interface on static builds.
-    find_dependency(Qt6 6.8 COMPONENTS Gui Network)
+
+set(_qmltui_pkg_quiet)
+if(QmlTui_FIND_QUIETLY)
+    set(_qmltui_pkg_quiet QUIET)
 endif()
+
 if("@QMLTUI_STATIC_QML_MODULE@" STREQUAL "STATIC")
     if(@QMLTUI_ENABLE_PRIVATE_QT@)
         find_dependency(Qt6 6.8 COMPONENTS QmlPrivate)
-    endif()
-    set(_qmltui_pkg_quiet)
-    if(QmlTui_FIND_QUIETLY)
-        set(_qmltui_pkg_quiet QUIET)
     endif()
     if(@QMLTUI_USE_SYSTEM_UTF8PROC@)
         find_package(utf8proc CONFIG QUIET)
@@ -83,22 +71,74 @@ if("@QMLTUI_STATIC_QML_MODULE@" STREQUAL "STATIC")
             pkg_check_modules(utf8proc REQUIRED ${_qmltui_pkg_quiet} IMPORTED_TARGET GLOBAL libutf8proc)
         endif()
     endif()
-    if(@QMLTUI_ENABLE_PTYVIEW@ AND @QMLTUI_USE_SYSTEM_LIBVTERM@)
+endif()
+
+# Core is always loaded because every other QmlTui module links QmlTui::Core.
+if(NOT TARGET QmlTui::Core)
+    include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiCoreTargets.cmake")
+endif()
+
+# When no COMPONENTS are specified, load every installed module for backwards
+# compatibility. When COMPONENTS (or OPTIONAL_COMPONENTS) are specified, load
+# only the requested optional modules so Core/Controls consumers never pull
+# Qt6::Gui, Qt6::Network, or libvterm unnecessarily.
+set(_qmltui_load_all FALSE)
+if(NOT QmlTui_FIND_COMPONENTS)
+    set(_qmltui_load_all TRUE)
+endif()
+
+if((_qmltui_load_all OR "Controls" IN_LIST QmlTui_FIND_COMPONENTS)
+   AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiControlsTargets.cmake")
+    if(NOT TARGET QmlTui::Controls)
+        include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiControlsTargets.cmake")
+    endif()
+endif()
+
+if((_qmltui_load_all OR "Image" IN_LIST QmlTui_FIND_COMPONENTS)
+   AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiImageTargets.cmake")
+    # Gui is reached by QmlTui::Image (QImage in its public interface); Network
+    # is in its link interface on static builds.
+    find_dependency(Qt6 6.8 COMPONENTS Gui Network)
+    if(NOT TARGET QmlTui::Image)
+        include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiImageTargets.cmake")
+    endif()
+endif()
+
+if((_qmltui_load_all OR "PtyView" IN_LIST QmlTui_FIND_COMPONENTS)
+   AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiPtyViewTargets.cmake")
+    if("@QMLTUI_STATIC_QML_MODULE@" STREQUAL "STATIC" AND @QMLTUI_USE_SYSTEM_LIBVTERM@)
         if(NOT TARGET PkgConfig::libvterm)
             find_dependency(PkgConfig)
             pkg_check_modules(libvterm REQUIRED ${_qmltui_pkg_quiet} IMPORTED_TARGET GLOBAL vterm)
         endif()
     endif()
-    unset(_qmltui_pkg_quiet)
+    if(NOT TARGET QmlTui::PtyView)
+        include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiPtyViewTargets.cmake")
+    endif()
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiTargets.cmake")
-if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
-    include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+if((_qmltui_load_all OR "Runner" IN_LIST QmlTui_FIND_COMPONENTS OR "qmltui-runner" IN_LIST QmlTui_FIND_COMPONENTS)
+   AND EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunnerTargets.cmake")
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+        set(QMLTUI_RUNNER_DECLARATIONS
+            "${_qmltui_prefix_dir}/@CMAKE_INSTALL_INCLUDEDIR@/QmlTui/Runner/qmltui-runner.d.ts"
+            CACHE INTERNAL "Installed location of the Runner scenario API declarations" FORCE)
+    endif()
+    if(NOT TARGET QmlTui::Runner)
+        include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunnerTargets.cmake")
+    endif()
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiRunner.cmake")
+    endif()
 endif()
+
 if(EMSCRIPTEN)
     include("${CMAKE_CURRENT_LIST_DIR}/QmlTuiWasm.cmake")
 endif()
+
+unset(_qmltui_load_all)
+unset(_qmltui_pkg_quiet)
+unset(_qmltui_prefix_dir)
 
 # Unnamespaced backing and plugin names referenced by installed qmldir files
 # (`linktarget QmlTui<Module>plugin`) and Qt's static QML plugin metadata.

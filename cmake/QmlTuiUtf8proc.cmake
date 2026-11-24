@@ -28,9 +28,9 @@ function(qmltui_provide_utf8proc)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     FetchContent_Declare(
         utf8proc
-        GIT_REPOSITORY https://github.com/JuliaStrings/utf8proc.git
-        GIT_TAG v2.11.3
-        GIT_SHALLOW TRUE
+        URL https://github.com/JuliaStrings/utf8proc/archive/refs/tags/v2.11.3.tar.gz
+        URL_HASH SHA256=abfed50b6d4da51345713661370290f4f4747263ee73dc90356299dfc7990c78
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(utf8proc)
     # utf8proc is plain C. A consumer that ran qt_standard_project_setup() before

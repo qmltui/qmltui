@@ -204,7 +204,7 @@ if(qmltui_core_library_type STREQUAL "STATIC_LIBRARY")
     target_link_libraries(QmlTuiCore INTERFACE QmlTuiCoreplugin)
     if(NOT QMLTUI_USE_SYSTEM_UTF8PROC)
         install(TARGETS utf8proc
-            EXPORT QmlTuiTargets
+            EXPORT QmlTuiCoreTargets
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         )
     endif()
@@ -219,16 +219,17 @@ endif()
 add_library(QmlTui::Core ALIAS QmlTuiCore)
 set_target_properties(QmlTuiCore PROPERTIES EXPORT_NAME Core)
 set_target_properties(QmlTuiCoreplugin PROPERTIES EXPORT_NAME CorePlugin)
+qmltui_set_library_version(QmlTuiCore)
 qmltui_set_install_rpath(QmlTuiCore "${CMAKE_INSTALL_LIBDIR}")
 qmltui_set_install_rpath(QmlTuiCoreplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui")
 install(TARGETS QmlTuiCore
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiCoreTargets
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 install(TARGETS QmlTuiCoreplugin
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiCoreTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui"
     ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui"
@@ -238,7 +239,7 @@ install(TARGETS QmlTuiCoreplugin
 # shared builds.
 if(qmltui_core_output_targets)
     install(TARGETS ${qmltui_core_output_targets}
-        EXPORT QmlTuiTargets
+        EXPORT QmlTuiCoreTargets
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"

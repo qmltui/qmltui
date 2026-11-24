@@ -4,14 +4,21 @@ project(qmltuiInstalledCustomItemConsumer LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Deliberately without Gui: QmlTuiConfig.cmake has to pull in every Qt module
-# the exported targets reference.
+# Deliberately without Gui: Core + Controls consumers must never pull Qt6::Gui
+# or QmlTui::Image even when Image is installed in the same prefix.
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
 find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls)
 if(TARGET qmltui::core OR TARGET qmltui::controls)
     message(FATAL_ERROR "Legacy lowercase qmltui:: aliases must not be exported")
 endif()
+if(TARGET QmlTui::Image OR TARGET Qt6::Gui)
+    message(FATAL_ERROR "find_package(QmlTui COMPONENTS Core Controls) must not load QmlTui::Image or Qt6::Gui")
+endif()
+
+# Now opt into optional installed modules so the full-header probe compiles every
+# installed header (including Image.h / PtyView.h when installed).
+find_package(QmlTui 0.6 OPTIONAL_COMPONENTS Image PtyView Runner)
 
 if(NOT DEFINED QMLTUI_PUBLIC_HEADERS)
     message(FATAL_ERROR "QMLTUI_PUBLIC_HEADERS (the generated list of installed headers) was not provided")

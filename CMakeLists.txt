@@ -182,6 +182,21 @@ function(qmltui_set_install_rpath target install_dir)
     set_target_properties(${target} PROPERTIES INSTALL_RPATH "${_rpath}")
 endfunction()
 
+function(qmltui_set_library_version target)
+    get_target_property(_target_type ${target} TYPE)
+    if(_target_type STREQUAL "SHARED_LIBRARY")
+        if(PROJECT_VERSION_MAJOR EQUAL 0)
+            set(_soversion "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+        else()
+            set(_soversion "${PROJECT_VERSION_MAJOR}")
+        endif()
+        set_target_properties(${target} PROPERTIES
+            VERSION "${PROJECT_VERSION}"
+            SOVERSION "${_soversion}"
+        )
+    endif()
+endfunction()
+
 if(EMSCRIPTEN)
     include(cmake/QmlTuiWasm.cmake)
 endif()
@@ -229,11 +244,37 @@ write_basic_package_version_file(
     COMPATIBILITY ${_qmltui_version_compat}
 )
 unset(_qmltui_version_compat)
-install(EXPORT QmlTuiTargets
-    FILE QmlTuiTargets.cmake
+install(EXPORT QmlTuiCoreTargets
+    FILE QmlTuiCoreTargets.cmake
     NAMESPACE QmlTui::
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
 )
+install(EXPORT QmlTuiControlsTargets
+    FILE QmlTuiControlsTargets.cmake
+    NAMESPACE QmlTui::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
+)
+if(QMLTUI_ENABLE_IMAGE)
+    install(EXPORT QmlTuiImageTargets
+        FILE QmlTuiImageTargets.cmake
+        NAMESPACE QmlTui::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
+    )
+endif()
+if(QMLTUI_ENABLE_PTYVIEW)
+    install(EXPORT QmlTuiPtyViewTargets
+        FILE QmlTuiPtyViewTargets.cmake
+        NAMESPACE QmlTui::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
+    )
+endif()
+if(QMLTUI_ENABLE_RUNNER AND NOT EMSCRIPTEN)
+    install(EXPORT QmlTuiRunnerTargets
+        FILE QmlTuiRunnerTargets.cmake
+        NAMESPACE QmlTui::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
+    )
+endif()
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/QmlTuiConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/QmlTuiConfigVersion.cmake"

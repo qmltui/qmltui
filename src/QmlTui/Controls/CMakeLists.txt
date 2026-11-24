@@ -44,24 +44,25 @@ target_include_directories(QmlTuiControls
 target_link_libraries(QmlTuiControls PUBLIC QmlTui::Core)
 set_target_properties(QmlTuiControls PROPERTIES EXPORT_NAME Controls)
 set_target_properties(QmlTuiControlsplugin PROPERTIES EXPORT_NAME ControlsPlugin)
+qmltui_set_library_version(QmlTuiControls)
 qmltui_set_install_rpath(QmlTuiControls "${CMAKE_INSTALL_LIBDIR}")
 qmltui_set_install_rpath(QmlTuiControlsplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls")
 
 install(TARGETS QmlTuiControls
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiControlsTargets
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 install(TARGETS QmlTuiControlsplugin
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiControlsTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
     ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Controls"
 )
 if(qmltui_controls_output_targets)   # static builds only, see Core
     install(TARGETS ${qmltui_controls_output_targets}
-        EXPORT QmlTuiTargets
+        EXPORT QmlTuiControlsTargets
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"

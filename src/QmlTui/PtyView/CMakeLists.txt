@@ -44,24 +44,25 @@ endif()
 add_library(QmlTui::PtyView ALIAS QmlTuiPtyView)
 set_target_properties(QmlTuiPtyView PROPERTIES EXPORT_NAME PtyView)
 set_target_properties(QmlTuiPtyViewplugin PROPERTIES EXPORT_NAME PtyViewPlugin)
+qmltui_set_library_version(QmlTuiPtyView)
 qmltui_set_install_rpath(QmlTuiPtyView "${CMAKE_INSTALL_LIBDIR}")
 qmltui_set_install_rpath(QmlTuiPtyViewplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView")
 
 install(TARGETS QmlTuiPtyView
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiPtyViewTargets
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 install(TARGETS QmlTuiPtyViewplugin
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiPtyViewTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView"
     ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView"
 )
 if(qmltui_pty_view_output_targets)   # static builds only, see Core
     install(TARGETS ${qmltui_pty_view_output_targets}
-        EXPORT QmlTuiTargets
+        EXPORT QmlTuiPtyViewTargets
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"
@@ -69,7 +70,7 @@ if(qmltui_pty_view_output_targets)   # static builds only, see Core
 endif()
 if(qmltui_pty_view_library_type STREQUAL "STATIC_LIBRARY" AND TARGET qmltui_libvterm AND NOT QMLTUI_USE_SYSTEM_LIBVTERM)
     install(TARGETS qmltui_libvterm
-        EXPORT QmlTuiTargets
+        EXPORT QmlTuiPtyViewTargets
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     )
 endif()
@@ -79,6 +80,8 @@ install(FILES
     DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/PtyView"
 )
 qmltui_install_headers(QmlTui/PtyView FILES PtyView.h)
-install(FILES "${PROJECT_SOURCE_DIR}/docs/third-party/libvterm-LICENSE"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/QmlTui/third-party"
-)
+if(NOT QMLTUI_USE_SYSTEM_LIBVTERM)
+    install(FILES "${PROJECT_SOURCE_DIR}/docs/third-party/libvterm-LICENSE"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/QmlTui/third-party"
+    )
+endif()

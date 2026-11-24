@@ -35,24 +35,25 @@ target_link_libraries(QmlTuiImage PUBLIC QmlTui::Core Qt6::Gui PRIVATE Qt6::Netw
 
 set_target_properties(QmlTuiImage PROPERTIES EXPORT_NAME Image)
 set_target_properties(QmlTuiImageplugin PROPERTIES EXPORT_NAME ImagePlugin)
+qmltui_set_library_version(QmlTuiImage)
 qmltui_set_install_rpath(QmlTuiImage "${CMAKE_INSTALL_LIBDIR}")
 qmltui_set_install_rpath(QmlTuiImageplugin "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image")
 
 install(TARGETS QmlTuiImage
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiImageTargets
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
 install(TARGETS QmlTuiImageplugin
-    EXPORT QmlTuiTargets
+    EXPORT QmlTuiImageTargets
     LIBRARY DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
     RUNTIME DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
     ARCHIVE DESTINATION "${QMLTUI_INSTALL_QMLDIR}/QmlTui/Image"
 )
 if(qmltui_image_output_targets)   # static builds only, see Core
     install(TARGETS ${qmltui_image_output_targets}
-        EXPORT QmlTuiTargets
+        EXPORT QmlTuiImageTargets
         LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
         OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"

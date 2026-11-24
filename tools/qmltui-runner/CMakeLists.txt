@@ -6,7 +6,7 @@ set_target_properties(qmltui-runner PROPERTIES EXPORT_NAME qmltui-runner)
 qmltui_set_install_rpath(qmltui-runner "${CMAKE_INSTALL_BINDIR}")
 if(QMLTUI_ENABLE_RUNNER)
     install(TARGETS qmltui-runner
-        EXPORT QmlTuiTargets
+        EXPORT QmlTuiRunnerTargets
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 endif()

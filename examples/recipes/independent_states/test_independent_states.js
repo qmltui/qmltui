@@ -35,7 +35,7 @@ function main(app) {
 
     // 6. RESTORATION: Reset to base state and verify restored styles and text
     app.press("r");
-    app.advanceTime(200);
+    app.advanceTime(250);
     app.expectText("STATUS: Offline (Disconnected)");
     app.expectStyled("snapshots/restoration.txt");
 

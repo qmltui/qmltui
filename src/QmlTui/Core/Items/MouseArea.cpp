@@ -111,11 +111,24 @@ void MouseArea::mousePressEvent(MouseEvent* event) {
     if (!(m_acceptedButtons & event->button())) {
         return; // not ours: the event stays unaccepted for items behind
     }
+    QPointer<MouseArea> self(this);
     setMousePosition(event->x(), event->y());
+    if (!self) return;
+    const Qt::MouseButtons previousButtons = m_pressedButtons;
     setPressedButtons(m_pressedButtons | event->button());
+    if (!self) return;
     updateContainsPress(true); // a press is hit-tested, so it is inside
-    emit pressed(event);
+    if (!self) return;
+    // Accepted up front, as in Qt Quick; a handler can set accepted = false
+    // to pass the press through to items behind.
     event->setAccepted(true);
+    emit pressed(event);
+    if (self && !event->isAccepted()) {
+        setPressedButtons(previousButtons);
+        if (self && !isPressed()) {
+            updateContainsPress(false);
+        }
+    }
 }
 
 void MouseArea::mouseReleaseEvent(MouseEvent* event) {
@@ -137,15 +150,14 @@ void MouseArea::mouseReleaseEvent(MouseEvent* event) {
         updateContainsPress(false);
         if (!self) return;
     }
+    event->setAccepted(true);
     emit released(event);
-    if (!self) {
-        event->setAccepted(true);
+    if (!self || !event->isAccepted()) {
         return;
     }
     if (ex >= 0 && ex < width() && ey >= 0 && ey < height()) {
         emit clicked(event);
     }
-    event->setAccepted(true);
 }
 
 void MouseArea::mouseMoveEvent(MouseEvent* event) {

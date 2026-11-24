@@ -51,6 +51,7 @@ private slots:
     void testTransitionStateBindingDetachedBeforeLiteralState();
     void testDecodedBindingTeardownWithoutEngine();
     void testColorTransitionStringLiteralsAndZeroDelta();
+    void testReverseTransitionToBaseAndInterruption();
     void testCustomBindingsDynamicRetargetAndAttachedOmittedTarget();
     void testDisabledFeaturesAvailability();
 };
@@ -1712,6 +1713,94 @@ void TestStates::testColorTransitionStringLiteralsAndZeroDelta() {
     QVERIFY(qobject_cast<ColorAnimation*>(ansiAnim) != nullptr);
     ansiAnim->tick(0);
     ansiAnim->tick(100);
+}
+
+void TestStates::testReverseTransitionToBaseAndInterruption() {
+    auto findRunningAnim = [](QObject* obj) -> PropertyAnimation* {
+        for (PropertyAnimation* anim : obj->findChildren<PropertyAnimation*>()) {
+            if (anim->running()) return anim;
+        }
+        return nullptr;
+    };
+
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+        Item {
+            id: root
+            property int baseFactor: 1
+            property int sizeVal: baseFactor * 10
+            states: [
+                State {
+                    name: "expanded"
+                    PropertyChanges {
+                        target: root
+                        properties: ({ "sizeVal": 50 })
+                    }
+                }
+            ]
+            transitions: [
+                Transition {
+                    from: "*"
+                    to: "*"
+                    NumberAnimation {
+                        property: "sizeVal"
+                        duration: 100
+                    }
+                }
+            ]
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto* root = qobject_cast<Item*>(object.get());
+    QVERIFY(root);
+    QCOMPARE(root->property("sizeVal").toInt(), 10);
+
+    // Enter expanded state and finish transition.
+    root->setState("expanded");
+    PropertyAnimation* enterAnim = findRunningAnim(root);
+    QVERIFY(enterAnim);
+    enterAnim->tick(0);
+    enterAnim->tick(100);
+    QCOMPARE(root->property("sizeVal").toInt(), 50);
+
+    // Exit to base state "": Transition animates smoothly back to 10.
+    root->setState("");
+    PropertyAnimation* exitAnim = findRunningAnim(root);
+    QVERIFY(exitAnim);
+    exitAnim->tick(0);
+    exitAnim->tick(50);
+    const int midValue = root->property("sizeVal").toInt();
+    QVERIFY(midValue > 10 && midValue < 50);
+
+    // Interrupt mid-revert by re-entering "expanded": original base value (10) must be preserved.
+    root->setState("expanded");
+    PropertyAnimation* reenterAnim = findRunningAnim(root);
+    QVERIFY(reenterAnim);
+    reenterAnim->tick(0);
+    reenterAnim->tick(100);
+    QCOMPARE(root->property("sizeVal").toInt(), 50);
+
+    // Now exit to base state "" to completion.
+    root->setState("");
+    PropertyAnimation* finalExitAnim = findRunningAnim(root);
+    QVERIFY(finalExitAnim);
+    finalExitAnim->tick(0);
+    finalExitAnim->tick(100);
+    QCOMPARE(root->property("sizeVal").toInt(), 10);
+
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
+    // Original base binding (`baseFactor * 10`) is restored on transition completion.
+    root->setProperty("baseFactor", 3);
+    QCOMPARE(root->property("sizeVal").toInt(), 30);
+#endif
 }
 
 void TestStates::testDisabledFeaturesAvailability() {

@@ -284,7 +284,8 @@ bool InputRouter::routeKeyRelease(int key, const QString& text, int modifiers) {
 
 bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button, int modifiers,
                                      bool motion, bool release, int wheelDeltaX, int wheelDeltaY,
-                                     Item* stopAncestor) {
+                                     Item* stopAncestor, QPointer<Item>* outAcceptedBy) {
+    if (outAcceptedBy) outAcceptedBy->clear();
     if (!target) return false;
 
     // Check child mouse event filters on ancestors
@@ -313,6 +314,7 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button, int
                                wheelDeltaX, wheelDeltaY);
         if (filterItem->childMouseEventFilter(targetGuard.data(), &filterEvent) ||
             filterEvent.isAccepted()) {
+            if (outAcceptedBy) *outAcceptedBy = targetGuard;
             return true;
         }
     }
@@ -335,6 +337,7 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button, int
     while (current) {
         int currentAbsX = current->absolutePosition().x();
         int currentAbsY = current->absolutePosition().y();
+        QPointer<Item> currentGuard(current);
         QPointer<Item> next = current->parentItem();
         MouseEvent currentEvent(eventType, x - currentAbsX, y - currentAbsY, button, modifiers,
                                 wheelDeltaX, wheelDeltaY);
@@ -350,6 +353,7 @@ bool InputRouter::dispatchMouseEvent(Item* target, int x, int y, int button, int
         }
         if (currentEvent.isAccepted()) {
             accepted = true;
+            if (outAcceptedBy) *outAcceptedBy = currentGuard;
             break;
         }
 
@@ -503,11 +507,12 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
                     if (!requested) return;
                 }
 
-                QPointer<Item> targetGuard(target);
-                bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers, motion,
-                                                   release, wheelDeltaX, wheelDeltaY, scopeItem);
-                if (accepted && isButtonPress && targetGuard) {
-                    m_implicitMouseGrabItem = targetGuard.data();
+                QPointer<Item> acceptedBy;
+                bool accepted =
+                    dispatchMouseEvent(target, x, localY, button, modifiers, motion, release,
+                                       wheelDeltaX, wheelDeltaY, scopeItem, &acceptedBy);
+                if (accepted && isButtonPress && acceptedBy) {
+                    m_implicitMouseGrabItem = acceptedBy;
                 }
                 return;
             }
@@ -539,11 +544,11 @@ void InputRouter::routeMouse(int button, int x, int y, bool release, bool motion
             if (!requested) return;
         }
 
-        QPointer<Item> targetGuard(target);
+        QPointer<Item> acceptedBy;
         bool accepted = dispatchMouseEvent(target, x, localY, button, modifiers, motion, release,
-                                           wheelDeltaX, wheelDeltaY);
-        if (accepted && isButtonPress && targetGuard) {
-            m_implicitMouseGrabItem = targetGuard.data();
+                                           wheelDeltaX, wheelDeltaY, nullptr, &acceptedBy);
+        if (accepted && isButtonPress && acceptedBy) {
+            m_implicitMouseGrabItem = acceptedBy;
         }
     }
 }

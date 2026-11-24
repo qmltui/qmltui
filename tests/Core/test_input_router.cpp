@@ -45,6 +45,7 @@ private slots:
     void testShortcutScopedPerTerminalAndPrintableFocusSuppression();
     void testShortcutStringSequences();
     void testKeyReleaseAndAutoRepeatRouting();
+    void testMouseAreaPressPassThroughWhenRejected();
 };
 
 void TestInputRouter::testImplicitMouseGrab() {
@@ -1004,6 +1005,45 @@ void TestInputRouter::testKeyReleaseAndAutoRepeatRouting() {
     QCOMPARE(attachedReleases, 2);
     QCOMPARE(focused.releaseCount, 2);
     QCOMPARE(forwarded.releaseCount, 2);
+}
+
+void TestInputRouter::testMouseAreaPressPassThroughWhenRejected() {
+    Terminal term;
+    term.engine()->setTerminalOutputEnabled(false);
+    term.engine()->setTestViewportSize(QSize(40, 12));
+
+    MouseArea parentArea(&term);
+    parentArea.setWidth(20);
+    parentArea.setHeight(6);
+
+    MouseArea childArea(&parentArea);
+    childArea.setWidth(10);
+    childArea.setHeight(4);
+
+    int parentPresses = 0;
+    int parentReleases = 0;
+    int childPresses = 0;
+    int childReleases = 0;
+    connect(&parentArea, &MouseArea::pressed, [&](MouseEvent*) { ++parentPresses; });
+    connect(&parentArea, &MouseArea::released, [&](MouseEvent*) { ++parentReleases; });
+    connect(&childArea, &MouseArea::pressed, [&](MouseEvent* ev) {
+        ++childPresses;
+        ev->setAccepted(false);
+    });
+    connect(&childArea, &MouseArea::released, [&](MouseEvent*) { ++childReleases; });
+
+    InputRouter router(&term);
+    router.routeMouse(0, 2, 2, false, false);
+    QCOMPARE(childPresses, 1);
+    QCOMPARE(parentPresses, 1);
+    QVERIFY(!childArea.isPressed());
+    QVERIFY(!childArea.containsPress());
+    QVERIFY(parentArea.isPressed());
+
+    router.routeMouse(0, 2, 2, true, false);
+    QCOMPARE(parentReleases, 1);
+    QCOMPARE(childReleases, 0);
+    QVERIFY(!parentArea.isPressed());
 }
 
 QTEST_MAIN(TestInputRouter)

@@ -41,19 +41,19 @@ y=3 x=1-98 fg=#3B4252FF bg=#1A1A24FF
 y=3 x=99-99 fg=default bg=#000000FF
 y=4 x=0-99 fg=default bg=#000000FF
 y=5 x=0-0 fg=default bg=#000000FF
-y=5 x=1-98 fg=#A1C279FF bg=#182717FF
+y=5 x=1-98 fg=#A0C279FF bg=#182717FF
 y=5 x=99-99 fg=default bg=#000000FF
 y=6 x=0-0 fg=default bg=#000000FF
-y=6 x=1-1 fg=#A1C279FF bg=#182717FF
+y=6 x=1-1 fg=#A0C279FF bg=#182717FF
 y=6 x=2-29 fg=default bg=#182717FF
-y=6 x=30-32 fg=default bg=#A1C279FF
+y=6 x=30-32 fg=default bg=#A0C279FF
 y=6 x=33-34 fg=default bg=#182717FF
 y=6 x=35-69 fg=#FFFFFFFF bg=#182717FF bold
 y=6 x=70-97 fg=default bg=#182717FF
-y=6 x=98-98 fg=#A1C279FF bg=#182717FF
+y=6 x=98-98 fg=#A0C279FF bg=#182717FF
 y=6 x=99-99 fg=default bg=#000000FF
 y=7 x=0-0 fg=default bg=#000000FF
-y=7 x=1-98 fg=#A1C279FF bg=#182717FF
+y=7 x=1-98 fg=#A0C279FF bg=#182717FF
 y=7 x=99-99 fg=default bg=#000000FF
 y=8 x=0-99 fg=default bg=#000000FF
 y=9 x=0-0 fg=default bg=#000000FF

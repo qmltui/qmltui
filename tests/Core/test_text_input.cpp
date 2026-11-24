@@ -1,4 +1,5 @@
 #include <QTest>
+#include <QSignalSpy>
 #include <QObject>
 #include <QRegularExpression>
 #include <QQmlComponent>
@@ -32,6 +33,7 @@ private slots:
     void testTerminalCursorCustomization();
     void testDoubleClickWordSelection();
     void testTypingCoalescingAndUndoBudget();
+    void testEditingFinishedOnReturnAndBlur();
     void testQmlSurface();
 };
 
@@ -401,6 +403,31 @@ void TestTextInput::testTypingCoalescingAndUndoBudget() {
     QVERIFY(editor.text() != afterEdits);
     editor.redo();
     QCOMPARE(editor.text(), afterEdits);
+}
+
+void TestTextInput::testEditingFinishedOnReturnAndBlur() {
+    TextInput input;
+    QSignalSpy finishedSpy(&input, &TextInput::editingFinished);
+    QSignalSpy acceptedSpy(&input, &TextInput::accepted);
+
+    // Gaining focus must not emit editingFinished.
+    input.setActiveFocus(true);
+    QCOMPARE(finishedSpy.count(), 0);
+
+    // Pressing Return emits both accepted and editingFinished.
+    KeyEvent ret(Qt::Key_Return, QStringLiteral("\r"), 0);
+    input.keyPressEvent(&ret);
+    QCOMPARE(acceptedSpy.count(), 1);
+    QCOMPARE(finishedSpy.count(), 1);
+
+    // Losing active focus emits editingFinished without emitting accepted.
+    input.setActiveFocus(false);
+    QCOMPARE(acceptedSpy.count(), 1);
+    QCOMPARE(finishedSpy.count(), 2);
+
+    // Redundant false write does not emit again.
+    input.setActiveFocus(false);
+    QCOMPARE(finishedSpy.count(), 2);
 }
 
 void TestTextInput::testQmlSurface() {

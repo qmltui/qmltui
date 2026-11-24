@@ -39,6 +39,9 @@ TextInput::TextInput(QObject* parent)
     connect(this, &Item::activeFocusChanged, this, [this]() {
         resetBlinkTimer();
         markDirty();
+        if (!activeFocus()) {
+            emit editingFinished();
+        }
     });
     connect(this, &Item::parentChanged, this, &TextInput::updateTerminalConnection);
     connect(this, &Item::ancestryChanged, this, &TextInput::updateTerminalConnection);

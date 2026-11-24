@@ -110,6 +110,12 @@ void StateController::handleTargetDestroyed(QObject* obj) {
         else
             ++it;
     }
+    for (auto it = m_revertingBaseRecords.begin(); it != m_revertingBaseRecords.end();) {
+        if (it.key().targetId == deadId)
+            it = m_revertingBaseRecords.erase(it);
+        else
+            ++it;
+    }
     const bool hasOwnerMap = propertyOwnerStorage().hasLocalData();
     for (auto it = m_ownedProperties.begin(); it != m_ownedProperties.end();) {
         if (it->targetId == deadId) {
@@ -641,12 +647,25 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
     }
 }
 
-void StateController::revertProperty(const CanonicalProperty& key) {
+void StateController::revertProperty(const CanonicalProperty& key, Transition* transitionObj,
+                                     QSet<CanonicalProperty>* animatedProperties) {
     auto it = m_baseRecords.find(key);
     if (it == m_baseRecords.end()) return;
 
-    const BasePropertyRecord& rec = it.value();
+    const BasePropertyRecord rec = it.value();
     if (!rec.target || !rec.restore) return;
+
+    if (transitionObj && animatedProperties) {
+        PropertyOverride revertOverride;
+        revertOverride.target = rec.target;
+        revertOverride.name = rec.name;
+        revertOverride.value = rec.baseValue;
+        revertOverride.binding = rec.baseBinding;
+        revertOverride.isBinding = rec.hadBinding;
+        revertOverride.restore = rec.restore;
+        applyOverride(key, revertOverride, transitionObj, *animatedProperties, true, &rec);
+        return;
+    }
 
     restoreOrWriteProperty(rec.target.data(), rec.name, rec.baseValue, rec.hadBinding,
                            rec.baseBinding);
@@ -654,7 +673,8 @@ void StateController::revertProperty(const CanonicalProperty& key) {
 
 void StateController::applyOverride(const CanonicalProperty& key, const PropertyOverride& override,
                                     Transition* transitionObj,
-                                    QSet<CanonicalProperty>& animatedProperties) {
+                                    QSet<CanonicalProperty>& animatedProperties, bool isRevert,
+                                    const BasePropertyRecord* revertRecord) {
     if (!override.target) return;
 
     QObject* targetObj = override.target.data();
@@ -736,18 +756,27 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
         newAnim->setTo(toVal);
 
         SavedBinding destBinding = override.isBinding ? override.binding : SavedBinding();
-        connect(newAnim, &Animation::finished, this, [this, newAnim, prop, destBinding]() mutable {
-            m_runningTransitionAnimations.removeOne(newAnim);
-            newAnim->deleteLater();
-            if (prop.isValid() && prop.object() != nullptr && destBinding) {
-                // Attach and reevaluate destination binding at transition completion
-                destBinding.installOn(prop);
-            }
-        });
+        if (isRevert && revertRecord) {
+            m_revertingBaseRecords.insert(key, *revertRecord);
+        }
+        connect(newAnim, &Animation::finished, this,
+                [this, newAnim, prop, key, destBinding, isRevert]() mutable {
+                    m_runningTransitionAnimations.removeOne(newAnim);
+                    newAnim->deleteLater();
+                    if (isRevert) {
+                        m_revertingBaseRecords.remove(key);
+                    }
+                    if (prop.isValid() && prop.object() != nullptr && destBinding) {
+                        // Attach and reevaluate destination binding at transition completion
+                        destBinding.installOn(prop);
+                    }
+                });
 
         removeBindingFromProperty(prop);
         m_runningTransitionAnimations.append(newAnim);
         newAnim->start();
+    } else if (isRevert) {
+        restoreOrWriteProperty(targetObj, propName, toVal, override.isBinding, override.binding);
     } else {
         // Not animated or endpoint equal
         installOrWriteProperty(targetObj, propName, toVal, override.isBinding, override.binding);
@@ -791,6 +820,26 @@ void StateController::applyState(const QString& newState) {
     }
     m_runningTransitionAnimations.clear();
 
+    // Reconcile any interrupted reverse-to-base transitions before evaluating the new state.
+    if (!m_revertingBaseRecords.isEmpty()) {
+        const QMap<CanonicalProperty, BasePropertyRecord> interrupted =
+            std::move(m_revertingBaseRecords);
+        m_revertingBaseRecords.clear();
+        for (auto it = interrupted.cbegin(); it != interrupted.cend(); ++it) {
+            const CanonicalProperty& canon = it.key();
+            const BasePropertyRecord& rec = it.value();
+            if (!rec.target) continue;
+            if (requestedOverrides.contains(canon)) {
+                if (!m_baseRecords.contains(canon)) {
+                    m_baseRecords.insert(canon, rec);
+                }
+            } else if (rec.restore) {
+                restoreOrWriteProperty(rec.target.data(), rec.name, rec.baseValue, rec.hadBinding,
+                                       rec.baseBinding);
+            }
+        }
+    }
+
     // 4. Find matching transition
     Transition* transitionObj = nullptr;
     for (const QPointer<Transition>& t : m_transitionsList) {
@@ -801,6 +850,7 @@ void StateController::applyState(const QString& newState) {
     }
 
     // 5. Properties to revert (present in m_baseRecords, but NOT requested by newStateObj)
+    QSet<CanonicalProperty> animatedProperties;
     QList<CanonicalProperty> toRevert;
     for (const CanonicalProperty& canon : m_baseRecords.keys()) {
         if (!requestedOverrides.contains(canon)) {
@@ -809,14 +859,13 @@ void StateController::applyState(const QString& newState) {
     }
 
     for (const CanonicalProperty& canon : toRevert) {
-        revertProperty(canon);
+        revertProperty(canon, transitionObj, &animatedProperties);
         m_baseRecords.remove(canon);
         if (propertyOwners().value(canon) == this) propertyOwners().remove(canon);
         m_ownedProperties.remove(canon);
     }
 
     // 6. Properties to apply
-    QSet<CanonicalProperty> animatedProperties;
     for (auto it = requestedOverrides.begin(); it != requestedOverrides.end(); ++it) {
         const CanonicalProperty& canon = it.key();
         const PropertyOverride& override = it.value();

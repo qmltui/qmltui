@@ -111,9 +111,11 @@ private:
                                 QSet<CanonicalProperty>* outAppliedKeys = nullptr);
     void collectOverridesForState(State* state,
                                   QMap<CanonicalProperty, PropertyOverride>& outOverrides);
-    void revertProperty(const CanonicalProperty& key);
+    void revertProperty(const CanonicalProperty& key, Transition* transitionObj = nullptr,
+                        QSet<CanonicalProperty>* animatedProperties = nullptr);
     void applyOverride(const CanonicalProperty& key, const PropertyOverride& override,
-                       Transition* transitionObj, QSet<CanonicalProperty>& animatedProperties);
+                       Transition* transitionObj, QSet<CanonicalProperty>& animatedProperties,
+                       bool isRevert = false, const BasePropertyRecord* revertRecord = nullptr);
 
     static void appendState(QQmlListProperty<State>* list, State* state);
     static qsizetype stateCount(QQmlListProperty<State>* list);
@@ -140,6 +142,8 @@ private:
 
     // Preserves pre-state values and bindings across A -> B -> base transitions.
     QMap<CanonicalProperty, BasePropertyRecord> m_baseRecords;
+    // Preserves original base records while a reverse-to-base transition animation is in flight.
+    QMap<CanonicalProperty, BasePropertyRecord> m_revertingBaseRecords;
     QSet<CanonicalProperty> m_ownedProperties;
     QList<QPointer<Animation>> m_runningTransitionAnimations;
     QMap<PropertyChanges*, QVariantMap> m_appliedMaps;

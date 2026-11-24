@@ -105,7 +105,8 @@ Changing or destroying the selected terminal updates the connection automaticall
 
 The signal reports a request, not confirmed system clipboard success. It fires
 even with OSC 52 output disabled, allowing application-provided clipboard handlers
-and feedback to continue working. The application owns the notification UI:
+and feedback to continue working. The application owns the notification UI,
+as demonstrated in the gallery example below.
 
 ### Example
 

@@ -39,7 +39,8 @@ When the layout has excess width, items with `Layout.fillWidth: true` expand pro
 to their `Layout.horizontalStretch` factors.
 
 The `spacing` property sets the number of character cells
-between adjacent items.
+between adjacent items. Unlike Qt Quick, `RowLayout` (along with `ColumnLayout`
+and `GridLayout`) defaults to `clip: true`.
 
 ### Example
 

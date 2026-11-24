@@ -23,14 +23,14 @@ Input is always delivered as raw VT byte sequences so `InputDecoder` needs no pl
 - `static void setFactory(Factory factory)` / `static const Factory &factory()` — installs or returns the process-wide custom `TerminalBackend` factory (`nullptr` restores the platform default).
 - `bool enterRawMode()` / `bool leaveRawMode()` — switches the terminal between line-buffered mode and raw mode. `TerminalDevice` flushes queued output before leaving raw mode.
 - `bool needsUtf8Designation() const` — `true` on POSIX terminals that expect `ESC % G` after entering raw mode; `false` on Windows where code pages are used.
-- `virtual void setKeyboardProtocolActive(bool active)` — notifies the backend when the Kitty keyboard disambiguation protocol (`CSI > 1 u` / `CSI < u`) is pushed or popped so crash/signal cleanup can pop it if needed.
+- `virtual void setKeyboardProtocolActive(bool active)` — notifies the backend when the Kitty keyboard disambiguation and event-type reporting protocol (`CSI > 3 u` / `CSI < u`, flags `1 | 2`) is pushed or popped so crash/signal cleanup can pop it if needed.
 - `WriteStatus writeSome(const char *data, size_t size, size_t &offset)` — writes as many bytes as the terminal accepts immediately (`Done`, `WouldBlock`, or `Error`).
-- `bool writeAll(std::string &pending, int timeoutMs)` — writes all bytes in `pending` within `timeoutMs`, erasing delivered bytes.
+- `bool writeAll(std::string &pending, int timeoutMs)` — writes all bytes in `pending` within `timeoutMs` (or indefinitely when `timeoutMs < 0`), erasing delivered bytes.
 - `bool supportsAsyncOutput() const` — `true` on POSIX where output can drain non-blockingly from the event loop; `false` on Windows.
 - `bool setNonBlockingOutput(bool enabled)` — toggles non-blocking output mode.
 - `void setWritableNotifications(bool enabled)` — enables or disables `writable()` notifications on a non-blocking channel.
 - `QSize size() const` — terminal dimensions in cells, or an invalid `QSize` when unknown (`TerminalDevice` falls back to 80×24).
-- `bool isInteractive() const` / `virtual bool isInputInteractive() const` — `true` when output (or standard input, respectively; defaults to `isInteractive()`) is attached to a live TTY rather than a pipe or file.
+- `bool isInteractive() const` / `virtual bool isInputInteractive() const` / `virtual bool isStderrInteractive() const` — `true` when output, standard input, or standard error (respectively; input and stderr default to `isInteractive()`) is attached to a live TTY rather than a pipe or file. `TerminalEngine` queries `isStderrInteractive()` to decide whether [`QtMessageRouting`](qtmessagerouting.md) buffers `stderr` output during `AltScreen` sessions.
 - `void startInput()` / `void stopInput()` — starts and stops delivery of `inputReceived()` and `resized()`.
 - `std::unique_ptr<TerminalBackend> createTerminalBackend(int outputFd = -1)` *(free function in `namespace qmltui`)* — creates a backend using `TerminalBackend::factory()` when installed, or the platform default otherwise (`outputFd < 0` selects standard output).
 

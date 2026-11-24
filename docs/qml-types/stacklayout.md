@@ -41,14 +41,10 @@ own.
 `count` and the layout follow the `children` list: a page created later, for
 example with `Component.createObject(layout)`, is counted and hidden or shown
 and sized according to `currentIndex` as soon as it is added, and a destroyed
-page is dropped. Bind `currentIndex` to a [TabBar](tabbar.md)'s
-`currentIndex` for tabbed pages; use [StackView](stackview.md) when pages are
-pushed and popped at run time instead of chosen by index.
-
-StackLayout switches pages instantly and does not move keyboard focus. It is
-the natural partner of [TabBar](tabbar.md), whose `currentIndex` can be
-bound to it. Use [StackView](stackview.md) for push and pop navigation where
-pages are created on demand.
+page is dropped. StackLayout switches pages instantly without moving keyboard
+focus. Bind `currentIndex` to a [TabBar](tabbar.md)'s `currentIndex` for tabbed
+pages; use [StackView](stackview.md) when pages are pushed, popped, and created
+on demand at run time instead of chosen by index.
 
 ### Example
 

@@ -62,6 +62,11 @@ via a [KeyEvent](keyevent.md) object (`onReleased` and `isAutoRepeat` require a
 terminal that supports the Kitty keyboard protocol).
 
 Key events can be forwarded to other items by adding them to the `forwardTo` list.
+`forwardTo` runs only after both the source item's `Keys` handlers and built-in
+`keyPressEvent()` leave the event unaccepted; on each forwarded target, QmlTui calls
+the target's C++ `keyPressEvent()` first and then emits `Keys.onPressed` (ignoring
+the target's `Keys.priority` and without emitting specific-key signals such as
+`onUpPressed` or `onReturnPressed`).
 All Keys signal handlers (including specific-key signals such as `onReturnPressed` and `onEscapePressed`) start with `event.accepted = false`; set `event.accepted = true` explicitly to terminate propagation up the parent chain.
 
 ### Example

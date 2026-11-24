@@ -36,7 +36,8 @@ smoothly from its old value to the new value.
 
 > [!NOTE]
 > Behavior is an optional feature in QmlTui requiring `QMLTUI_ENABLE_PRIVATE_QT=ON`
-> and links against `Qt6::QmlPrivate`.
+> and links against `Qt6::QmlPrivate`. Unlike Qt Quick, QmlTui's `Behavior` does
+> not expose an `enabled` toggle property.
 
 ### Example
 

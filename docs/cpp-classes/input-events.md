@@ -19,6 +19,7 @@ Delivered to `Item::keyPressEvent(KeyEvent*)` and QML [`Keys`](../qml-types/keys
 | `text()` | `QString` | Decoded Unicode text produced by the key press or bracketed paste. |
 | `modifiers()` | `int` | Bitmask of `Qt::KeyboardModifiers` (`Qt::ShiftModifier`, `Qt::ControlModifier`, `Qt::AltModifier`). |
 | `isPaste()` | `bool` | `true` when `text()` arrived inside a bracketed-paste sequence (`?2004h`). |
+| `isAutoRepeat()` | `bool` | `true` when the key press is a terminal-reported auto-repeat (Kitty keyboard event-type `2`). |
 | `isAccepted()` / `setAccepted(bool)` | `bool` / `void` | Reads or marks whether the event has been consumed. |
 
 ## `qmltui::MouseEvent`
@@ -33,7 +34,7 @@ Delivered to `Item::mousePressEvent()`, `mouseReleaseEvent()`, `mouseMoveEvent()
 | `nativeButton()` | `int` | Raw SGR low-bit button code (`0` left, `1` middle, `2` right, `3` none). |
 | `modifiers()` | `int` | Active `Qt::KeyboardModifiers` bitmask. |
 | `isMotion()` | `bool` | `true` when `type() == Type::Move`. |
-| `wheelDeltaX()`, `wheelDeltaY()` | `int` | Horizontal and vertical wheel scroll deltas (`±120` per notch). |
+| `wheelDeltaX()`, `wheelDeltaY()` | `int` | Horizontal and vertical wheel scroll deltas (`±1` per notch: `+1` wheel up, `-1` wheel down — unlike `QWheelEvent::angleDelta()`'s `±120` eighths-of-a-degree scale). |
 | `isAccepted()` / `setAccepted(bool)` | `bool` / `void` | Reads or marks whether the event has been consumed. |
 
 ## `qmltui::Shortcut`

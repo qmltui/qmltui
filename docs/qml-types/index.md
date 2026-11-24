@@ -23,7 +23,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [Gradient](gradient.md): Linear color gradient interpolated across cells between `GradientStop` entries.
 - [GradientStop](gradientstop.md): Color stop at a normalized `[0.0, 1.0]` position inside a `Gradient`.
 - [Clipboard](clipboard.md): Singleton providing OSC 52 / platform clipboard copy and Promise-based reads.
-- [QmlTui](qmltui.md): Global engine singleton exposing helper factories (`span()`, `highlightRange()`, color utilities).
+- [QmlTui](qmltui.md): Global engine singleton exposing helper factories (`span()`, `color()`, `rgba()`, `ansi()`).
 - [color](color.md): Terminal color value type supporting `default`, `transparent`, ANSI palette names, and RGB hex strings.
 - [span](span.md): Styled inline text run passed to `Text.spans`.
 - [highlightRange](highlightrange.md): Character range and style descriptor used in `TextArea` highlight layers.
@@ -37,7 +37,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [ColumnLayout](columnlayout.md): Vertical layout container supporting `Layout.fillHeight`, `preferredHeight`, and stretch factors.
 - [GridLayout](gridlayout.md): Two-dimensional row-and-column layout container with cell spanning and alignment.
 - [StackLayout](stacklayout.md): Indexed container showing one child at a time sized to fill the layout.
-- [Layout](layout.md): Attached property configuring size hints, margins, alignment, and stretch factors inside `*Layout` containers.
+- [Layout](layout.md): Attached property configuring size hints, grid spans, alignment, and stretch factors inside `*Layout` containers.
 - [Repeater](repeater.md): Instantiates a delegate component for each entry in a model inside a parent positioner or layout.
 - [Loader](loader.md): Dynamically instantiates or unloads a `Component` or QML URL on demand.
 
@@ -57,7 +57,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [ComboBox](combobox.md): Dropdown selector combining a single-row summary box with a modal `Popup` option list.
 - [SpinBox](spinbox.md): Interactive integer stepper over `[from, to]` in `stepSize` increments.
 - [Slider](slider.md): One-row horizontal numeric slider controlled via arrow keys, `Home`/`End`, mouse drag, or wheel.
-- [ProgressBar](progressbar.md): One-row horizontal progress indicator filling from `from` to `to` (plus indeterminate mode).
+- [ProgressBar](progressbar.md): One-row horizontal progress indicator filling from `from` to `to` with optional gradients, thresholds, and presets.
 - [BusyIndicator](busyindicator.md): Animated spinner cycling through Unicode Braille or block glyphs while `running` is true.
 - [Sparkline](sparkline.md): Compact inline trend chart rendering numeric series as vertical block glyphs per column.
 - [Panel](panel.md): Bordered container frame with title, trailing title, footer, and trailing footer slots on its border rows.
@@ -72,7 +72,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [TreeView](treeview.md): Virtualized hierarchical view for expandable `QAbstractItemModel` trees with branch connectors.
 - [ListView](listview.md): Virtualized scrollable list instantiating visible delegates from a `ListModel`, JS array, or C++ model.
 - [GridView](gridview.md): Virtualized scrollable two-dimensional tile grid of model delegates.
-- [ScrollView](scrollview.md): Scrollable viewport container with optional vertical and horizontal scrollbars for overflowing content.
+- [ScrollView](scrollview.md): Scrollable viewport container with a vertical overlay scrollbar and 2D scroll offsets (`contentX`, `contentY`) for overflowing content.
 
 ## `QmlTui`: Input Events
 
@@ -80,7 +80,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [KeyEvent](keyevent.md): Event payload carrying `key`, `text`, `modifiers`, and `accepted` state in `Keys` handlers.
 - [MouseArea](mousearea.md): Interactive cell region handling SGR mouse clicks, drags, hover tracking, and scroll wheel events.
 - [MouseEvent](mouseevent.md): Event payload carrying cell-space pointer coordinates, buttons, modifiers, and wheel deltas.
-- [Shortcut](shortcut.md): Declarative keyboard shortcut (`sequence` / `sequences`) active across the application or enclosing window context.
+- [Shortcut](shortcut.md): Declarative single-stroke keyboard shortcut (`sequence`) active while its ancestor `Item` is visible and enabled (scoped to modal `Popup` subtrees).
 
 ## `QmlTui`: Animation and State
 
@@ -97,7 +97,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 
 ## `QmlTui`: Canvas
 
-- [Canvas](canvas.md): Sub-cell vector drawing surface rendered with 2x4 `Braille`, 1x2 `HalfBlock`, or `ASCII` characters.
+- [Canvas](canvas.md): Sub-cell vector drawing surface rendered with 2x4 `Braille` or 1x2 `HalfBlock` characters.
 - [CanvasShape](canvasshape.md): Base type for declarative 2D vector shapes placed inside a `Canvas`.
 - [CanvasRectangle](canvasrectangle.md): Stroked or filled sub-cell rectangle shape on a `Canvas`.
 - [Circle](circle.md): Stroked or filled sub-cell circle on a `Canvas`.

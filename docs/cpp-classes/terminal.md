@@ -39,7 +39,7 @@
 | Property | Type | Access | Notify Signal | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `capabilities` | `qmltui::TerminalCapabilities` | read-only | `capabilitiesChanged` | Detected or overridden host terminal capabilities. |
-| `title` | `QString` | read/write | `titleChanged` | Host terminal window title emitted via OSC 2. |
+| `title` | `QString` | read/write | `titleChanged` | Host terminal window title emitted via OSC 0 (`\033]0;...\a`). |
 | `color` | `qmltui::Color` | read/write | `colorChanged` | Root background color (`"transparent"` by default). |
 | `mode` | `Mode` | read/write | `modeChanged` | Presentation mode (`Mode::AltScreen` or `Mode::Inline`). |
 | `clipboardMode` | `ClipboardMode` | read/write | `clipboardModeChanged` | Clipboard mode (`ClipboardMode::Osc52` by default). |
@@ -54,8 +54,8 @@ In addition to the property notify signals above, `Terminal` emits `clipboardCop
 
 ## Public Methods
 
-- `TerminalEngine *engine() const` — returns the `TerminalEngine` for this session, creating it on demand if `componentComplete()` has not run yet.
-- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded by `TerminalEngine::ControlSequenceQueueLimit`).
+- `TerminalEngine *engine() const` — returns the `TerminalEngine` for this session, creating it on demand if `componentComplete()` has not run yet. In installed `find_package(QmlTui)` builds, `TerminalEngine` is forward-declared only (an opaque pointer — [`TerminalEngine.h`](terminalengine.md) is an in-tree internal header), so installed C++ consumers should call `engine()` only as an eager-initialization trigger and drive the session through `Terminal`, `Scrollback`, and `Runner::startFromEnvironment()`.
+- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded to 16 MiB per frame).
 - `bool enqueuePostControlSequence(QByteArray bytes)` / `QByteArray takePostControlSequences()` — queues or drains terminal resource commands (such as Sixel graphics) emitted after the cell diff each frame.
 - `void copyToClipboard(const QString &text)` (`Q_INVOKABLE`) — emits `clipboardCopyRequested(text)` and, when `clipboardMode() == ClipboardMode::Osc52`, writes an OSC 52 sequence.
 - `void bell()` (`Q_INVOKABLE`) — emits a terminal bell (`\x07`).
@@ -70,6 +70,7 @@ In addition to the property notify signals above, `Terminal` emits `clipboardCop
 
 ```cpp
 #include <QCoreApplication>
+#include <QmlTui/Core/Engine/Shortcut.h>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Items/Text.h>
 
@@ -81,8 +82,12 @@ int main(int argc, char *argv[])
     terminal.setTitle(QStringLiteral("C++ Terminal App"));
 
     auto *label = new qmltui::Text(&terminal);
-    label->setText(QStringLiteral("Hello from C++"));
+    label->setText(QStringLiteral("Hello from C++ — press Ctrl+Q to quit"));
     label->setColor(qmltui::Color(QStringLiteral("cyan")));
+
+    auto *quitShortcut = new qmltui::Shortcut(&terminal);
+    quitShortcut->setSequence(QStringLiteral("Ctrl+Q"));
+    QObject::connect(quitShortcut, &qmltui::Shortcut::activated, &app, &QCoreApplication::quit);
 
     terminal.componentComplete();
     return app.exec();

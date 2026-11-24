@@ -24,7 +24,7 @@ Root element for QmlTui terminal applications, managing session lifecycle, scree
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `capabilities` | `terminalCapabilities` |  | Read-only. Holds detected terminal capabilities such as Kitty graphics and synchronized output support. |
-| `title` | `string` | `""` | Holds the terminal window title bar string set via OSC 2 escape sequence. |
+| `title` | `string` | `""` | Holds the terminal window title bar string set via OSC 0 (`\033]0;...\a`). |
 | `color` | `color` | `"transparent"` | Holds the root background color of the terminal screen. |
 | `mode` | `Mode` | `Terminal.AltScreen` | Holds the display mode: `Terminal.AltScreen` (alternate screen) or `Terminal.Inline` (normal buffer). |
 | `clipboardMode` | `ClipboardMode` | `Terminal.Osc52` | Holds the clipboard integration mode: `Terminal.Osc52` or `Terminal.Disabled`. |
@@ -86,7 +86,10 @@ coordinates keyboard and mouse event routing, and manages the terminal screen mo
 In `AltScreen` mode, the application switches to the terminal's alternate screen
 buffer, clears the screen, and renders frames across the full terminal grid dimensions.
 In `Inline` mode, the application renders inside the normal buffer with content-driven
-height, leaving preceding terminal scrollback intact.
+height capped at `terminalHeight - 1`, leaving preceding terminal scrollback intact.
+`Terminal`'s `width` and `height` are session-managed — assigning `width` or `height`
+explicitly on a `Terminal` emits a QML warning and is ignored (place explicit dimensions
+on inner children instead).
 
 Terminal does not automatically bind Q or Escape to quit; applications should provide
 an explicit keyboard quit path using [Keys](keys.md) or [Shortcut](shortcut.md).
@@ -116,7 +119,7 @@ Terminal {
             centerIn: root.mode === Terminal.AltScreen ? parent : null
         }
         width: 50
-        height: 9
+        height: 11
         border {
             style: Border.Rounded
             color: "cyan"

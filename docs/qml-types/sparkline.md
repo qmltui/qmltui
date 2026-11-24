@@ -23,12 +23,12 @@ A compact chart that draws a series of numbers as one block glyph per column, sc
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `values` | `var` |  | Holds the series as a JavaScript array or list of numbers; the newest value is last and is drawn in the rightmost column. |
-| `from` | `real` | `0.0` | Holds the value drawn at the bottom of the chart when a fixed range is set with `to`. |
-| `to` | `real` | `0.0` | Holds the value drawn at the top of the chart; `0.0` means auto-scale to the minimum and maximum of `values`. |
+| `values` | `list<real>` | `[]` | Holds the series as a list of numbers; the newest value is last and is drawn in the rightmost column. |
+| `from` | `real` | `0.0` | Holds the value drawn at the bottom of the chart when `from < to`. |
+| `to` | `real` | `0.0` | Holds the value drawn at the top of the chart; whenever `from >= to` (including the `0.0..0.0` default), the chart auto-scales to the minimum and maximum of `values`. |
 | `filled` | `bool` | `false` | Whether the cells below each column's top glyph are drawn as solid `█` blocks in multi-row charts instead of being left blank. |
 | `color` | `color` | `"default"` | Holds the foreground colour of the glyphs, where `"default"` is the terminal's own foreground. |
-| `backgroundColor` | `color` | `"transparent"` | Holds the background colour written to every cell of the chart. |
+| `backgroundColor` | `color` | `"transparent"` | Holds the background colour written to painted cells (blank cells are left unpainted while `"transparent"`). |
 
 ## Detailed Description
 
@@ -39,17 +39,19 @@ growing history scrolls left. When it has fewer, the values are right-aligned
 and the unused columns on the left are left blank. Nothing is painted
 while `values` is empty.
 
-The range is `from`..`to` when `to` is non-zero. When `to` is `0.0` the range
-is the minimum and maximum of the series, widened to one unit above the
-minimum when all values are equal; `from` is ignored in that case. Every value
+The range is `from`..`to` whenever `from < to` (allowing negative-to-zero ranges
+such as `from: -60; to: 0`). Whenever `from >= to` (including the `0.0`..`0.0`
+default), the range auto-scales to the minimum and maximum of the series, widened
+to one unit above the minimum when all values are equal. Every value
 is clamped into the range and mapped onto `height * 8` sub-cell levels, using
 the eight Unicode lower-block glyphs `▁▂▃▄▅▆▇█` (U+2581 to U+2588). A one-row
 chart draws that glyph directly, so the minimum value is `▁` rather than a
 blank cell. A taller chart places the glyph in the row the level falls in
 (rows count from the bottom), leaves the rows above blank, and draws the rows
 below either blank, giving a line, or as `█` when `filled` is true, giving an
-area. `color` and `backgroundColor` are written to every cell of the item,
-including blank ones.
+area. When `backgroundColor` is `"transparent"` (the default), blank cells are
+skipped so underlying items remain visible; setting an opaque `backgroundColor`
+fills every cell of the chart including blank ones.
 
 Sparkline has no border; wrap it in a [Rectangle](rectangle.md) or
 [Panel](panel.md) inset by one cell when one is needed.

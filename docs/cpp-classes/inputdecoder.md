@@ -6,7 +6,9 @@
 
 ## Public Types and Constants
 
+- `enum class KeyAction { Press = 1, Repeat = 2, Release = 3 }` — Kitty keyboard event type passed to `KeyEventCallback`.
 - `using KeyCallback = std::function<void(int qtKey, const QString &text, int modifiers)>`
+- `using KeyEventCallback = std::function<void(int qtKey, const QString &text, int modifiers, KeyAction action)>`
 - `using PasteCallback = std::function<void(const QString &text)>`
 - `struct MouseInput { int button = 3; int x = 0; int y = 0; bool release = false; bool motion = false; int modifiers = 0; int wheelDeltaX = 0; int wheelDeltaY = 0; }`
 - `using DetailedMouseCallback = std::function<void(const MouseInput &input)>`
@@ -18,7 +20,10 @@
 ## Public Methods
 
 #### `void setKeyCallback(KeyCallback cb)`
-Registers the callback invoked when a key sequence is decoded (`int qtKey`, `const QString &text`, `int modifiers`).
+Registers the legacy press/repeat key callback (`int qtKey`, `const QString &text`, `int modifiers`).
+
+#### `void setKeyEventCallback(KeyEventCallback cb)`
+Registers the full key-event callback (`int qtKey`, `const QString &text`, `int modifiers`, `KeyAction action`) delivering `KeyAction::Press`, `KeyAction::Repeat`, and `KeyAction::Release` (used by `TerminalEngine` to populate `KeyEvent::isAutoRepeat()` and dispatch `Item::keyReleaseEvent()` / `Keys.onReleased`).
 
 #### `void setPasteCallback(PasteCallback cb)`
 Registers the callback invoked with the complete payload of a bracketed paste (`\033[200~...\033[201~`).
@@ -48,7 +53,7 @@ Returns the Qt key code produced by a character keystroke (`a`–`z` map to `Qt:
 
 `CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text-codepoints] u` is decoded as a key event. The first parameter is the Unicode code point (`27`, `13`, `9`, and `127` map to Escape, Return, Tab, and Backspace; `Shift+Tab` becomes `Qt::Key_Backtab`). Code points in `57344..63743` map through the functional-key table (`F13`–`F35`, keypad keys with `Qt::KeypadModifier`, and lock/menu keys). Standalone modifier and media key reports are consumed without emitting a key event.
 
-The modifier field is `1 + bitmask`: `1` Shift, `2` Alt, `4` Ctrl, `8` Super, `16` Hyper, `32` Meta, `64` CapsLock, `128` NumLock. Super and Meta map to `Qt::MetaModifier`. The event-type sub-parameter defaults to press (`1`); repeat (`2`) dispatches another press, and release (`3`) is consumed without emitting a press event.
+The modifier field is `1 + bitmask`: `1` Shift, `2` Alt, `4` Ctrl, `8` Super, `16` Hyper, `32` Meta, `64` CapsLock, `128` NumLock. Super and Meta map to `Qt::MetaModifier`. The event-type sub-parameter defaults to `KeyAction::Press` (`1`); `KeyAction::Repeat` (`2`) dispatches with `autoRepeat = true`, and `KeyAction::Release` (`3`) is delivered through `setKeyEventCallback()` (and omitted from the press-only `setKeyCallback()`).
 
 A printable code point (using the shifted key when Shift is active) becomes the event's `text` unless Ctrl or Alt is held, preventing `Ctrl+A` from inserting `"a"`. Explicitly reported text code points (flag 16) take precedence when present. `CSI ? flags u` is routed to the reply callback rather than key dispatch.
 

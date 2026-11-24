@@ -50,7 +50,7 @@ Displays a scrollable sequence of model delegates. [More...](#detailed-descripti
 
 | Signal | Description |
 | :--- | :--- |
-| `itemActivated(int index)` | Emitted when an item is activated with Enter or a mouse click. |
+| `itemActivated(int index)` | Emitted when an item is activated with Enter, Space, or a mouse click. |
 | `modelDataChanged()` | Emitted when the underlying model resets or inserts, removes, moves, or modifies rows. |
 
 ## Methods
@@ -73,6 +73,12 @@ and automatically scrolls the view to keep the active item visible. Mouse clicks
 
 Delegates access the `ListView.isCurrentItem` attached property to adjust styling
 when selected.
+
+### Differences from Qt Quick
+
+- **Uniform delegate stride**: `ListView` measures delegate extent once from the first delegate and assumes every row has the same height (or width in horizontal mode); for variable-height rows such as wrapped chat messages, compose a [ScrollView](scrollview.md) + [Column](column.md) + [Repeater](repeater.md).
+- **Orientation & selection**: `orientation` uses `Qt.Vertical` / `Qt.Horizontal` (not `ListView.Vertical`), and `currentIndex` defaults to `-1` (set `currentIndex: 0` when an initial selection is desired).
+- **Static model cap**: Integer and JS-array models are capped at 10,000 materialized items; use a C++ `QAbstractItemModel` for larger datasets. `header`, `footer`, `highlight`, `currentItem`, and `positionViewAtIndex()` are not provided.
 
 ### Example
 

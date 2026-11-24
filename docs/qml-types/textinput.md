@@ -108,6 +108,13 @@ with `echoCharacter`. The cursor appearance is customizable via `cursorShape`,
 Pressing Enter or Return emits `accepted()` and `editingFinished()`. Losing active
 focus also emits `editingFinished()`.
 
+### Differences from Qt Quick
+
+- `validator` is a `QRegularExpression` (not a `Validator` object). It updates `acceptableInput` reactively without blocking keystrokes or gating `accepted()` / `editingFinished()`.
+- `cursorDelegate` is a `string` character glyph rather than a `Component`.
+- `displayText` returns `placeholderText` while `text` is empty (whereas Qt Quick returns `""`).
+- Optional color overrides (`placeholderColor`, `cursorColor`, `selectionColor`, `selectedTextColor`) default to `QmlTui.invalidColor` (unset).
+
 ### Example
 
 <<< ../../examples/gallery/examples/TextInput.qml{qml}

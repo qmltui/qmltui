@@ -39,9 +39,9 @@ Manages committing rendered output lines into the terminal's native scrollback b
 
 | Method | Description |
 | :--- | :--- |
-| `void append(var data)` | Renders the delegate using the provided data object and commits it to scrollback. |
+| `void append(var data)` | Renders the `delegate` (or a `DelegateChooser` assigned to `delegate`) using the provided data object and commits it to scrollback. Silently no-ops if no `delegate` or root `Terminal` is attached. |
 | `void append(Item item)` | Renders and commits a snapshot of the given Item into scrollback. |
-| `void append(span span)` | Renders a styled span (`{ text, color, ... }` or `QmlTui.span()`) and commits it to scrollback (honoring `spacing` and `separator`). |
+| `void append(span span)` | Renders a styled span (`QmlTui.span(...)`, or a `{ text, color, ... }` map when no `delegate` is set) and commits it to scrollback (honoring `spacing` and `separator`). When a `delegate` is set, plain JS objects route to `delegate` — use `QmlTui.span(...)` to append a styled span alongside a delegate. |
 | `void append(list<span> spans)` | Renders a list of styled spans as a single entry and commits it to scrollback. |
 | `bool print(var value)` | Appends `value` directly into the terminal scrollback buffer, bypassing `delegate`, `spacing`, and `separator`. Accepts a plain `string`, a `span` (`QmlTui.span()`), a `{ text, color, ... }` style map, or an array of spans or style maps. Returns `true` on success. |
 | `void clear()` | Resets the internal delegate cache and consumed position. |
@@ -59,6 +59,9 @@ styled spans; configurable via `QMLTUI_SCROLLBACK_QUEUE_LIMIT` or
 `TerminalEngine::setScrollbackQueueLimit`). In full-screen mode, scrollback output is queued
 until inline mode resumes or the session exits.
 
+- **Width & wrapping**: `delegate` items default to `Terminal.width` when their width is `0` and bake line breaks at commit time (committed scrollback rows do not reflow on terminal resize). `print(spans)` and `append(spans)` paint at their `implicitWidth` without wrapping to `Terminal.width`.
+- **Heterogeneous entries (`DelegateChooser`)**: Assign a `DelegateChooser` (`import Qt.labs.qmlmodels`) to `delegate` to commit distinct templates (for example prompt rows, tool calls, and diff blocks) from one `Scrollback` instance.
+
 ### Example
 
 ```qml
@@ -72,6 +75,9 @@ Terminal {
     property int stepCount: 1
 
     mode: Terminal.Inline
+    // Inline mode defaults mouseReporting to false so the terminal retains native
+    // scrollback scrolling and selection; enable it explicitly for clickable controls.
+    mouseReporting: true
     title: "Inline Scrollback Demo"
 
     Keys.onPressed: event => {

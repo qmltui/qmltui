@@ -39,8 +39,8 @@ Dropdown selection control with an inline summary row and a Popup option list. [
 | `textColor` | `color` | `QmlTui.defaultColor` | Holds the text colour of the summary row and option items. |
 | `popupColor` | `color` | `QmlTui.defaultColor` | Holds the background colour of the dropdown popup. |
 | `popupBorderColor` | `color` | `border.color` | Holds the border colour of the dropdown popup. |
-| `selectionColor` | `color` | `"default"` | Holds the background colour of the highlighted popup row (defaults to reverse video). |
-| `selectedTextColor` | `color` | `"default"` | Holds the text colour of the highlighted popup row. |
+| `selectionColor` | `color` | `QmlTui.invalidColor` | Holds the background colour of the highlighted popup row. When both `selectionColor` and `selectedTextColor` are unset (`QmlTui.invalidColor`), reverse video is used; setting any valid color (including `"default"`) replaces reverse video. |
+| `selectedTextColor` | `color` | `QmlTui.invalidColor` | Holds the text colour of the highlighted popup row (unset by default so reverse video applies). |
 
 ## Signals
 

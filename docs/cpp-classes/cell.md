@@ -7,7 +7,7 @@
 
 ## Storage Model
 
-`Cell` is 24 bytes and trivially copyable. Grapheme clusters up to `Cell::InlineGlyphCapacity` (11 bytes) are stored inline, covering single code points, emoji with skin tones or variation selectors, flags, and keycaps. Longer clusters (such as multi-person ZWJ sequences) are interned in a process-wide append-only table and referenced by index. Because `Cell` has no per-instance heap allocation, cells copy and compare by value and `TextGridBuffer::clear()` is a contiguous fill.
+`Cell` is 24 bytes and trivially copyable. Grapheme clusters up to `Cell::InlineGlyphCapacity` (11 bytes) are stored inline, covering single code points, emoji with skin tones or variation selectors, flags, and keycaps. Longer clusters (such as multi-person ZWJ sequences) are interned in a bounded process-wide table (`Cell::MaxInternedGlyphs = 16384` unique entries, each capped at `Cell::MaxGraphemeBytes = 64` bytes) and referenced by index, keeping memory growth strictly bounded in long-lived services. Because `Cell` has no per-instance heap allocation, cells copy and compare by value and `TextGridBuffer::clear()` is a contiguous fill.
 
 ## `TextAttribute`
 
@@ -30,6 +30,8 @@ Bitwise `|` and `&` operators combine and test `TextAttribute` flags (for exampl
 | Member | Type | Description |
 | :--- | :--- | :--- |
 | `InlineGlyphCapacity` | `static constexpr int` | Maximum UTF-8 byte length (`11`) stored inline before interning. |
+| `MaxGraphemeBytes` | `static constexpr int` | Maximum UTF-8 byte length (`64`) stored per grapheme cluster. |
+| `MaxInternedGlyphs` | `static constexpr int` | Hard upper bound (`16384`) on unique multi-byte clusters retained in the process-wide intern table. |
 | `fgColor` | `uint32_t` | 32-bit ARGB foreground color (`0x00000000` represents the terminal default foreground). |
 | `bgColor` | `uint32_t` | 32-bit ARGB background color (`0x00000000` represents transparent / terminal default background). |
 | `displayWidth` | `uint8_t` | Column width occupied by the grapheme cluster (default `1`). |

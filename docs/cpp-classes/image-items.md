@@ -51,3 +51,14 @@ Every Core visual item header below is installed under `<QmlTui/Core/Items/...>`
 | `<QmlTui/Core/Items/Canvas.h>` | `qmltui::Canvas`, `CanvasShape`, `CanvasRectangle`, `Circle`, `Line`, `Point`, `Polygon` | [Canvas](../qml-types/canvas.md) |
 | `<QmlTui/Core/Items/Loader.h>`, `<QmlTui/Core/Items/Repeater.h>` | `qmltui::Loader`, `qmltui::Repeater` | [Loader](../qml-types/loader.md), [Repeater](../qml-types/repeater.md) |
 | `<QmlTui/Core/Items/Scrollback.h>` | `qmltui::Scrollback` | [Scrollback](../qml-types/scrollback.md) |
+
+## Additional Installed Headers (`Core/Engine`, `Core/Primitives`, `Controls`)
+
+The following QML-backing and utility headers are also installed as part of the public header set (verified at configure time by `cmake/QmlTuiPublicHeaders.cmake`):
+
+| Header | Target | Purpose |
+| :--- | :--- | :--- |
+| `<QmlTui/Core/Engine/Animation.h>`, `<QmlTui/Core/Engine/State.h>`, `<QmlTui/Core/Engine/StateGroup.h>`, `<QmlTui/Core/Engine/Transition.h>` | `QmlTui::Core` | QML-backing C++ types for declarative animations and state machines. |
+| `<QmlTui/Core/Engine/Clipboard.h>`, `<QmlTui/Core/Engine/Keys.h>` | `QmlTui::Core` | QML-backing C++ types for the `Clipboard` singleton and `Keys` attached object. |
+| `<QmlTui/Core/Primitives/QmlTuiGlobal.h>`, `<QmlTui/Core/Primitives/QmlTuiExport.h>` | `QmlTui::Core` | `QmlTui` QML singleton helpers (`span`, `color`, `rgba`, `ansi`) and shared/static symbol export macros. |
+| `<QmlTui/Controls/Sparkline.h>`, `<QmlTui/Controls/TabBar.h>`, `<QmlTui/Controls/ToolTip.h>` | `QmlTui::Controls` | C++-backed controls (`qmltui::Sparkline`, `qmltui::TabBar`, `qmltui::ToolTip`). |

@@ -29,10 +29,10 @@ flowchart TD
 The router installs its `qInstallMessageHandler` hook while at least one `TerminalEngine` instance exists or an explicit `QtMessageRouting::install()` registration is active, and restores the previous Qt message handler once the last engine and registration are torn down.
 
 When an application does not call `QtMessageRouting::install()` (while a `TerminalEngine` is active):
-- Setting `QMLTUI_LOG_FILE=<path>` opens `<path>` in append mode and registers an automatic diagnostic sink that writes and flushes every `console.log()`, `qDebug()`, and `qWarning()` line immediately during `AltScreen` sessions.
-- Otherwise, no diagnostic sink is registered and presentation defaults to `stderrPresentationSink()`.
-- Outside alternate-screen sessions, or when `stderr` is redirected to a file or pipe (`./my_app 2> debug.log`) while running on an interactive terminal, messages are delivered and flushed immediately through `stderrPresentationSink()`.
-- During an interactive alternate-screen session where `stderr` points to the terminal TTY (and `QMLTUI_LOG_FILE` is unset), non-fatal messages are buffered (up to 500 entries, dropping the oldest on overflow) and replayed through `stderrPresentationSink()` after the terminal exits raw mode and restores the normal screen.
+- Setting `QMLTUI_LOG_FILE=<path>` opens `<path>` in append mode and mirrors every `console.log()`, `qDebug()`, and `qWarning()` line immediately to `<path>` in addition to the active presentation path (including even when `QtMessageRouting::install()` is called).
+- Without an explicit `QtMessageRouting::install()`, presentation defaults to `stderrPresentationSink()`.
+- Outside alternate-screen sessions (including **`Terminal.Inline` mode**), or when `stderr` is redirected to a file or pipe (`./my_app 2> debug.log`) while running on an interactive terminal, messages are delivered and flushed immediately through `stderrPresentationSink()`. Because raw mode disables `OPOST`, interactive **`Terminal.Inline`** applications should call `QtMessageRouting::install(fileSink)` with no presentation sink (or redirect `2> debug.log`) so `console.log()` / `qWarning()` lines do not overwrite or shift the live inline prompt.
+- During an interactive `AltScreen` session where `stderr` points to the terminal TTY, non-fatal messages are buffered (up to 500 entries, dropping the oldest on overflow) and replayed through `stderrPresentationSink()` after the terminal exits raw mode and restores the normal screen.
 
 ### Custom Configuration
 
@@ -81,6 +81,8 @@ Unregisters the configuration, discards any buffered presentation records owned 
 ```cpp
 #include <QCoreApplication>
 #include <QFile>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QTextStream>
 #include <QmlTui/Core/Engine/QtMessageRouting.h>
 #include <QmlTui/Core/Items/Terminal.h>
@@ -89,12 +91,14 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
+    QMutex logMutex;
     QFile logFile("application.log");
     logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
     QTextStream logStream(&logFile);
 
     auto routing = qmltui::QtMessageRouting::install(
         [&](const qmltui::QtMessage &msg) {
+            QMutexLocker lock(&logMutex);
             logStream << "[" << msg.timestampUtc.toString(Qt::ISODate) << "] "
                       << msg.formattedMessage() << "\n";
             logStream.flush();

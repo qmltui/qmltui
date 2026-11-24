@@ -23,6 +23,9 @@ Controls how `diff()` and `diffRelative()` serialize cell changes into VT/ANSI e
 
 - `bool resize(int width, int height)` — resizes the buffer in columns and rows and resets all cells to default spaces. Returns `true` if dimensions changed.
 - `void clear()` — resets all cells to default spaces and clears the per-frame OSC 8 hyperlink table.
+- `void clearRect(int x, int y, int width, int height)` — clears cells within the given rectangle to default spaces (breaking any split wide-glyph spans at the edges).
+- `void copyFrom(const TextGridBuffer &source, int x, int y, int width, int height)` — copies a rectangular region from `source` into this buffer.
+- `void splitWideGlyphSpan(int x, int y)` — clears any multi-column glyph spanning `(x, y)` cleanly so partial overwrites do not leave orphaned continuation cells.
 - `void swap(TextGridBuffer &other) noexcept` — swaps contents with `other` in O(1).
 - `int width() const` / `int height() const` — buffer dimensions in columns and rows.
 - `bool contains(int x, int y) const` — returns `true` when `(x, y)` is inside the buffer bounds.
@@ -33,11 +36,11 @@ Controls how `diff()` and `diffRelative()` serialize cell changes into VT/ANSI e
 
 Overloads are provided for both raw `uint32_t` ARGB values and [`qmltui::Color`](color.md):
 
-- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)`
-- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor, Color bgColor = Color::fromArgb32(0x00000000), TextAttribute attributes = TextAttribute::None)`
-- `int setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)`
-- `int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor, Color bgColor = Color::fromArgb32(0x00000000), TextAttribute attributes = TextAttribute::None)`
-  Writes a pre-segmented grapheme cluster of display width `width` at `(x, y)` (plus `width - 1` continuation cells), returning the column advance (`width`, `0` when appended as a zero-width combining mark to the preceding cell, or `-1` when it does not fit).
+- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None, int minClipX = 0)`
+- `int setGrapheme(int x, int y, QByteArrayView utf8, int width, Color fgColor, Color bgColor = Color::fromArgb32(0x00000000), TextAttribute attributes = TextAttribute::None, int minClipX = 0)`
+- `int setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None, int minClipX = 0)`
+- `int setGrapheme(int x, int y, QStringView cluster, int width, Color fgColor, Color bgColor = Color::fromArgb32(0x00000000), TextAttribute attributes = TextAttribute::None, int minClipX = 0)`
+  Writes a pre-segmented grapheme cluster of display width `width` at `(x, y)` (plus `width - 1` continuation cells), enforcing left-edge clipping at `minClipX` (so wide glyphs never overwrite cells left of the clip rect) and returning the column advance (`width`, `0` when appended as a zero-width combining mark to the preceding cell, or `-1` when it does not fit).
 - `void writeText(int x, int y, const QString &text, uint32_t fgColor = 0x00000000, uint32_t bgColor = 0x00000000, TextAttribute attributes = TextAttribute::None)`
 - `void writeText(int x, int y, const QString &text, Color fgColor, Color bgColor = Color::Default, TextAttribute attributes = TextAttribute::None)`
   Segments `text` into grapheme clusters and writes them horizontally starting at `(x, y)`.
@@ -57,7 +60,7 @@ Overloads are provided for both raw `uint32_t` ARGB values and [`qmltui::Color`]
 - `std::string diffRelative(const TextGridBuffer &nextBuffer) const` / `void diffRelative(const TextGridBuffer &nextBuffer, std::string &out, const AnsiEncodeOptions &options = {}) const` — emits relative cursor movement sequences for `InlineRenderer`.
 - `std::string toAnsiString() const` / `void toAnsiString(std::string &out) const` — serializes the full buffer into newline-separated ANSI rows.
 - `int lastContentColumn(int row) const` / `void appendRowAnsi(std::string &out, int row, ColorDepth depth) const` — row-level serialization helpers used by scrollback output.
-- `uint8_t registerLink(const QString &url)` / `QString linkUrl(uint8_t linkId) const` / `void setActiveLinkId(uint8_t linkId)` / `uint8_t activeLinkId() const` — per-frame OSC 8 hyperlink table (`1..255`; `0` means no link).
+- `uint8_t registerLink(const QString &url)` / `QString linkUrl(uint8_t linkId) const` / `int linkCount() const` / `void setActiveLinkId(uint8_t linkId)` / `uint8_t activeLinkId() const` — per-frame OSC 8 hyperlink table (`1..255`; `0` means no link).
 
 ## Example
 

@@ -119,6 +119,8 @@ Same as `paste()`, but without requesting rendering or waiting for a frame. Pair
 
 ### Mouse Input
 
+Mouse helpers (`click`, `clickText`, `doubleClick`, `mouseDown`, `mouseUp`, `drag`, and `scroll`) inject directly into the application's input router regardless of `Terminal.mouseReporting`. Only `hover()` and `hoverText()` check active hover motion reporting (`MouseArea.hoverEnabled`). Because `Terminal.Inline` defaults `mouseReporting` to `false`, inline applications that expect real-terminal mouse clicks must still set `mouseReporting: true` explicitly.
+
 #### `void clickText(const QString &text, int occurrence = 0, const QString &button = "left", const QStringList &modifiers = {})`
 
 Clicks the center of the selected rendered-text match and waits for the resulting committed frame. Text-based mouse helpers translate frame rows through the renderer's screen origin (quiet inline sessions place the frame immediately above the terminal's last row). Coordinate-based mouse methods use screen coordinates, whereas `findText()` returns frame coordinates.
@@ -369,7 +371,7 @@ In `Terminal.Inline` mode, completed rows are committed through `Scrollback` and
 
 When armed with `--record <path>`, `qmltui_add_scenario(... RECORD <name>.cast)`, or `QMLTUI_RUNNER_RECORD=<path>`, Runner substitutes an in-memory 24-bit color backend and writes emitted ANSI bytes into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. Under `CLOCK VIRTUAL`, frame timestamps advance only through `sleep()` and `advanceTime()`, producing byte-identical `.cast` recordings across runs. `RECORD` cannot be combined with `LIVE`.
 
-- `void startRecording(const QString &relativePath)`: Closes any active recording and starts a new `.cast` file at `relativePath` under the artifact directory, beginning with a full repaint.
+- `void startRecording(const QString &relativePath)`: Closes any active recording and starts a new `.cast` file at `relativePath` under the artifact directory, beginning with a full repaint. Requires the session to have been armed at process launch with `--record` / `QMLTUI_RUNNER_RECORD` (which installs the in-memory recording backend before `main(app)` starts).
 - `void stopRecording()`: Flushes pending bytes and closes the active recording. Emits a warning and does nothing if no recording is in progress.
 - `void marker(const QString &label)`: Writes an asciicast `"m"` chapter marker event at the current timestamp. Emits a warning and does nothing if no recording is in progress.
 
@@ -391,12 +393,12 @@ qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled -- ./myApp
 qmltui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
 ```
 
-Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms`). Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
+Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`). Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | JavaScript scenario path (`.js`, `.mjs`, or Qt resource `:/...`). |
-| `--eval <code>` | None | Inline JavaScript scenario code. |
+| `--eval <code>` | None | Inline JavaScript scenario code (auto-wrapped in `function main(app) { ... }` unless the snippet contains `main(` or `main (` — write an explicit `function main(app)` if your snippet mentions `"main()"` inside a string). |
 | `--capture-after-ms <ms>` | None | Delay (`0..30000` ms) before writing `capture.txt` and `capture_styled.txt`. |
 | `--sizes <list>` | None | Comma-separated `<cols>x<rows>` viewport sweep writing `frame_<WxH>.txt` (incompatible with `--script`). |
 | `--sweep` | Off | Shorthand for `--sizes 60x18,80x24,120x36`. |
@@ -405,14 +407,13 @@ Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` 
 | `--artifacts <dir>` | Retained temp dir | Output directory (must be new or empty unless `--clean-artifacts` is set). |
 | `--clean-artifacts` | Off | Clear an existing Runner artifact directory (containing `result.json`) before running. |
 | `--print`, `--ruler` | Off | Print `frameStats` and captured frames to `stdout` (`--ruler` adds 0-based `(x, y)` coordinate rulers; incompatible with `--live`). |
-| `--styled` | Off | Include `--- styles` SGR/color runs when probing or printing frames. |
-| `--scrollback` | Off | Capture and print `Terminal.Inline` committed scrollback rows (`scrollback.txt`). |
-| `--live` | Off | Forward live ANSI rendering to the terminal. |
+| `--styled` | Off | Include `--- styles` SGR/color runs in saved `*_styled.txt` artifacts (sets `QMLTUI_RUNNER_FINAL_STYLED=1` for `final_styled.txt` / `failure_styled.txt`, and prints `--- Styles ---` when paired with `--print` or `--ruler`). |
+| `--scrollback` | Off | Probe modifier that captures `Terminal.Inline` committed scrollback rows (`scrollback.txt`; incompatible with `--script`, and prints scrollback to `stdout` when paired with `--print` or `--ruler`). |
+| `--live` | Off | Forward live ANSI terminal output during the scenario. |
 | `--clock <real\|virtual>` | `real` | Select the Runner clock before application startup. |
 | `--record <path>` | Off | Write an asciicast v2 `.cast` file (relative to the artifact directory; incompatible with `--live`). |
-| `--update-snapshots` | Off | Rewrite snapshot baselines from committed frames. |
 | `--operation-timeout-ms <ms>` | `2000` | Per-operation timeout (`1..30000` ms). |
-| `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms). |
+| `--timeout-ms <ms>` | `300000` | Overall scenario watchdog timeout (`1..300000` ms; must satisfy `capture-after-ms + idle-ms + operation-timeout-ms <= timeout-ms` or launcher exits `2`). |
 | `--startup-timeout-ms <ms>` | `5000` | Runner activation handshake deadline (`1..300000` ms). |
 
 ### How Probe and Output Flags Compose
@@ -509,6 +510,7 @@ When `QmlTui::Runner` is linked into an application, QML-created `Terminal` root
 | `QMLTUI_RUNNER_LIVE` | Off | Emit live ANSI terminal output during the scenario. |
 | `QMLTUI_RUNNER_EMBEDDED_SCENARIO` | Off | Mark a process driven by a directly constructed `Runner` as a quiet test session before `Terminal` creation. |
 | `QMLTUI_RUNNER_UPDATE_SNAPSHOTS` | Off | Rewrite snapshot baselines on mismatch instead of failing. |
+| `QMLTUI_RUNNER_FINAL_STYLED` | Off | Also write `final_styled.txt` (on pass) or `failure_styled.txt` (on failure) alongside the plain final frame (set automatically by `qmltui-runner --styled`). |
 | `QMLTUI_RUNNER_RECORD` | None | Absolute path, or relative path under the artifact directory, for recording an asciicast v2 `.cast` file (incompatible with `QMLTUI_RUNNER_LIVE`). |
 | `QMLTUI_RUNNER_HANDSHAKE_PATH` | None | File path where `Runner::start()` writes the activation handshake JSON when launched by `qmltui-runner`. |
 | `QMLTUI_RUNNER_HANDSHAKE_TOKEN` | None | Token echoed into `QMLTUI_RUNNER_HANDSHAKE_PATH` to verify activation. |

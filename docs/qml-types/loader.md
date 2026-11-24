@@ -29,7 +29,7 @@ Loads and instantiates components or QML documents dynamically on demand. [More.
 | `item` | `QtObject` |  | Read-only. Holds the instantiated visual item or QObject, or `null` if nothing is loaded. |
 | `status` | `Status` |  | Read-only. Holds the current loading status: `Loader.Null`, `Loader.Ready`, `Loader.Loading`, or `Loader.Error`. |
 | `progress` | `real` |  | Read-only. Holds the loading progress from `0.0` to `1.0`. |
-| `asynchronous` | `bool` | `false` | Whether the QML component should be compiled and instantiated asynchronously in a background thread. |
+| `asynchronous` | `bool` | `false` | When loading a URL via `source`, passes `QQmlComponent.Asynchronous` to `loadUrl()` so component loading/compilation happens asynchronously (has no effect on `sourceComponent`; object creation still runs synchronously on the main thread once ready). |
 | `errorString` | `string` |  | Read-only. Holds the description of any error encountered during compilation or instantiation. |
 
 ## Signals
@@ -61,6 +61,11 @@ When `active` is set to `false`, the instantiated item is immediately destroyed.
 
 Access the loaded instance via `item` only after `status` is `Loader.Ready`
 or inside the `onLoaded` signal handler.
+
+### Differences from Qt Quick
+
+- `Loader` does not provide `setSource(url, properties)`; pass state via bindings on `sourceComponent` or assign properties inside `onLoaded`.
+- `asynchronous: true` applies only to URL `source` loading (`QQmlComponent::Asynchronous`), and final object instantiation runs synchronously on the main thread.
 
 ### Example
 

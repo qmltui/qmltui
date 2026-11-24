@@ -2,7 +2,7 @@
 title: PtyView
 kind: qml
 import: QmlTui.PtyView
-since: "0.4"
+since: "0.5"
 inherits: Item
 cpp: qmltui::PtyView
 category: display
@@ -16,7 +16,7 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | | |
 | :--- | :--- |
 | **Import Statement** | `import QmlTui.PtyView` |
-| **Since** | QmlTui 0.4 |
+| **Since** | QmlTui 0.5 |
 | **Inherits** | [Item](item.md) |
 
 ## Properties
@@ -32,7 +32,7 @@ Embedded terminal emulator hosting a process inside a pseudo-terminal (PTY). [Mo
 | `autoStart` | `bool` | `false` | Whether the process starts automatically when the component completes. |
 | `processState` | `ProcessState` | `PtyView.NotRunning` | Read-only. Holds the current process lifecycle state: `NotRunning`, `Starting`, `Running`, or `Stopping`. |
 | `running` | `bool` | `false` | Read-only. Holds whether the child process is currently active and running. |
-| `processId` | `qlonglong` | `-1` | Read-only. Holds the operating system process ID (`qint64`) of the child process, or `-1` when not running. |
+| `processId` | `qlonglong` | `0` | Read-only. Holds the operating system process ID (`qint64`) of the child process, or `0` when not running (matching `QProcess::processId()`). |
 | `exitCode` | `int` | `-1` | Read-only. Holds the exit status code after the process terminates (`-1` before exit). |
 | `errorString` | `string` | `""` | Read-only. Holds error details if process spawning or execution fails. |
 | `title` | `string` | `""` | Read-only. Holds the dynamic terminal title requested by the child process via escape sequences. |
@@ -98,10 +98,12 @@ reserves the rightmost column for the scrollbar and resizes the child PTY to
 `"Ctrl+Q"` or `"F6"`) or `Keys.priority: Keys.BeforeItem` to move focus out of the
 terminal pane or quit the host application.
 
-Programs and arguments are passed directly to the child process. QmlTui never
-implicitly invokes a shell or expands shell syntax. The child receives
-`TERM=xterm-256color`, `COLORTERM=truecolor`, and `TERM_PROGRAM=qmltui` unless a
-different `terminalType` is selected.
+Programs and arguments are launched directly via `QProcess::start()` without
+invoking an intermediate shell or expanding shell metacharacters. If `program`
+does not match an existing file path or executable on `PATH`, `PtyView::start()`
+falls back to `QProcess::splitCommand(program)` and prepends any extra tokens
+to `arguments`. The child receives `TERM=xterm-256color`, `COLORTERM=truecolor`,
+and `TERM_PROGRAM=qmltui` unless a different `terminalType` is selected.
 
 The process lifecycle is exposed through `processState`, `running`, `processId`,
 `exitCode`, and `errorString`. Applications can host multiple PtyView instances

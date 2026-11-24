@@ -26,7 +26,7 @@ Describes property modifications applied in a State. [More...](#detailed-descrip
 | `target` | `QtObject` | `null` | Holds the target object whose properties are altered in this state. |
 | `properties` | `var` | `{}` | Holds a dictionary of property names and target values applied in this state. |
 | `restoreEntryValues` | `bool` | `true` | Whether modified properties should revert to their entry values upon exiting this state. |
-| `explicit` | `bool` | `false` | When true, expressions are evaluated once upon state entry. When false (default), expressions remain reactive while the state is active. Requires `QMLTUI_ENABLE_PRIVATE_QT=ON`. |
+| `explicit` | `bool` | `false` | When true, expressions are evaluated once upon state entry instead of staying reactive while the state is active. Supported for map-based `properties` in all builds, and for direct property bindings when `QMLTUI_ENABLE_PRIVATE_QT=ON`. |
 
 ## Detailed Description
 
@@ -68,7 +68,7 @@ Mixing direct property assignments and `properties: ({ ... })` in a single
 
 When entering a state:
 - With `QMLTUI_ENABLE_PRIVATE_QT=ON`, any preexisting QML binding on the target property is suspended (not destroyed) and restored when the state exits (`restoreEntryValues: true`). With `QMLTUI_ENABLE_PRIVATE_QT=OFF`, entry values are captured as snapshots and restored via `setProperty()`, replacing any preexisting binding on that property.
-- If `explicit` is `false` (default), direct expressions remain live and reactive to dependency changes while the state is active. If `explicit` is `true`, expressions are evaluated once on entry (`explicit` requires `QMLTUI_ENABLE_PRIVATE_QT=ON`).
+- If `explicit` is `false` (default), expressions remain live and reactive to dependency changes while the state is active. If `explicit` is `true`, values are evaluated once on state entry (supported for `properties: ({ ... })` maps in all builds, and for direct bindings when `QMLTUI_ENABLE_PRIVATE_QT=ON`).
 - When exiting the state, if `restoreEntryValues` is `true` (default), original values or bindings are restored and re-evaluated. If `restoreEntryValues` is `false`, the values applied by the state are retained.
 
 ### Example

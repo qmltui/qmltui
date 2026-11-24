@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qmltui::AbstractButton
+cpp: qmltui::Item
 category: inputs
 summary: A focusable exclusive option drawn as (*) or ( ) that unchecks its ButtonGroup siblings when selected
 ---

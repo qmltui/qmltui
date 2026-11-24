@@ -49,9 +49,12 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 | Value | Description |
 | :--- | :--- |
 | `Text.PlainText` | Text is treated as plain literal text without formatting interpretation. |
-| `Text.RichText` | Basic HTML tags (such as `<b>`, `<i>`, `<font color="...">`, `<a href="...">`) are parsed. |
+| `Text.RichText` | Parses basic HTML tags (`<b>`, `<strong>`, `<i>`, `<em>`, `<u>`, `<reversed>`, `<font color="...">`, `<a href="...">`) and inline Markdown (`**bold**`, `` `code` ``, `[label](url)`). |
 | `Text.AnsiText` | Embedded ANSI/VT SGR escape sequences are parsed and styled. |
-| `Text.AutoText` | Automatically determines format based on presence of HTML tags, markdown links, or ANSI escape codes. |
+| `Text.AutoText` | Parses both `RichText` (HTML tags and inline Markdown `**bold**`, `` `code` ``, `[label](url)`) and `AnsiText` (ANSI SGR escape codes). |
+
+> [!WARNING]
+> **Differences from Qt Quick**: Unlike Qt Quick's `Text.AutoText`, QmlTui's default `Text.AutoText` interprets inline Markdown (`**...**`, `` `...` ``, `[label](url)`) and ANSI SGR escape sequences. Always set `textFormat: Text.PlainText` (or use literal `spans`) when displaying user data, logs, file paths, shell commands, or source code.
 
 ## Enumeration Text.WrapMode
 

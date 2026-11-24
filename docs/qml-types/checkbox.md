@@ -4,7 +4,7 @@ kind: qml
 import: QmlTui.Controls
 since: "0.4"
 inherits: AbstractButton
-cpp: qmltui::AbstractButton
+cpp: qmltui::Item
 category: inputs
 summary: A focusable two-state option drawn as [x] or [ ] followed by a label
 ---

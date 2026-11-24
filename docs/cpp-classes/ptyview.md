@@ -21,7 +21,7 @@
 | Property | Type | Access | Notify Signal | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `program` | `QString` | read/write | `programChanged` | Executable path or name (falls back to `defaultUserShell()` when empty). |
-| `arguments` | `QStringList` | read/write | `argumentsChanged` | Arguments passed directly to `execvp` without shell expansion. |
+| `arguments` | `QStringList` | read/write | `argumentsChanged` | Arguments passed directly via `QProcess::start()` without shell expansion (if `program` is not found on disk or `PATH`, `start()` falls back to `QProcess::splitCommand(program)` and prepends extra tokens to `arguments`). |
 | `workingDirectory` | `QString` | read/write | `workingDirectoryChanged` | Initial working directory for the child process. |
 | `environment` | `QVariantMap` | read/write | `environmentChanged` | Extra environment variables merged into the child environment. |
 | `inheritEnvironment` | `bool` | read/write | `inheritEnvironmentChanged` | Whether the child inherits the parent environment (`true` by default). |
@@ -29,7 +29,7 @@
 | `autoStart` | `bool` | read/write | `autoStartChanged` | Starts the process automatically on `componentComplete()` (`false` by default). |
 | `processState` | `ProcessState` | read-only | `processStateChanged` | Current lifecycle state. |
 | `running` | `bool` | read-only | `runningChanged` | `true` while `processState == Running`. |
-| `processId` | `qint64` | read-only | `processIdChanged` | OS process ID (PID) of the child, or `-1` when not running. |
+| `processId` | `qint64` | read-only | `processIdChanged` | OS process ID (PID) of the child, or `0` when not running (matching `QProcess::processId()`). |
 | `exitCode` | `int` | read-only | `exitCodeChanged` | Exit status of the last terminated child process (`-1` before exit). |
 | `errorString` | `QString` | read-only | `errorStringChanged` | Diagnostic message from the last PTY or spawn error. |
 | `title` | `QString` | read-only | `titleChanged` | Window title set via OSC 0/2 when `allowTitleChanges` is `true`. |

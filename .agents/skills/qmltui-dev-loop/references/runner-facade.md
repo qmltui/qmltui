@@ -67,7 +67,7 @@ Mouse buttons accept `"left"` (default), `"middle"`, or `"right"`. Coordinate me
 | `expectNoText(text, timeoutMs?)` / `expectNoText(text, { timeout? })` | Fails if the next committed frame contains non-empty `text`. |
 | `expectRegex(pattern, timeoutMs?)` / `expectRegex(pattern, { timeout? })` | Fails unless the next committed frame matches `pattern`. |
 | `expectTextInRegion(x, y, width, height, text, timeoutMs?)` | Fails unless sub-rectangle `[x, y, width, height]` contains `text`. |
-| `expectStyle(x, y, expectedStyle, timeoutMs?)` | Asserts cell `(x, y)` properties: `character`, `foreground`, `background` (`"#RRGGBBAA"`, CSS name, or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed`, `blink`, `conceal`, `strikethrough`. Unknown keys fail immediately. |
+| `expectStyle(x, y, expectedStyle, timeoutMs?)` | Asserts cell `(x, y)` properties: `character`, `foreground`, `background` (`"#RRGGBBAA"`, CSS name, or `"default"`), `bold`, `dim`, `italic`, `underline`, `reversed` (`reverse` alias), `blink`, `conceal`, `strikethrough`. Unknown keys fail immediately. |
 
 ### Snapshots & Captures
 
@@ -128,7 +128,7 @@ Requires `--record <rel.cast>`, `QMLTUI_RUNNER_RECORD=<path>`, or `qmltui_add_sc
 
 ## `qmltui-runner` CLI & Environment Variables
 
-Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms`):
+Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`):
 
 | CLI Flag | Env Equivalent | Default | Notes |
 | :--- | :--- | :--- | :--- |
@@ -142,7 +142,8 @@ Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` /
 | `--artifacts <dir>` | `QMLTUI_RUNNER_ARTIFACT_DIR` | Temp dir | **Must be new or empty** unless `--clean-artifacts` is set |
 | `--clean-artifacts` | *(launcher flag)* | Off | Clear an existing Runner artifact directory (containing `result.json`) before running |
 | `--print`, `--ruler` | *(launcher flag)* | Off | Print `frameStats` and captured frames (`--ruler` adds 0-based `(x, y)` rulers) to `stdout` |
-| `--styled`, `--scrollback` | *(launcher flag)* | Off | Include `--- styles` SGR runs and/or `Terminal.Inline` scrollback when probing/printing |
+| `--styled` | `QMLTUI_RUNNER_FINAL_STYLED=1` | Off | Writes `*_styled.txt` artifacts (works with `--script`); prints `--- Styles ---` to `stdout` when paired with `--print` or `--ruler` |
+| `--scrollback` | *(synthesized `EVAL`)* | Off | Captures `Terminal.Inline` scrollback (incompatible with `--script`); prints with `--print` or `--ruler` |
 | `--update-snapshots` | `QMLTUI_RUNNER_UPDATE_SNAPSHOTS=1` | Off | Rewrites `expect*Snapshot` / `expectStyled` baseline files |
 | `--record <rel.cast>` | `QMLTUI_RUNNER_RECORD` | Off | Relative path inside `--artifacts`; incompatible with `--live` |
 | `--live` | `QMLTUI_RUNNER_LIVE=1` | Off | Stream ANSI to real terminal (human inspection only) |
@@ -163,7 +164,7 @@ Choose `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` /
 **Engine diagnostic environment variables**:
 - `QMLTUI_DEBUG_PAINT_DIRTY=1`: Warns on `stderr` whenever an `Item` calls `markDirty()` inside `paint()`.
 - `QMLTUI_LOG_FILE=<path>`: Streams `qDebug` / `qWarning` / `console.log()` unbuffered to `<path>` (essential during `--live` or interactive `AltScreen` runs where TTY `stderr` is buffered until exit).
-- `QMLTUI_FRAME_STATS=1`: Logs periodic render timing and byte counters to `stderr`.
+- `QMLTUI_FRAME_STATS=1`: Logs per-frame render timing and byte counters via `qmltui.frames` `qCDebug` (routed through `QtMessageRouting`; set `QMLTUI_LOG_FILE` or redirect `stderr` in `AltScreen`).
 - `NO_COLOR=1` / `QMLTUI_COLOR_DEPTH=mono|16|256|truecolor`: Overrides `TerminalCapabilities.colorDepth` and ANSI color encoding in non-recording probes and `--live` runs (`--record` forces 24-bit `truecolor`).
 
 ## `result.json` (Schema v1)

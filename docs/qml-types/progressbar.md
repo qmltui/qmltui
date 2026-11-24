@@ -32,7 +32,7 @@ A one-row horizontal bar that fills from left to right as a value moves from `fr
 | `percentageText` | `string` |  | Read-only. Holds the percentage suffix, a space and a right-aligned integer padded to three cells followed by `%`, or the empty string when `showPercentage` is false. |
 | `style` | `string` | `"block"` | Holds the glyph preset: `"block"` draws `█`/`░`, `"segmented"` draws `▉`/`░`, `"line"` draws `━`/`─`, `"pill"` draws `▮`/`▯`, `"dot"` draws `●`/`○`, `"hash"` draws `#`/`-`; an unknown value draws like `"block"`. |
 | `color` | `color` | `"default"` | Holds the colour of the filled bar (when no gradient or thresholds are set), brackets and percentage, and the fallback colour of the empty portion when `trackColor` is unset. |
-| `trackColor` | `color` | `QmlTui.invalidColor` | Holds an explicit colour for the empty portion of the bar; when unset (`QmlTui.invalidColor`), empty cells use `color` (dimmed when no gradient, thresholds, or explicit `color` is active). |
+| `trackColor` | `color` | `QmlTui.invalidColor` | Holds an explicit colour for the empty portion of the bar; when unset (`QmlTui.invalidColor`), empty cells inherit `color` and are rendered unbolded with `dim: true`. |
 | `fillCharacter` | `string` | `""` | Holds a glyph drawn for each filled cell; when non-empty it overrides `style`. |
 | `emptyCharacter` | `string` | `""` | Holds a glyph drawn for each empty cell; when non-empty it overrides `style`. |
 | `gradient` | `Gradient` | `null` | Holds a [Gradient](gradient.md) whose stops colour the filled cells by their position along the bar, `0.0` at the left edge and `1.0` at the right. |
@@ -59,9 +59,10 @@ wraps the bar in `[` and `]` and `showPercentage` appends `percentageText`, so
 `" 100%"` at full width; both are taken out of `barWidth` rather than added to
 the item. When the width leaves no cells for the bar, only the decorations are
 drawn. Filled cells, brackets and percentage are drawn bold; empty cells are
-drawn unbolded in `trackColor` when set, or in `color` when `trackColor`
-defaults to `QmlTui.invalidColor` (dimmed automatically when no
-gradient/thresholds are active or when `color` is unset).
+drawn unbolded in `trackColor` when set, or in `color` with `dim: true` whenever
+`trackColor` is unset (`QmlTui.invalidColor`), regardless of whether `gradient`,
+`thresholds`, or an explicit `color` is active. Setting `trackColor` explicitly
+disables automatic dimming.
 
 With neither a gradient nor thresholds, filled cells use `color`. When
 `hasGradient` is true, filled runs are built from `segments`: for each filled

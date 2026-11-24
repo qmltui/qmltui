@@ -15,8 +15,8 @@
 | `color` | `qmltui::Color` | read/write | `colorChanged` | Foreground color (`"default"` by default). |
 | `backgroundColor` | `qmltui::Color` | read/write | `backgroundColorChanged` | Background color of painted character cells (`"transparent"` by default). |
 | `bold`, `dim`, `italic`, `underline`, `reversed` | `bool` | read/write | `*Changed` | SGR text attributes (`dim` is also applied automatically when `enabled` is `false`). |
-| `horizontalAlignment` | `int` | read/write | `horizontalAlignmentChanged` | `Qt::AlignLeft`, `Qt::AlignHCenter`, or `Qt::AlignRight`. |
-| `verticalAlignment` | `int` | read/write | `verticalAlignmentChanged` | `Qt::AlignTop`, `Qt::AlignVCenter`, or `Qt::AlignBottom`. |
+| `horizontalAlignment` | `Qt::Alignment` | read/write | `horizontalAlignmentChanged` | `Qt::AlignLeft`, `Qt::AlignHCenter`, or `Qt::AlignRight`. |
+| `verticalAlignment` | `Qt::Alignment` | read/write | `verticalAlignmentChanged` | `Qt::AlignTop`, `Qt::AlignVCenter`, or `Qt::AlignBottom`. |
 | `textFormat` | `TextFormat` | read/write | `textFormatChanged` | `PlainText` (`0`), `RichText` (`1`), `AnsiText` (`2`), or `AutoText` (`3`). |
 | `wrapMode` | `WrapMode` | read/write | `wrapModeChanged` | `NoWrap` (`0`), `WordWrap` (`1`), `WrapAnywhere` (`2`), or `Wrap` (`3`). |
 | `gradient` | `qmltui::Gradient*` | read/write | `gradientChanged` | Optional foreground gradient interpolated across rendered characters. |

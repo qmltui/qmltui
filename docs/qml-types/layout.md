@@ -54,6 +54,12 @@ proportionally according to `Layout.horizontalStretch` and `Layout.verticalStret
 In [GridLayout](gridlayout.md), `Layout.row`, `Layout.column`, `Layout.rowSpan`,
 and `Layout.columnSpan` determine the exact grid cell coordinates and cell span.
 
+### Differences from Qt Quick
+
+- Stretch properties are named `Layout.horizontalStretch` and `Layout.verticalStretch` and default to `1` (not Qt Quick's `horizontalStretchFactor`/`verticalStretchFactor` defaulting to `0`).
+- `Layout` does not provide `Layout.margins` / `Layout.leftMargin` etc.; set `padding` on the container or `spacing` between siblings.
+- `RowLayout`, `ColumnLayout`, and `GridLayout` default to `clip: true` (unlike Qt Quick's `false`).
+
 ### Example
 
 <<< ../../examples/gallery/examples/Layouts.qml{qml}

@@ -20,10 +20,12 @@
       "items": [
         { "text": "All Guides", "link": "/guides/" },
         { "text": "Architecture", "link": "/guides/architecture" },
+        { "text": "Migrating from Qt Quick", "link": "/guides/migrating-from-qt-quick" },
         { "text": "Layouts & Geometry", "link": "/guides/layouts" },
         { "text": "Input & Focus", "link": "/guides/input-and-focus" },
         { "text": "Styling & Colors", "link": "/guides/styling-and-colors" },
         { "text": "Models & Views", "link": "/guides/models" },
+        { "text": "Python (PySide6)", "link": "/guides/python-pyside6" },
         { "text": "Animation & States", "link": "/guides/animation-and-states" },
         { "text": "Inline Mode & Scrollback", "link": "/guides/inline-mode" },
         { "text": "Embedded PTY (PtyView)", "link": "/guides/pty-view" },

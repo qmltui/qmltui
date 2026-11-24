@@ -120,6 +120,7 @@ endif()
 if(QMLTUI_BUILD_TESTS)
 add_qmltui_test(test_span test_span.cpp)
 add_qmltui_test(test_rectangle test_rectangle.cpp)
+add_qmltui_test(test_doc_custom_block test_doc_custom_block.cpp)
 add_executable(qmltui_span_fixture span_fixture.cpp)
 target_link_libraries(qmltui_span_fixture PRIVATE QmlTui::Core QmlTui::Runner)
 qmltui_add_scenario(

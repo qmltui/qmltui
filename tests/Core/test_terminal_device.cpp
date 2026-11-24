@@ -24,7 +24,11 @@
 #include <QmlTui/Core/Primitives/TerminalCapabilities.h>
 #include <QmlTui/Core/Primitives/TerminalDevice.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
+#include <QmlTui/Core/Engine/RenderPhase_p.h>
+#include <QmlTui/Core/Items/Column.h>
+#include <QmlTui/Core/Items/Row.h>
 #include <QmlTui/Core/Items/Scrollback.h>
+#include <QmlTui/Core/Items/Text.h>
 
 using namespace qmltui;
 
@@ -107,6 +111,9 @@ private slots:
     void testScrollbackQueueLimit();
     void testOsc11BackgroundOutput();
     void testResizeRepaint();
+    void testInlineHeadlessDiffBytes();
+    void testScrollbackCompositeLayoutClean();
+    void testFlushBlockingNegativeTimeout();
 };
 
 void TestTerminalDevice::initTestCase() {
@@ -741,6 +748,81 @@ void TestTerminalDevice::testResizeRepaint() {
     frame = readAvailable(pipe.readEnd);
     QVERIFY(!frame.empty());
     QVERIFY(frame.find("\033[2J\033[H") != std::string::npos);
+}
+
+void TestTerminalDevice::testInlineHeadlessDiffBytes() {
+    Pipe pipe;
+    QVERIFY(pipe.open());
+    TerminalDevice device(pipe.writeEnd);
+    Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    auto* label = new Text(&terminal);
+    label->setText(QStringLiteral("Inline headless telemetry"));
+
+    InlineRenderer renderer;
+    renderer.setOutputEnabled(false);
+    renderer.resize(40, 10);
+    renderer.start(&terminal, device);
+
+    // First headless inline frame encodes ANSI diff bytes without writing to the device.
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    QVERIFY(readAvailable(pipe.readEnd).empty());
+    QVERIFY(renderer.lastFrameStats().diffBytes > 0);
+    QCOMPARE(renderer.lastFrameStats().bytesWritten, qint64(0));
+
+    // Unchanged frame diffs to zero bytes.
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    QCOMPARE(renderer.lastFrameStats().diffBytes, qint64(0));
+
+    // Updating the text produces non-zero diff bytes again.
+    label->setText(QStringLiteral("Updated inline row"));
+    QVERIFY(renderer.renderFrame(&terminal, device));
+    QVERIFY(renderer.lastFrameStats().diffBytes > 0);
+    QCOMPARE(renderer.lastFrameStats().bytesWritten, qint64(0));
+}
+
+void TestTerminalDevice::testScrollbackCompositeLayoutClean() {
+    Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    terminal.engine()->setTestViewportSize(QSize(60, 12));
+    terminal.engine()->setTerminalOutputEnabled(false);
+
+    Scrollback sb(&terminal);
+    Row row;
+    row.setHeight(2);
+    Column col(&row);
+    Text line1(&col);
+    line1.setText(QStringLiteral("Line one"));
+    Text line2(&col);
+    line2.setText(QStringLiteral("Line two"));
+
+    sb.append(QVariant::fromValue(&row));
+    QCOMPARE(RenderPhase::dirtyDuringPaintCount(), 0);
+    QVERIFY(terminal.engine()->pendingScrollbackRowCount() > 0);
+}
+
+void TestTerminalDevice::testFlushBlockingNegativeTimeout() {
+    Pipe pipe;
+    QVERIFY(pipe.open());
+    TerminalDevice device(pipe.writeEnd);
+    QVERIFY(device.setAsyncOutput(true));
+    const std::string payload = payloadOf(64 * 1024);
+    QVERIFY(device.write(payload));
+
+    std::string received;
+    std::thread reader([&]() {
+        char buf[4096];
+        while (received.size() < payload.size()) {
+            const ssize_t n = ::read(pipe.readEnd, buf, sizeof buf);
+            if (n <= 0) break;
+            received.append(buf, static_cast<size_t>(n));
+        }
+    });
+    const bool ok = device.flushBlocking(-1);
+    reader.join();
+    (void)device.finishOutput(0);
+    QVERIFY(ok);
+    QCOMPARE(received, payload);
 }
 
 QTEST_MAIN(TestTerminalDevice)

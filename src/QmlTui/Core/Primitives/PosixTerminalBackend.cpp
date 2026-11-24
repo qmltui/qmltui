@@ -428,7 +428,6 @@ TerminalBackend::WriteStatus PosixTerminalBackend::writeSome(const char* data, s
 
 bool PosixTerminalBackend::writeAll(std::string& pending, int timeoutMs) {
     if (pending.empty()) return true;
-    if (timeoutMs < 0) return false;
 
     // Even a caller-owned descriptor may have been switched back to blocking
     // mode. Keep every write non-blocking so the deadline also bounds write().
@@ -446,10 +445,14 @@ bool PosixTerminalBackend::writeAll(std::string& pending, int timeoutMs) {
         else if (written == 0 || (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK))
             return false;
         if (!pending.empty()) {
-            const qint64 remaining = timeoutMs - timer.elapsed();
-            if (remaining <= 0) return false;
+            int pollTimeout = -1;
+            if (timeoutMs >= 0) {
+                const qint64 remaining = timeoutMs - timer.elapsed();
+                if (remaining <= 0) return false;
+                pollTimeout = static_cast<int>(remaining);
+            }
             pollfd descriptor{m_outputFd, POLLOUT, 0};
-            const int ready = ::poll(&descriptor, 1, static_cast<int>(remaining));
+            const int ready = ::poll(&descriptor, 1, pollTimeout);
             if (ready < 0 && errno == EINTR) continue;
             if (ready <= 0 || (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL))) return false;
         }

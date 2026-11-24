@@ -289,9 +289,15 @@ bool Scrollback::submitBatch(Item* item, Terminal* output) {
     Item* separator = m_hasRenderedFirstItem ? separatorItem(output, ownedSeparator) : nullptr;
     const int spacing = m_hasRenderedFirstItem ? resolveItemSpacing(item, m_spacing) : 0;
     const int itemWidth = resolvedWidth(item, output);
+    ItemPaintTraversal::layoutSubtree(item);
     const int itemHeight = resolvedHeight(item);
-    const int separatorWidth = separator ? resolvedWidth(separator, output) : 0;
-    const int separatorHeight = separator ? resolvedHeight(separator) : 0;
+    int separatorWidth = 0;
+    int separatorHeight = 0;
+    if (separator) {
+        separatorWidth = resolvedWidth(separator, output);
+        ItemPaintTraversal::layoutSubtree(separator);
+        separatorHeight = resolvedHeight(separator);
+    }
 
     TextGridBuffer buffer;
     if (!buffer.resize((std::max)(itemWidth, separatorWidth),

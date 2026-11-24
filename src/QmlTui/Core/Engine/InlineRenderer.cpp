@@ -137,10 +137,6 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
 
     const QByteArray controls = rootWindow->takeControlSequences();
     const QByteArray postControls = rootWindow->takePostControlSequences();
-    if (!outputEnabled()) {
-        m_lastStats = stats;
-        return true;
-    }
 
     const ColorDepth colorDepth = capabilities().colorDepth;
     const bool canDiffRows = scrollback.empty() && m_hasCommittedPrompt &&
@@ -163,7 +159,7 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
         postControls.isEmpty()) {
         const qint64 encodedNs = timer.nsecsElapsed();
         stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
-        if (!m_mouseRowOffset) queryCursorPosition(device);
+        if (outputEnabled() && !m_mouseRowOffset) queryCursorPosition(device);
         stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
         m_lastStats = stats;
         return true;
@@ -212,17 +208,24 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     const qint64 encodedNs = timer.nsecsElapsed();
     stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
     stats.diffBytes = static_cast<qint64>(m_ansi.size());
-    const bool written = device.write(m_ansi);
-    if (written) {
+    bool written = true;
+    if (outputEnabled()) {
+        written = device.write(m_ansi);
+        if (written) {
+            m_committedPrompt = m_promptBuffer;
+            m_committedColorDepth = colorDepth;
+            m_hasCommittedPrompt = true;
+            if (!m_mouseRowOffset) queryCursorPosition(device);
+            stats.bytesWritten = stats.diffBytes;
+        } else {
+            m_hasCommittedPrompt = false;
+        }
+    } else {
         m_committedPrompt = m_promptBuffer;
         m_committedColorDepth = colorDepth;
         m_hasCommittedPrompt = true;
-        if (!m_mouseRowOffset) queryCursorPosition(device);
-    } else {
-        m_hasCommittedPrompt = false;
     }
     stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
-    if (written) stats.bytesWritten = stats.diffBytes;
     m_lastStats = stats;
     return written;
 }

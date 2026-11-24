@@ -36,7 +36,7 @@ This Code of Conduct applies within all project spaces, and also applies when an
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainer via GitHub security advisories or maintainer contact channels on <https://github.com/qmltui>. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainer via the maintainer contact channels on <https://github.com/qmltui>. All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 

@@ -17,15 +17,31 @@ SPDX-License-Identifier = "LGPL-3.0-only"
 
 # Examples and build glue: BSD-3-Clause, so they can be copied without conditions.
 [[annotations]]
-path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", ".githooks/**", "CMakeLists.txt", "jsconfig.json", ".gitignore", ".clang-format", ".qmlformat.ini", ".qmlls.ini", "REUSE.toml"]
+path = ["examples/**", "cmake/**", "scripts/**", ".github/**", ".agents/**", ".githooks/**", "CMakeLists.txt", "jsconfig.json", ".gitignore", ".clang-format", ".qmlformat.ini", "REUSE.toml"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
 SPDX-License-Identifier = "BSD-3-Clause"
 
-# Documentation, including the markdown reference pages that live next to the
-# code under src/**/doc/ and the notices in this directory.
+# Documentation and repository Markdown notices.
 [[annotations]]
-path = ["docs/**", "**/*.md", "**/doc/**"]
+path = ["docs/**", "**/*.md"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Yosri Ayed"
 SPDX-License-Identifier = "CC-BY-4.0"
+
+# Third-party upstream license notices installed with bundled builds.
+[[annotations]]
+path = "docs/third-party/utf8proc-LICENSE"
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "2014-2021 Steven G. Johnson, Jiahao Chen, Peter Colberg, Tony Kelman, Scott P. Jones, and other contributors",
+    "2009, 2013 Public Software Group e. V., Berlin, Germany",
+    "1991-2007 Unicode, Inc."
+]
+SPDX-License-Identifier = "MIT AND Unicode-3.0"
+
+[[annotations]]
+path = "docs/third-party/libvterm-LICENSE"
+precedence = "override"
+SPDX-FileCopyrightText = "2008 Paul Evans <leonerd@leonerd.org.uk>"
+SPDX-License-Identifier = "MIT"

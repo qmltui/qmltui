@@ -70,6 +70,7 @@ comment:
 I have read the CLA Document and I hereby sign the CLA
 ```
 
-Later pull requests are covered automatically. Pull requests that only touch
-`docs/`, `examples/`, `cmake/`, `scripts/`, or other `BSD-3-Clause` /
+Later pull requests are covered automatically. If the CLA check needs to be
+re-run on an existing pull request, comment `recheck`. Pull requests that only
+touch `docs/`, `examples/`, `cmake/`, `scripts/`, or other `BSD-3-Clause` /
 `CC-BY-4.0` paths do not require CLA sign-off.

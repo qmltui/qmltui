@@ -1,5 +1,8 @@
 # QmlTui 0.4 acceptance checks
 
+> [!NOTE]
+> **Historical 0.4 archive**: This report preserves the QmlTui 0.4 acceptance snapshot. Several names and tradeoffs documented here were superseded in 0.5 and 0.6: `QMLTUI_ENABLE_BEHAVIOR` became `QMLTUI_ENABLE_PRIVATE_QT`, `TerminalHost` became `PtyView`, `Stream` became `Terminal.Inline` + `Scrollback`, and long-cluster glyph interning is now bounded (`Cell::MaxInternedGlyphs = 16384`, `Cell::MaxGraphemeBytes = 64`). See [0.5 migration notes](../../../changes/0.5.md) and the [0.6 changelog](../../../changes/changelog.md).
+
 ## Scope and method
 
 Linux validation of the proposed rendering changes plus acceptance fixes.

@@ -10,9 +10,17 @@ Demonstrates hosting a QmlTui application from Python using `PySide6` (`QCoreApp
 ```bash
 # Build QmlTui QML plugins with public Qt APIs only (avoids private-API version
 # mismatches when PySide6 wheels bundle their own Qt libraries)
-cmake -S . -B build -DQMLTUI_ENABLE_PRIVATE_QT=OFF
+cmake -S . -B build -G Ninja \
+  -DQMLTUI_ENABLE_PRIVATE_QT=OFF \
+  -DQMLTUI_BUILD_TESTS=OFF \
+  -DQMLTUI_BUILD_BENCHMARKS=OFF
 cmake --build build --target QmlTuiCoreplugin QmlTuiControlsplugin
 
-# Run with a Python environment containing PySide6 (matching your Qt 6 minor version)
+# Install PySide6 matching your Qt 6 minor version (e.g. 6.8.*), then run:
+pip install "PySide6==6.<minor>.*"
 python3 examples/recipes/pyside6/main.py
+# Or specify a custom build tree:
+QMLTUI_BUILD_DIR=/path/to/build python3 examples/recipes/pyside6/main.py
 ```
+
+For standalone installed-prefix setups and testing guidance, see the [Python and PySide6 Guide](../../../docs/guides/python-pyside6.md).

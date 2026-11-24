@@ -1,5 +1,8 @@
 # Model View Performance Profile (2026-09-11)
 
+> [!NOTE]
+> **Historical profile**: This document records the pre-0.6 per-phase profile before demand-driven delegate schema inspection, on-demand `QVariantMap` replacement of per-row `QQmlPropertyMap`, and 48-byte `TreeView::VisibleNode` compaction. (`StandardItemDelegate` also later moved from `QmlTui.Controls` to [`examples/recipes/standard_item_delegate/`](../../../examples/recipes/standard_item_delegate/).) For current QmlTui vs. Qt Quick vs. Qt Widgets numbers, see [2026-10-27-view-comparison.md](2026-10-27-view-comparison.md).
+
 Per-phase cost of `ListView`, `GridView`, `TableView`, and `TreeView` over a
 C++ model, measured after Plan 07 (header data, `rootIndex`, GridView
 virtualization, lazy fetch, TreeView persistent state, standard item roles).

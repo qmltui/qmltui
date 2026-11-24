@@ -92,11 +92,16 @@ hardware and software configuration:
 
 ## Reproducing
 
+Building `benchmark_view_compare` requires `-DQMLTUI_BUILD_BENCHMARKS=ON` and optional `Qt6::Gui`, `Qt6::Quick`, and `Qt6::Widgets` modules installed alongside `Qt6::Core` and `Qt6::Qml` (so the benchmark can measure QmlTui side by side against Qt Quick and Qt Widgets):
+
 ```bash
 cmake -S . -B build-release -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DQMLTUI_BUILD_TESTS=ON \
+  -DQMLTUI_BUILD_BENCHMARKS=ON \
   -DQMLTUI_BUILD_EXAMPLES=OFF
 cmake --build build-release --target benchmark_view_compare -j8
 ./build-release/tests/Core/benchmark_view_compare --rows 100000 --steps 500 --json view-compare.json
 ```
+
+For the earlier per-phase stack profile that motivated these optimizations, see the historical [2026-09-11 view phases profile](2026-09-11-view-phases.md).

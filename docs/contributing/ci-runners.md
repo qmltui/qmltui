@@ -23,7 +23,7 @@ Each runner is a background agent that polls GitHub for jobs. Fetch a one-hour r
 
 ### Linux Runner (Native or WSL)
 
-When running on `[self-hosted, linux]`, `ci.yml` reads the desktop Qt prefix from `QMLTUI_QT_LINUX`, and the `wasm` compile-guard job reads the single-threaded Qt for WebAssembly prefix from `QMLTUI_QT_WASM` plus Emscripten from `EMSDK` (defaulting to `~/emsdk`). CMake, Ninja, `clang-format`, and `clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage` job) come from the host distribution.
+When running on `[self-hosted, linux]`, `ci.yml` reads the desktop Qt prefix from `QMLTUI_QT_LINUX`, and the `wasm` compile-guard job reads the single-threaded Qt for WebAssembly prefix from `QMLTUI_QT_WASM` plus Emscripten from `EMSDK` (defaulting to `~/emsdk`). CMake, Ninja, `python3`, `clang-format` (`23.1.3` to match GitHub-hosted CI), and `clang++` / `llvm-cov` / `llvm-profdata` (for the `coverage` job) come from the host distribution.
 
 ```bash
 mkdir -p ~/actions-runner && cd ~/actions-runner
@@ -78,11 +78,12 @@ To remove a runner, generate a removal token on **Settings > Actions > Runners**
 
 | Job | Default Runner (and all fork PRs) | Opt-in Runner (`QMLTUI_SELF_HOSTED=1`, non-fork) | Trigger |
 | :--- | :--- | :--- | :--- |
-| `linux` (`Behavior` `ON` and `OFF`, format/docs/skills checks) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `linux` (`Private Qt` `ON` and `OFF`, format/docs/skills checks) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `sanitizers` (`ASan` + `UBSan`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
-| `coverage` (Clang `llvm-cov` + badge update on `main`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
-| `windows` (`Behavior` `ON`, MSVC 2022) | `windows-2022` | `[self-hosted, windows]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
-| `macos` (`Behavior` `ON`) | `macos-latest` | `macos-latest` | Every trigger on public repos; `workflow_dispatch` and `v*` tags on private repos |
+| `coverage` (Clang `llvm-cov` report artifact) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `coverage-badge` (publishes `coverage.svg` & `summary.md` to `badges` branch) | `ubuntu-24.04` | `ubuntu-24.04` | `main` pushes (requires `coverage`, `contents: write`) |
+| `windows` (`Private Qt` `ON`, MSVC 2022) | `windows-2022` | `[self-hosted, windows]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
+| `macos` (`Private Qt` `ON`) | `macos-latest` | `macos-latest` | Every trigger on public repos; `workflow_dispatch` and `v*` tags on private repos |
 | `quickstart` (`examples/helloworld` via `FetchContent`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `wasm` (`examples/helloworld` Wasm compile-guard) | `ubuntu-24.04` | `[self-hosted, linux]` | Wasm/Core/Controls/CMake changes, `workflow_dispatch`, and `v*` tags (full Wasm playground & Pages site build runs in `qmltui/qmltui.github.io`) |
 | `reuse` (`reuse lint`) | `ubuntu-24.04` | `ubuntu-24.04` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |

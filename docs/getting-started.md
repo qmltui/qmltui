@@ -8,7 +8,25 @@ For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlT
 
 - **CMake 3.21** or newer and **Ninja** (recommended)
 - **C++17** compiler
-- **Qt 6.8 or newer** (tested across Qt 6.8 through 6.12) with `Core` and `Qml` (plus `QmlPrivate` when using `Behavior`, and `Gui` + `Network` when enabling `QmlTui.Image` with `-DQMLTUI_ENABLE_IMAGE=ON`). See the [Qt 6 Getting Started Guide](https://doc.qt.io/qt-6/gettingstarted.html) to install Qt 6.8+.
+- **Qt 6.8 or newer** (tested across Qt 6.8 through 6.12) with `Core` and `Qml` (plus `QmlPrivate` when using `Behavior`, `Test` when building repository unit tests, and `Gui` + `Network` when enabling `QmlTui.Image` with `-DQMLTUI_ENABLE_IMAGE=ON`).
+
+### Installing Qt 6.8+
+
+- **Ubuntu 24.04 / Debian**: System `apt` packages on Ubuntu 24.04 ship Qt 6.4, which is too old for QmlTui. Install Qt 6.8+ with [`aqtinstall`](https://github.com/miurahr/aqtinstall) (`pip install aqtinstall && aqt install-qt linux desktop 6.8.3 linux_gcc_64`) or the official [Qt Online Installer](https://doc.qt.io/qt-6/gettingstarted.html), then pass `-DCMAKE_PREFIX_PATH=~/Qt/6.8.3/gcc_64` to CMake. On newer distributions shipping Qt 6.8+ (such as Arch Linux, CachyOS, or Fedora), install the system `qt6-base` and `qt6-declarative` development packages (plus `qt6-declarative-private-dev` on Debian/Ubuntu derivatives if enabling `Behavior`, or pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`).
+- **macOS**: `brew install qt cmake ninja`, then pass `-DCMAKE_PREFIX_PATH=$(brew --prefix qt)` to CMake.
+- **Windows**: Install Qt 6.8+ (MSVC 2022 64-bit) via the [Qt Online Installer](https://doc.qt.io/qt-6/gettingstarted.html) or `aqtinstall`, then pass `-DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/msvc2022_64` from a Visual Studio Developer Prompt.
+
+## New to Qt/QML? QmlTui in 3 Minutes
+
+If you are coming from **Ratatui** (Rust), **Bubble Tea** (Go), or **Textual** (Python) rather than Qt, five concepts cover almost everything you will see in this tutorial:
+
+- **Retained scene graph, not immediate-mode redraw**: Instead of rebuilding a widget tree on every tick, you declare UI objects once in a `.qml` file. Property bindings (`text: "Count: " + controller.count`) automatically mark only affected items dirty and re-render minimal ANSI cell diffs when data changes.
+- **`pragma ComponentBehavior: Bound`**: A file-top directive that makes QML lexical scoping strict and enables QmlTui's fast path for list/table delegates. Put it at line 1 of every `.qml` file.
+- **`qt_add_qml_module(...)`**: A CMake macro that compiles your `.qml` files and C++ classes into a single QML module embedded inside your binary (no loose runtime `.qml` files to ship) and generates a `<target>_qmllint` static checker target.
+- **`Q_OBJECT`, `QML_ELEMENT`, `Q_PROPERTY ... NOTIFY`, `Q_INVOKABLE`**: Standard Qt C++ macros processed automatically at build time (`AUTOMOC`). `Q_OBJECT` enables signals/slots, `QML_ELEMENT` exposes the C++ class as a QML element tag (`AppController { ... }`), `Q_PROPERTY(... NOTIFY ...)` lets QML bindings react whenever a C++ value changes, and `Q_INVOKABLE` lets QML signal handlers (`onClicked:`) call C++ methods.
+- **No GUI dependencies**: QmlTui runs on `QCoreApplication` (`Qt6::Core` + `Qt6::Qml`). It never imports `QtQuick`, never links `Qt6::Gui` (unless you opt into `QmlTui.Image`), and runs headlessly over SSH or in CI.
+
+Already familiar with Qt Quick? Read [Migrating from Qt Quick](guides/migrating-from-qt-quick.md) for a concise diff of cell geometry, border padding, `Keys.BeforeItem`, and view contracts.
 
 ## Step 1: Create a Standalone Application
 
@@ -333,14 +351,17 @@ ctest --test-dir build --output-on-failure
 
 ## Explore the Component Gallery (Optional)
 
-Browse all 45 built-in controls, data views, layouts, and canvas primitives directly in your browser in the [Component Gallery](https://qmltui.github.io/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/playground.html).
+Browse 42 default interactive demos (45 when built with `-DQMLTUI_ENABLE_IMAGE=ON` and `-DQMLTUI_ENABLE_PTYVIEW=ON`) covering all 75 built-in types directly in your browser in the [Component Gallery](https://qmltui.github.io/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/playground.html).
 
-To build and run `qmltui_gallery` locally in your terminal:
+To build and run `qmltui_gallery` locally in your terminal (disabling tests and benchmarks so `Qt6::Test` is not required):
 
 ```sh
 git clone https://github.com/qmltui/qmltui.git
 cd qmltui
-cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
+cmake -S . -B build -G Ninja \
+  -DQMLTUI_BUILD_EXAMPLES=ON \
+  -DQMLTUI_BUILD_TESTS=OFF \
+  -DQMLTUI_BUILD_BENCHMARKS=OFF
 cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```

@@ -8,8 +8,8 @@ steps. `stopRecording()` closes the current cast; `startRecording(relativePath)`
 starts another with a full repaint. See the [Runner API](../cpp-classes/runner.md).
 
 In `examples/CMakeLists.txt`, `QMLTUI_RECORD_DIR` points to `docs/assets/casts/` and
-`QMLTUI_RECORD_POST_COMMAND` runs `agg --renderer resvg --font-size 24 --line-height 1.08 --theme ... "<CAST>" "<CAST_STEM>.gif"` automatically
-whenever `agg` is found in `PATH`. All recording scenarios carry the `Demo` CTest
+`QMLTUI_RECORD_POST_COMMAND` invokes `agg` (resolved at CMake **configure** time via `find_program(QMLTUI_AGG_EXECUTABLE NAMES agg)`) automatically
+whenever `agg` is found in `PATH`. If you install `agg` after configuring, re-run `cmake -S . -B build` so CMake picks it up. You can also render standalone `.cast` files to `.gif` directly with [`scripts/render_cast_gif.py`](../../scripts/render_cast_gif.py). All recording scenarios carry the `Demo` CTest
 label so normal `ctest -L Runner` runs stay fast.
 
 ## Prerequisites
@@ -22,10 +22,10 @@ cargo install --git https://github.com/asciinema/agg
 
 ## Regenerating casts and GIFs
 
-Configure and build with examples and tests enabled (use a Behavior-enabled, Image-enabled, PtyView-enabled tree so all gallery tiles are present):
+Configure and build with examples and tests enabled (use a `QMLTUI_ENABLE_PRIVATE_QT=ON`, `QMLTUI_ENABLE_IMAGE=ON`, `QMLTUI_ENABLE_PTYVIEW=ON` tree so all 45 gallery tiles are present):
 
 ```sh
-cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_IMAGE=ON -DQMLTUI_ENABLE_PTYVIEW=ON
+cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_PRIVATE_QT=ON -DQMLTUI_ENABLE_IMAGE=ON -DQMLTUI_ENABLE_PTYVIEW=ON
 cmake --build build -j$(nproc)
 ```
 
@@ -49,4 +49,4 @@ ctest --test-dir build -R "^gallery_button_demo$" --output-on-failure
 ```
 
 Inspect the GIFs for Unicode glyphs, colors, and animation pacing.
-Additional application casts are maintained in qmltui-apps.
+Additional application casts are maintained in [`qmltui/apps`](https://github.com/qmltui/apps).

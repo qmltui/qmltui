@@ -136,10 +136,13 @@ Terminal {
 
 ## Quickstart
 
-To build locally, install **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** with **`Core` and `Qml`** (tested across Qt 6.8 through 6.12):
+To build locally, install **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** with **`Core` and `Qml`** (tested across Qt 6.8 through 6.12; building tests additionally requires `Qt6::Test`):
 
 ```sh
-cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
+cmake -S . -B build -G Ninja \
+  -DQMLTUI_BUILD_EXAMPLES=ON \
+  -DQMLTUI_BUILD_TESTS=OFF \
+  -DQMLTUI_BUILD_BENCHMARKS=OFF
 cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
@@ -148,8 +151,8 @@ cmake --build build --target qmltui_gallery
 
 ### Start Your Own Project
 
-- **Standalone C++ / CMake (`FetchContent` or `find_package(QmlTui)`)**: Follow the 3-file [Getting Started tutorial](docs/getting-started.md) or copy [`examples/helloworld/`](examples/helloworld/).
-- **Python (`PySide6`)**: Host `QmlTui` and `QmlTui.Controls` directly on `QCoreApplication` without custom C++ bindings—see [`examples/recipes/pyside6/`](examples/recipes/pyside6/).
+- **Standalone C++ / CMake (`FetchContent` or `find_package(QmlTui)`)**: Follow the 3-file [Getting Started tutorial](docs/getting-started.md) (includes a 3-minute Qt/QML primer for newcomers) or copy [`examples/helloworld/`](examples/helloworld/). Coming from Qt Quick? See [Migrating from Qt Quick](docs/guides/migrating-from-qt-quick.md).
+- **Python (`PySide6`)**: Build the public-Qt C++ QML plugins once and host `QmlTui` and `QmlTui.Controls` directly from Python on `QCoreApplication` without custom C++ bindings—see the [Python (PySide6) guide](docs/guides/python-pyside6.md) and [`examples/recipes/pyside6/`](examples/recipes/pyside6/).
 - **WebAssembly (`xterm.js`)**: Cross-compile with Qt for WebAssembly (`wasm_singlethread`) and `qmltui_wasm_app()`—see the [WebAssembly guide](docs/guides/webassembly.md) or try QmlTui in your browser in the [Live Playground](https://qmltui.github.io/playground.html).
 
 ## QML Modules and CMake Targets
@@ -177,6 +180,8 @@ See [Build Configuration and Installation](docs/build-configuration.md) for `Fet
 Link `QmlTui::Runner` under `BUILD_TESTING` to drive your unmodified executable headlessly on `QCoreApplication`—sweeping viewports with 0-based `(x, y)` rulers, inspecting `#RRGGBBAA` / SGR styles, stepping animations on a virtual clock, checking idle repaint budgets, and recording deterministic `.cast` replays:
 
 ```sh
+cmake -S . -B build -G Ninja -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON
+cmake --build build --target qmltui-runner hello_qmltui
 ./build/tools/qmltui-runner/qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled \
   -- ./build/examples/helloworld/hello_qmltui
 ```

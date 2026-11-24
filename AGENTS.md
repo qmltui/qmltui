@@ -34,8 +34,9 @@
   ```
 
 - Build the affected target and run the narrowest relevant CTest first. Run the
-  broader configured suite after changes to Core, public APIs, QML modules, or
-  CMake integration.
+  broader configured suite (`ctest --test-dir build -LE Demo --output-on-failure`,
+  excluding long-running `Demo` cast recordings) after changes to Core, public
+  APIs, QML modules, or CMake integration.
 - Use Qt Test executables for C++ units and component contracts. Use
   `qmltui::Runner`/`Runner` for whole-application input and committed terminal
   frames. A visible-behavior test must assert the rendered frame, not only a QML

@@ -26,8 +26,8 @@ request.
 ## Development
 
 Build and test instructions, QML conventions, and the test workflow are in
-[AGENTS.md](AGENTS.md) and [docs/](docs/). To configure, build, and run tests
-locally:
+[AGENTS.md](AGENTS.md), [docs/contributing/adding-features.md](docs/contributing/adding-features.md), and [docs/](docs/). To configure, build, and run tests
+locally (omit `-DQMLTUI_ENABLE_PTYVIEW=ON` on Windows, where `PtyView` is unsupported):
 
 ```bash
 cmake -S . -B build \
@@ -35,12 +35,18 @@ cmake -S . -B build \
   -DQMLTUI_BUILD_TESTS=ON \
   -DQMLTUI_BUILD_EXAMPLES=ON \
   -DQMLTUI_ENABLE_IMAGE=ON \
-  -DQMLTUI_ENABLE_PTYVIEW=ON
+  -DQMLTUI_ENABLE_PTYVIEW=ON   # Linux and macOS only
 cmake --build build --parallel
 ctest --test-dir build -LE Demo --output-on-failure
 ```
 
-Before opening a pull request, verify formatting, documentation snippets, skill metadata, and licensing:
+Install the repository git hooks once to auto-check formatting before commits, and use `clang-format==23.1.3` (matching CI) to avoid formatter diffs:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Before opening a pull request, verify formatting, documentation snippets, skill metadata, and licensing (passing explicit directories to `format.py --check` checks the full tree; calling it with no paths checks staged files only):
 
 ```bash
 ./scripts/format.py --check src tools examples tests
@@ -50,4 +56,4 @@ reuse lint
 git diff --check
 ```
 
-Pull requests touching private-Qt features (`Behavior` or `PropertyChanges`) or feature gating must keep both `QMLTUI_ENABLE_PRIVATE_QT=ON` and `QMLTUI_ENABLE_PRIVATE_QT=OFF` build trees green, which CI verifies across Linux, macOS, and Windows.
+Pull requests touching private-Qt features (`Behavior` or `PropertyChanges`) or feature gating must keep both `QMLTUI_ENABLE_PRIVATE_QT=ON` and `QMLTUI_ENABLE_PRIVATE_QT=OFF` build trees green. Linux CI verifies both `Private Qt ON` and `OFF` matrices (plus ASan/UBSan and Clang coverage), while Windows and macOS CI verify `Private Qt ON` (see [docs/contributing/ci-runners.md](docs/contributing/ci-runners.md) and [docs/contributing/recording.md](docs/contributing/recording.md)).

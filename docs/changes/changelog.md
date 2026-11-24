@@ -9,7 +9,17 @@ Linux, macOS, Windows Terminal, and WebAssembly (`xterm.js`).
 - **Normalized QML APIs and `Bound` controls**: Built-in `QmlTui.Controls` components use `pragma ComponentBehavior: Bound` with consistent explicit color override behavior across focus and disabled states, hardened `State` / `PropertyChanges` lifetimes, and bounded glyph interning.
 - **`Terminal.Inline` dynamic viewport resizing**: `InlineRenderer` and `Runner::resize(columns, rows)` now reflow `Terminal.Inline` sessions cleanly, keeping frame height content-sized up to `rows - 1`.
 - **WebAssembly shell (`qmltui_wasm_app()`)**: Generates a standalone `xterm.js` terminal host page (`<target>.html`) with `@xterm/addon-unicode-graphemes` (`15-graphemes`), OSC 4/10/11 color query replies, and OSC 52 clipboard bridging.
-- **Python (`PySide6`) integration**: Added [`examples/recipes/pyside6/`](../../examples/recipes/pyside6/) demonstrating hosting QmlTui QML modules from Python `QAbstractListModel` backends.
+- **Python (`PySide6`) integration**: Added [`examples/recipes/pyside6/`](../../examples/recipes/pyside6/) and the [Python (PySide6) Guide](../guides/python-pyside6.md) demonstrating hosting QmlTui QML modules from Python `QAbstractTableModel` and `QSortFilterProxyModel` backends.
+
+## Migrating from 0.5 to 0.6
+
+| 0.5 API / Target | 0.6 Replacement |
+| :--- | :--- |
+| `qmltui::core`, `qmltui::controls`, `qmltui::image`, `qmltui::ptyview`, `qmltui::runner` | `QmlTui::Core`, `QmlTui::Controls`, `QmlTui::Image`, `QmlTui::PtyView`, `QmlTui::Runner` (plus `QmlTui::qmltui-runner`) |
+| `qmltui::controls::ToolTip` (C++ namespace) | `qmltui::ToolTip` |
+| Direct member layout on `Item`, `Terminal`, `Popup`, `FocusScope` | Encapsulated behind `d_ptr` (`ItemPrivate`, etc.) — recompile all C++ subclasses against 0.6 headers |
+| Versioned QML imports (`import QmlTui 1.0`) | Unversioned QML imports (`import QmlTui`, `import QmlTui.Controls`, `import QmlTui.Image`, `import QmlTui.PtyView`) |
+| `find_package(QmlTui 0.5 REQUIRED)` | `find_package(QmlTui 0.6 REQUIRED)` (per-module `COMPONENTS` export sets isolate optional `Image` / `PtyView` dependencies) |
 
 ## Headless Testing (`Runner`) and Agentic Tooling
 
@@ -18,13 +28,13 @@ Linux, macOS, Windows Terminal, and WebAssembly (`xterm.js`).
 
 ## CMake Packaging and Diagnostics
 
-- **Automatic QML import paths and exported CLI**: `find_package(QmlTui 0.6)` configures `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically, sets relative `$ORIGIN` / `@loader_path` `INSTALL_RPATH` entries on installed libraries and plugins, and exports `QmlTui::qmltui-runner`.
+- **Automatic QML import paths, split export sets, and exported CLI**: `find_package(QmlTui 0.6)` configures `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically, sets relative `$ORIGIN` / `@loader_path` `INSTALL_RPATH` entries and `SOVERSION 0.6` on installed shared libraries, isolates optional `COMPONENTS` export sets, and exports `QmlTui::qmltui-runner`.
 - **Live `AltScreen` logging**: Stream `console.log()`, `qDebug()`, and QML warnings unbuffered during alternate-screen sessions with `QMLTUI_LOG_FILE=<path>` or `2> debug.log`.
-- **Documentation portal and showcase**: Interactive VitePress documentation and browser playground live in [`qmltui/qmltui.github.io`](https://github.com/qmltui/qmltui.github.io), alongside 12 full-scale applications in [`qmltui/apps`](https://github.com/qmltui/apps).
+- **Documentation portal and showcase**: Interactive VitePress documentation and browser playground live in [`qmltui/qmltui.github.io`](https://github.com/qmltui/qmltui.github.io), alongside 13 full-scale applications in [`qmltui/apps`](https://github.com/qmltui/apps).
 
 ## Earlier Releases
 
 - [Porting from 0.4 to 0.5](0.5.md)
-- [Porting from 0.4](0.4.md)
-- [Porting from 0.3](0.3.md)
-- [Porting from 0.1](0.1.md)
+- [Porting from 0.3 to 0.4](0.4.md)
+- [Porting from 0.2 to 0.3](0.3.md)
+- [0.1 Stabilization Notes](0.1.md)

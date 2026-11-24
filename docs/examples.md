@@ -1,9 +1,12 @@
 # Examples and Recipes
 
-Configure QmlTui with `-DQMLTUI_BUILD_EXAMPLES=ON` to build the interactive component gallery and standalone recipe executables:
+Configure QmlTui with `-DQMLTUI_BUILD_EXAMPLES=ON` to build the interactive component gallery and standalone recipe executables (pass `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_BUILD_BENCHMARKS=OFF` if you do not have `Qt6::Test` installed; pass `-DQMLTUI_ENABLE_IMAGE=ON -DQMLTUI_ENABLE_PTYVIEW=ON` to include the optional `Image`, `AnimatedSprite`, and `PtyView` tiles alongside the 42 default demos):
 
 ```sh
-cmake -S . -B build -G Ninja -DQMLTUI_BUILD_EXAMPLES=ON
+cmake -S . -B build -G Ninja \
+  -DQMLTUI_BUILD_EXAMPLES=ON \
+  -DQMLTUI_BUILD_TESTS=OFF \
+  -DQMLTUI_BUILD_BENCHMARKS=OFF
 cmake --build build -j8 --target qmltui_gallery
 
 # Open the interactive gallery grid:
@@ -83,18 +86,18 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 
 | Recipe | Directory | CMake Target | Guide / Recording | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **BigText** | [`examples/recipes/big_text/`](../examples/recipes/big_text/) | `qmltui_big_text_demo` | [Custom C++ Items](guides/custom-items.md) · [GIF](assets/casts/components/big_text.gif) | Custom C++ `qmltui::Item` (`BigText.h`, `BigText.cpp`) painting 3x5 block-pixel banner text into `TextGridBuffer`. |
+| **BigText** | [`examples/recipes/big_text/`](../examples/recipes/big_text/) | `qmltui_big_text_demo` | [Custom C++ Items](guides/custom-items.md) · [GIF](assets/casts/components/big_text.gif) | Custom C++ `qmltui::Item` (`BigText.h`, `BigText.cpp`) painting 3×3 block-pixel banner text into `TextGridBuffer`. |
 | **Calendar** | [`examples/recipes/calendar/`](../examples/recipes/calendar/) | `qmltui_calendar_demo` | [Layouts](guides/layouts.md) · [GIF](assets/casts/components/calendar.gif) | Reusable `Calendar.qml` month-grid date picker built with `Column`, `Row`, `Repeater`, and keyboard navigation. |
 | **C++-Only Application** | [`examples/recipes/cpp_only/`](../examples/recipes/cpp_only/) | `qmltui_cpp_only_demo` | [Custom C++ Items](guides/custom-items.md) | Constructing and updating a `qmltui::Terminal` and item tree directly from C++ without `.qml` files. |
-| **Custom C++ Item** | [`examples/recipes/custom_cpp_item/`](../examples/recipes/custom_cpp_item/) | `qmltui_custom_cpp_item_demo` | [Custom C++ Items](guides/custom-items.md) | Subclassing `qmltui::Rectangle` (`ProgressBar`), overriding `paint(TextGridBuffer &, int, int, const ClipRect &)`, and registering with `QML_ELEMENT`. |
+| **Custom C++ Item** | [`examples/recipes/custom_cpp_item/`](../examples/recipes/custom_cpp_item/) | `qmltui_custom_cpp_item_demo` | [Custom C++ Items](guides/custom-items.md) | Subclassing `qmltui::Rectangle` (`ProgressBar`), overriding `paint(TextGridBuffer &, int, int, const ClipRect &) const`, and registering with `QML_ELEMENT`. |
 | **Independent States** | [`examples/recipes/independent_states/`](../examples/recipes/independent_states/) | `qmltui_independent_states_demo` | [Animation & States](guides/animation-and-states.md) | Orthogonal state machines using `StateGroup`, `State`, and `Transition` (`QMLTUI_ENABLE_PRIVATE_QT=ON`). |
 | **Inline REPL** | [`examples/recipes/inline_repl/`](../examples/recipes/inline_repl/) | `qmltui_inline_repl_demo` | [Inline Mode](guides/inline-mode.md) · [GIF](assets/casts/components/inline_mode.gif) | Command-line REPL using `Terminal.Inline`, `Scrollback`, and `ProgressBar`. |
 | **Lazy Model** | [`examples/recipes/lazy_model/`](../examples/recipes/lazy_model/) | `qmltui_lazy_model_demo` | [Models & Views](guides/models.md) | C++ `LazyDirectoryModel` (`QAbstractItemModel`) populating a 4-level directory tree on demand in `TreeView`. |
 | **Live Image** | [`examples/recipes/live_image/`](../examples/recipes/live_image/) | `qmltui_live_image_demo` | [Architecture](guides/architecture.md) | Streaming procedural `QImage` frames from `qmltui::AsyncImageProvider` into `Image` (`QMLTUI_ENABLE_IMAGE=ON`). |
-| **PySide6** | [`examples/recipes/pyside6/`](../examples/recipes/pyside6/) | *(Python script)* | [Models & Views](guides/models.md) | Hosting `QmlTui` and `QmlTui.Controls` from Python with `PySide6`, a Python `QAbstractTableModel`, and `QSortFilterProxyModel`. |
+| **PySide6** | [`examples/recipes/pyside6/`](../examples/recipes/pyside6/) | *(Python script)* | [Python (PySide6)](guides/python-pyside6.md) | Hosting `QmlTui` and `QmlTui.Controls` from Python with `PySide6`, a Python `QAbstractTableModel`, and `QSortFilterProxyModel`. |
 | **StandardItemDelegate** | [`examples/recipes/standard_item_delegate/`](../examples/recipes/standard_item_delegate/) | `qmltui_standard_item_delegate_demo` / `qmltui_standard_item_delegate_widgets` | [Models & Views](guides/models.md) · [GIF](assets/casts/components/standard_item_delegate.gif) | Shared C++ `ReleaseChecklistModel` (`QStandardItemModel`) rendered with `StandardItemDelegate` in `ListView` alongside `TableView`, `TreeView`, and an optional Qt Widgets window. |
 | **StatusBadge** | [`examples/recipes/status_badge/`](../examples/recipes/status_badge/) | `qmltui_status_badge_demo` | [Styling & Colors](guides/styling-and-colors.md) · [GIF](assets/casts/components/status_badge.gif) | Copyable `StatusBadge.qml` pill component (`[OK]`, `[WARN]`, `[ERR]`) with configurable icon, label, border, and color presets. |
-| **TableView Model** | [`examples/recipes/table_view/`](../examples/recipes/table_view/) | `qmltui_table_view_demo` | [Models & Views](guides/models.md) · [GIF](assets/casts/components/table_view.gif) | `TableView` backed by C++ `ProcessModel` (`QAbstractTableModel`) and `ProcessProxy` (`QSortFilterProxyModel`) with column sorting and filtering. |
+| **TableView Model** | [`examples/recipes/table_view/`](../examples/recipes/table_view/) | `qmltui_table_view_demo` | [Models & Views](guides/models.md) | `TableView` backed by C++ `ProcessModel` (`QAbstractTableModel`) and `ProcessProxy` (`QSortFilterProxyModel`) with column sorting and filtering. |
 | **TextArea Highlighting** | [`examples/recipes/text_area_highlighting/`](../examples/recipes/text_area_highlighting/) | `qmltui_text_area_highlighting_demo` | [Styling & Colors](guides/styling-and-colors.md) · [GIF](assets/casts/components/text_area_highlighting.gif) | Custom syntax highlighting on `TextArea` implemented in both QML (`QmlHighlighter.qml`) and C++ (`JsonHighlighter`). |
 
 ## Starter Template (`examples/helloworld/`)

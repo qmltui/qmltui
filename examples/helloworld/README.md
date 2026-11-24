@@ -21,6 +21,8 @@ Press **Enter** to increment the counter, **R** to reset, or **Q** / **Escape** 
 
 ## Run the Headless `Runner` Scenario
 
+Run the smoke test with `-LE Demo` (which excludes long-running `.cast` / `.gif` recording scenarios labeled `Demo`):
+
 ```sh
 ctest --test-dir build -LE Demo --output-on-failure
 ```

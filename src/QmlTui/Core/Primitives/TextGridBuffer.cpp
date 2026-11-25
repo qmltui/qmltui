@@ -138,13 +138,18 @@ void TextGridBuffer::splitWideGlyphSpan(int startX, int y, int spanWidth) {
 
 int TextGridBuffer::setGrapheme(int x, int y, QStringView cluster, int width, uint32_t fgColor,
                                 uint32_t bgColor, TextAttribute attributes, int minClipX) {
-    char encoded[64];
+    char encoded[Cell::MaxGraphemeBytes];
     const int length = UnicodeText::encodeUtf8(cluster, encoded, sizeof encoded,
                                                /*sanitizeControls=*/true);
     if (length >= 0)
         return setGrapheme(x, y, QByteArrayView(encoded, length), width, fgColor, bgColor,
                            attributes, minClipX);
-    const QByteArray fallback = UnicodeText::toUtf8(cluster, /*sanitizeControls=*/true);
+    // Avoid unbounded heap allocations on pathological combining-mark clusters:
+    // at most Cell::MaxGraphemeBytes UTF-16 code units can fit in MaxGraphemeBytes UTF-8 bytes.
+    qsizetype prefixUnits = (std::min)(cluster.size(), qsizetype(Cell::MaxGraphemeBytes));
+    if (prefixUnits > 0 && cluster.at(prefixUnits - 1).isHighSurrogate()) --prefixUnits;
+    const QByteArray fallback =
+        UnicodeText::toUtf8(cluster.first(prefixUnits), /*sanitizeControls=*/true);
     return setGrapheme(x, y, QByteArrayView(fallback), width, fgColor, bgColor, attributes,
                        minClipX);
 }

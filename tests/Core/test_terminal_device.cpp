@@ -4,6 +4,8 @@
 #include <QElapsedTimer>
 #include <QEventLoop>
 #include <QObject>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QRegularExpression>
 #include <QTest>
 #include <QSignalSpy>
@@ -18,6 +20,7 @@
 #include <unistd.h>
 
 #include <QmlTui/Core/Primitives/Color.h>
+#include <QmlTui/Core/Primitives/TerminalBackend.h>
 #include <QmlTui/Core/Engine/AltScreenRenderer.h>
 #include <QmlTui/Core/Engine/InlineRenderer.h>
 #include <QmlTui/Core/Items/Terminal.h>
@@ -113,6 +116,8 @@ private slots:
     void testResizeRepaint();
     void testInlineHeadlessDiffBytes();
     void testScrollbackCompositeLayoutClean();
+    void testScrollbackWrapAndResizePooledDelegate();
+    void testInlineRecordingSuppressesCursorQuery();
     void testFlushBlockingNegativeTimeout();
 };
 
@@ -799,6 +804,144 @@ void TestTerminalDevice::testScrollbackCompositeLayoutClean() {
     sb.append(QVariant::fromValue(&row));
     QCOMPARE(RenderPhase::dirtyDuringPaintCount(), 0);
     QVERIFY(terminal.engine()->pendingScrollbackRowCount() > 0);
+}
+
+void TestTerminalDevice::testScrollbackWrapAndResizePooledDelegate() {
+    QQmlEngine qmlEngine;
+    qmlEngine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/../QmlTui"));
+    QQmlComponent delegate(&qmlEngine);
+    delegate.setData(R"(
+        import QtQml
+        import QmlTui
+        Text {
+            required property string msg
+            wrapMode: Text.WordWrap
+            text: msg
+        }
+    )",
+                     QUrl());
+    QVERIFY2(delegate.isReady(), qPrintable(delegate.errorString()));
+
+    Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    terminal.engine()->setTestViewportSize(QSize(20, 10));
+    terminal.engine()->setTerminalOutputEnabled(false);
+
+    Scrollback sb(&terminal);
+    QQmlEngine::setContextForObject(&sb, qmlEngine.rootContext());
+    sb.setDelegate(&delegate);
+
+    // 30-column text wraps onto 2 rows at terminal width 20.
+    const QString text = QStringLiteral("alpha beta gamma delta epsilon");
+    sb.append(QVariantMap{{QStringLiteral("msg"), text}});
+    const int rowsAt20 = terminal.engine()->pendingScrollbackRowCount();
+    QVERIFY2(rowsAt20 >= 2,
+             qPrintable(QStringLiteral("expected wrap >= 2 rows, got %1").arg(rowsAt20)));
+
+    // Resize terminal to 40: pooled delegate adopts new terminal width and fits on 1 row.
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+    sb.append(QVariantMap{{QStringLiteral("msg"), text}});
+    const int addedAt40 = terminal.engine()->pendingScrollbackRowCount() - rowsAt20;
+    QCOMPARE(addedAt40, 1);
+
+    // Caller-owned unset-width item passed to append(Item*) restores unset width after commit,
+    // so re-appending after resize adopts the new terminal width instead of staying frozen.
+    Text reusable;
+    reusable.setWrapMode(Text::WordWrap);
+    reusable.setText(text);
+    QVERIFY(!reusable.hasExplicitWidth());
+    terminal.engine()->setTestViewportSize(QSize(20, 10));
+    const int before20 = terminal.engine()->pendingScrollbackRowCount();
+    sb.append(&reusable);
+    QVERIFY(!reusable.hasExplicitWidth());
+    QVERIFY(terminal.engine()->pendingScrollbackRowCount() - before20 >= 2);
+    terminal.engine()->setTestViewportSize(QSize(40, 10));
+    const int before40 = terminal.engine()->pendingScrollbackRowCount();
+    sb.append(&reusable);
+    QVERIFY(!reusable.hasExplicitWidth());
+    QCOMPARE(terminal.engine()->pendingScrollbackRowCount() - before40, 1);
+}
+
+void TestTerminalDevice::testInlineRecordingSuppressesCursorQuery() {
+    class InteractiveStubBackend final : public TerminalBackend {
+    public:
+        explicit InteractiveStubBackend(std::string* sink) : m_sink(sink) {}
+        bool enterRawMode() override { return true; }
+        bool leaveRawMode() override { return true; }
+        WriteStatus writeSome(const char* data, size_t size, size_t& offset) override {
+            if (m_sink && offset < size) m_sink->append(data + offset, size - offset);
+            offset = size;
+            return WriteStatus::Done;
+        }
+        bool writeAll(std::string& pending, int) override {
+            if (m_sink) m_sink->append(pending);
+            pending.clear();
+            return true;
+        }
+        bool supportsAsyncOutput() const override { return false; }
+        bool setNonBlockingOutput(bool) override { return true; }
+        void setWritableNotifications(bool) override {}
+        QSize size() const override { return QSize(40, 10); }
+        bool isInteractive() const override { return true; }
+        bool isInputInteractive() const override { return true; }
+        void startInput() override {}
+        void stopInput() override {}
+
+    private:
+        std::string* m_sink = nullptr;
+    };
+
+    const bool hadTerm = qEnvironmentVariableIsSet("TERM");
+    const QByteArray savedTerm = qgetenv("TERM");
+    const bool hadQueryTimeout = qEnvironmentVariableIsSet("QMLTUI_QUERY_TIMEOUT_MS");
+    const QByteArray savedQueryTimeout = qgetenv("QMLTUI_QUERY_TIMEOUT_MS");
+    qputenv("TERM", "xterm-256color");
+    qunsetenv("QMLTUI_QUERY_TIMEOUT_MS");
+    auto resetEnv = qScopeGuard([=] {
+        if (hadTerm)
+            qputenv("TERM", savedTerm);
+        else
+            qunsetenv("TERM");
+        if (hadQueryTimeout)
+            qputenv("QMLTUI_QUERY_TIMEOUT_MS", savedQueryTimeout);
+        else
+            qunsetenv("QMLTUI_QUERY_TIMEOUT_MS");
+    });
+
+    std::string output;
+    TerminalBackend::setFactory(
+        [&output](int) { return std::make_unique<InteractiveStubBackend>(&output); });
+    auto resetFactory = qScopeGuard([] { TerminalBackend::setFactory(nullptr); });
+
+    TerminalDevice device;
+    Terminal terminal;
+    terminal.setMode(Terminal::Mode::Inline);
+    auto* engine = terminal.engine();
+    engine->setTerminalOutputEnabled(true);
+    // Interactive backend allows terminal queries until capabilities are overridden (as in
+    // Runner::armRecording()).
+    QVERIFY(engine->canQueryTerminal());
+
+    TerminalCapabilities caps = engine->capabilities();
+    caps.colorDepth = ColorDepth::TrueColor;
+    caps.syncOutput = false;
+    engine->setCapabilities(caps);
+    QVERIFY(!engine->canQueryTerminal());
+    engine->setLiveOutput(true);
+
+    auto* label = new Text(&terminal);
+    label->setText(QStringLiteral("Recorded inline prompt"));
+
+    InlineRenderer renderer;
+    renderer.setOutputEnabled(true);
+    renderer.resize(40, 10);
+    renderer.start(&terminal, device);
+    QVERIFY(renderer.renderFrame(&terminal, device));
+
+    QVERIFY(!output.empty());
+    QCOMPARE(output.find("\033[6n"), std::string::npos);
+    QVERIFY(renderer.mouseRowOffset().has_value());
+    QCOMPARE(renderer.lastFrameStats().queuedBytes, qint64(0));
 }
 
 void TestTerminalDevice::testFlushBlockingNegativeTimeout() {

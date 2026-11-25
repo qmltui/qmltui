@@ -28,7 +28,7 @@ public:
     TextGridBuffer();
 
     // Resizes the grid to width x height columns/rows and clears all cells.
-    // Returns true when the dimensions changed.
+    // Returns true for valid non-negative dimensions within the cell limit.
     bool resize(int width, int height);
     // Resets all cells to blank spaces with default foreground/background and clears the link
     // table.

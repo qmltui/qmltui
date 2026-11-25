@@ -42,13 +42,15 @@ struct Win32EmergencyState {
     UINT originalOutputCodePage = 0;
     bool active = false;
     bool handlerInstalled = false;
+    bool keyboardProtocolActive = false;
 };
 
 Win32EmergencyState g_win32Emergency;
 
+constexpr char kWin32KittyKeyboardPop[] = "\033[<u";
 constexpr char kWin32ResetSequence[] =
-    "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?2004l"
-    "\033[?25h\033[0m\033]111\a\033]111;\a\033]111;\033\\\033[?1049l";
+    "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?1004l\033[?2004l\033[?2031l"
+    "\033[?25h\033[0m\033]9;4;0\033\\\033]111\a\033]111;\a\033]111;\033\\\033[?1049l";
 
 BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {
     if (ctrlType == CTRL_CLOSE_EVENT || ctrlType == CTRL_LOGOFF_EVENT ||
@@ -58,6 +60,12 @@ BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {
         if (g_win32Emergency.active) {
             DWORD written = 0;
             if (g_win32Emergency.output != INVALID_HANDLE_VALUE) {
+                if (g_win32Emergency.keyboardProtocolActive) {
+                    WriteFile(g_win32Emergency.output, kWin32KittyKeyboardPop,
+                              static_cast<DWORD>(sizeof(kWin32KittyKeyboardPop) - 1), &written,
+                              nullptr);
+                    g_win32Emergency.keyboardProtocolActive = false;
+                }
                 WriteFile(g_win32Emergency.output, kWin32ResetSequence,
                           static_cast<DWORD>(sizeof(kWin32ResetSequence) - 1), &written, nullptr);
                 SetConsoleMode(g_win32Emergency.output, g_win32Emergency.originalOutputMode);
@@ -136,6 +144,7 @@ bool Win32ConsoleBackend::enterRawMode() {
         g_win32Emergency.originalInputCodePage = m_originalInputCodePage;
         g_win32Emergency.originalOutputCodePage = m_originalOutputCodePage;
         g_win32Emergency.active = true;
+        g_win32Emergency.keyboardProtocolActive = false;
         if (!g_win32Emergency.handlerInstalled) {
             if (SetConsoleCtrlHandler(&consoleCtrlHandler, TRUE))
                 g_win32Emergency.handlerInstalled = true;
@@ -150,6 +159,7 @@ bool Win32ConsoleBackend::leaveRawMode() {
         const std::lock_guard<std::mutex> lock(g_win32Emergency.mutex);
         if (g_win32Emergency.owner == this) {
             g_win32Emergency.active = false;
+            g_win32Emergency.keyboardProtocolActive = false;
             g_win32Emergency.owner = nullptr;
             if (g_win32Emergency.handlerInstalled) {
                 SetConsoleCtrlHandler(&consoleCtrlHandler, FALSE);
@@ -166,6 +176,13 @@ bool Win32ConsoleBackend::leaveRawMode() {
         restored = false;
     m_rawMode = false;
     return restored;
+}
+
+void Win32ConsoleBackend::setKeyboardProtocolActive(bool active) {
+    const std::lock_guard<std::mutex> lock(g_win32Emergency.mutex);
+    if (g_win32Emergency.owner == this) {
+        g_win32Emergency.keyboardProtocolActive = active;
+    }
 }
 
 TerminalBackend::WriteStatus Win32ConsoleBackend::writeSome(const char* data, size_t size,

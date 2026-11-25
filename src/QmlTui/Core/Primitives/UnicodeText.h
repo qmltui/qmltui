@@ -42,7 +42,7 @@ class QMLTUI_CORE_EXPORT UnicodeText {
 public:
     // Total terminal column width of text (0, 1, or 2 columns per grapheme cluster).
     static int displayWidth(QStringView text, bool sanitizeControls = false);
-    // Truncates text with a trailing ellipsis so its display width fits in maxColumns.
+    // Truncates text at grapheme boundaries so its display width fits in maxColumns (no ellipsis).
     static QString elideText(QStringView text, int maxColumns);
     // Next or previous grapheme cluster boundary relative to a UTF-16 code unit offset.
     static int nextBoundary(QStringView text, int utf16Position);

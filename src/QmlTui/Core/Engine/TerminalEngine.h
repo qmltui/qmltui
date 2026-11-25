@@ -207,7 +207,10 @@ public:
     // Whether a terminal in the current mode would deliver any-motion (hover)
     // events. Runner mirrors this so scripted hover matches what a real
     // terminal can send.
-    bool mouseMotionReporting() const { return m_mouseMotionReportingEnabled; }
+    bool mouseMotionReporting() const {
+        return m_mouseMotionReportingEnabled && mouseReportingWanted();
+    }
+    bool canQueryTerminal() const;
 
 signals:
     void framePainted();
@@ -236,7 +239,6 @@ private:
     void startRenderer();
     void startQueries();
     void finishQueries();
-    bool canQueryTerminal() const;
     void applyCapabilities(const TerminalCapabilities& capabilities);
     // Kitty keyboard flags 1 | 2 (disambiguate escape codes and report event
     // types: press, repeat, release), push/pop form. The mode is owned per

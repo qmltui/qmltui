@@ -30,6 +30,7 @@ public:
     void discardCommittedState() override;
 
 private:
+    bool canQueryCursorPosition(const TerminalDevice& device) const;
     void queryCursorPosition(TerminalDevice& device);
     void invalidateMouseOrigin();
 
@@ -43,6 +44,7 @@ private:
     ColorDepth m_committedColorDepth = ColorDepth::TrueColor;
     std::optional<int> m_mouseRowOffset;
     bool m_hasCommittedPrompt = false;
+    bool m_canQueryCursorPosition = false;
     bool m_cursorQueryPending = false;
     bool m_cursorQueryStale = false;
 };

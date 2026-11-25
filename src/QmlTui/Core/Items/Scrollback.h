@@ -58,8 +58,9 @@ public:
 
     // Renders a single model payload through `delegate` (or a standalone Item
     // or styled Span run) and commits its cells to scrollback. Emits
-    // `outputRejected` if the terminal is not in Inline mode or the item cannot
-    // be rendered.
+    // `outputRejected` if the session queue limit is exceeded or the item
+    // cannot be rendered (in AltScreen mode, output stays queued until Inline
+    // resumes or shutdown).
     Q_INVOKABLE void append(const QVariant& data);
     void append(qmltui::Item* item);
     void append(const qmltui::Span& span);
@@ -82,6 +83,7 @@ private:
     struct CachedDelegate {
         QPointer<Item> item;
         QPointer<QQmlContext> context;
+        bool usesTerminalWidth = false;
     };
 
     int appendRows(int first, int last);
@@ -96,9 +98,9 @@ private:
     // Separator (after the first item), spacing rows and the item are painted
     // into one buffer and submitted as one block, so the engine can keep the
     // cells alongside the bytes it sends.
-    bool submitBatch(Item* item, Terminal* output);
-    Item* separatorItem(Terminal* output, std::unique_ptr<Item>& owned);
-    static int resolvedWidth(Item* item, Terminal* output);
+    bool submitBatch(Item* item, Terminal* output, bool usesTerminalWidth);
+    Item* separatorItem(Terminal* output, std::unique_ptr<Item>& owned, bool& outUsesTerminalWidth);
+    static int resolvedWidth(Item* item, Terminal* output, bool usesTerminalWidth);
     static int resolvedHeight(Item* item);
     bool reportRejection(const QString& reason);
     void applyModelDataToDelegate(Item* item, QQmlContext* context, QQmlComponent* component,

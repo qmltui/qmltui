@@ -206,53 +206,63 @@ void Scrollback::clearDelegateCache() {
     m_delegateCache.clear();
     if (m_cachedSeparator.item) {
         delete m_cachedSeparator.item;
-        m_cachedSeparator = {nullptr, nullptr};
+        m_cachedSeparator = {nullptr, nullptr, false};
     }
 }
 
 Scrollback::CachedDelegate Scrollback::getOrCreateDelegate(QQmlComponent* component,
                                                            const QVariantMap& initialProperties) {
-    if (!component) return {nullptr, nullptr};
+    if (!component) return {nullptr, nullptr, false};
     auto it = m_delegateCache.find(component);
     if (it != m_delegateCache.end() && it.value().item) {
         return it.value();
     }
 
     QQmlContext* context = DelegateUtils::createContext(component, this);
-    if (!context) return {nullptr, nullptr};
+    if (!context) return {nullptr, nullptr, false};
 
     for (auto itProp = initialProperties.cbegin(); itProp != initialProperties.cend(); ++itProp) {
         DelegateUtils::setContextProperty(component, context, itProp.key(), itProp.value());
     }
 
     Item* item = DelegateUtils::createItem(component, initialProperties, context, terminal(), this);
-    if (!item) return {nullptr, nullptr};
+    if (!item) return {nullptr, nullptr, false};
     item->setParentItem(nullptr);
     item->setParent(this);
 
-    CachedDelegate cached{item, context};
+    const bool usesTerminalWidth = !item->hasExplicitWidth();
+    CachedDelegate cached{item, context, usesTerminalWidth};
     m_delegateCache.insert(component, cached);
     return cached;
 }
 
 Scrollback::CachedDelegate Scrollback::getOrCreateSeparator() {
-    if (!m_separator || !DelegateUtils::isReady(m_separator, this)) return {nullptr, nullptr};
+    if (!m_separator || !DelegateUtils::isReady(m_separator, this)) {
+        return {nullptr, nullptr, false};
+    }
 
     if (m_cachedSeparator.item) return m_cachedSeparator;
 
     QQmlContext* context = DelegateUtils::createContext(m_separator, this);
-    if (!context) return {nullptr, nullptr};
+    if (!context) return {nullptr, nullptr, false};
 
     Item* item = DelegateUtils::createItem(m_separator, {}, context, terminal(), this);
-    if (!item) return {nullptr, nullptr};
+    if (!item) return {nullptr, nullptr, false};
     item->setParentItem(nullptr);
     item->setParent(this);
 
-    m_cachedSeparator = CachedDelegate{item, context};
+    const bool usesTerminalWidth = !item->hasExplicitWidth();
+    m_cachedSeparator = CachedDelegate{item, context, usesTerminalWidth};
     return m_cachedSeparator;
 }
 
-int Scrollback::resolvedWidth(Item* item, Terminal* output) {
+int Scrollback::resolvedWidth(Item* item, Terminal* output, bool usesTerminalWidth) {
+    if (usesTerminalWidth) {
+        int w = output ? output->width() : 80;
+        if (w <= 0) w = 80;
+        item->setWidth(w);
+        return w;
+    }
     int w = item->width() > 0 ? item->width() : (output ? output->width() : 80);
     if (w <= 0) w = 80;
     if (item->width() <= 0) {
@@ -266,11 +276,14 @@ int Scrollback::resolvedHeight(Item* item) {
     return h <= 0 ? 1 : h;
 }
 
-Item* Scrollback::separatorItem(Terminal* output, std::unique_ptr<Item>& owned) {
+Item* Scrollback::separatorItem(Terminal* output, std::unique_ptr<Item>& owned,
+                                bool& outUsesTerminalWidth) {
+    outUsesTerminalWidth = false;
     if (!m_separator || !DelegateUtils::isReady(m_separator, this)) return nullptr;
 
     if (m_reuseItems) {
         CachedDelegate cd = getOrCreateSeparator();
+        outUsesTerminalWidth = cd.usesTerminalWidth;
         return cd.item;
     }
 
@@ -279,22 +292,26 @@ Item* Scrollback::separatorItem(Terminal* output, std::unique_ptr<Item>& owned) 
     Item* item = DelegateUtils::createItem(m_separator, {}, context, output, this);
     if (!item) return nullptr;
     item->setParentItem(nullptr);
+    outUsesTerminalWidth = !item->hasExplicitWidth();
     owned.reset(item);
     return item;
 }
 
-bool Scrollback::submitBatch(Item* item, Terminal* output) {
+bool Scrollback::submitBatch(Item* item, Terminal* output, bool usesTerminalWidth) {
     if (!item || !output) return false;
     std::unique_ptr<Item> ownedSeparator;
-    Item* separator = m_hasRenderedFirstItem ? separatorItem(output, ownedSeparator) : nullptr;
+    bool separatorUsesTerminalWidth = false;
+    Item* separator = m_hasRenderedFirstItem
+                          ? separatorItem(output, ownedSeparator, separatorUsesTerminalWidth)
+                          : nullptr;
     const int spacing = m_hasRenderedFirstItem ? resolveItemSpacing(item, m_spacing) : 0;
-    const int itemWidth = resolvedWidth(item, output);
+    const int itemWidth = resolvedWidth(item, output, usesTerminalWidth);
     ItemPaintTraversal::layoutSubtree(item);
     const int itemHeight = resolvedHeight(item);
     int separatorWidth = 0;
     int separatorHeight = 0;
     if (separator) {
-        separatorWidth = resolvedWidth(separator, output);
+        separatorWidth = resolvedWidth(separator, output, separatorUsesTerminalWidth);
         ItemPaintTraversal::layoutSubtree(separator);
         separatorHeight = resolvedHeight(separator);
     }
@@ -387,6 +404,7 @@ int Scrollback::appendRows(int first, int last) {
         properties.insert(QStringLiteral("modelData"), modelMap);
 
         Item* itemToRender = nullptr;
+        bool usesTerminalWidth = false;
         std::unique_ptr<Item> itemCleanup;
 
         if (m_reuseItems) {
@@ -394,6 +412,7 @@ int Scrollback::appendRows(int first, int last) {
             if (!cd.item) return row;
             applyModelDataToDelegate(cd.item, cd.context, rowDelegate, row, modelMap, modelMap);
             itemToRender = cd.item;
+            usesTerminalWidth = cd.usesTerminalWidth;
         } else {
             QQmlContext* context = DelegateUtils::createContext(rowDelegate, this);
             if (!context) return row;
@@ -408,11 +427,12 @@ int Scrollback::appendRows(int first, int last) {
             Item* item = DelegateUtils::createItem(rowDelegate, properties, context, output, this);
             if (!item) return row;
             item->setParentItem(nullptr);
+            usesTerminalWidth = !item->hasExplicitWidth();
             itemCleanup.reset(item);
             itemToRender = item;
         }
 
-        if (!submitBatch(itemToRender, output)) return row;
+        if (!submitBatch(itemToRender, output, usesTerminalWidth)) return row;
     }
     return last + 1;
 }
@@ -483,6 +503,7 @@ void Scrollback::append(const QVariant& data) {
     properties.insert(QStringLiteral("modelData"), rawData);
 
     Item* itemToRender = nullptr;
+    bool usesTerminalWidth = false;
     std::unique_ptr<Item> itemCleanup;
 
     if (m_reuseItems) {
@@ -490,6 +511,7 @@ void Scrollback::append(const QVariant& data) {
         if (!cd.item) return;
         applyModelDataToDelegate(cd.item, cd.context, rowDelegate, currentIndex, modelMap, rawData);
         itemToRender = cd.item;
+        usesTerminalWidth = cd.usesTerminalWidth;
     } else {
         QQmlContext* context = DelegateUtils::createContext(rowDelegate, this);
         if (!context) return;
@@ -504,11 +526,12 @@ void Scrollback::append(const QVariant& data) {
         Item* item = DelegateUtils::createItem(rowDelegate, properties, context, output, this);
         if (!item) return;
         item->setParentItem(nullptr);
+        usesTerminalWidth = !item->hasExplicitWidth();
         itemCleanup.reset(item);
         itemToRender = item;
     }
 
-    if (!submitBatch(itemToRender, output)) return;
+    if (!submitBatch(itemToRender, output, usesTerminalWidth)) return;
     ++m_consumedRowCount;
 }
 
@@ -516,7 +539,10 @@ void Scrollback::append(qmltui::Item* item) {
     Terminal* output = terminal();
     if (!item || !output) return;
 
-    if (!submitBatch(item, output)) return;
+    const bool hadExplicitWidth = item->hasExplicitWidth();
+    const bool submitted = submitBatch(item, output, !hadExplicitWidth);
+    if (!hadExplicitWidth) item->setWidth(-1);
+    if (!submitted) return;
     ++m_consumedRowCount;
 }
 
@@ -536,7 +562,7 @@ void Scrollback::append(const QList<qmltui::Span>& spans) {
     textItem.setWidth((std::max)(1, textItem.implicitWidth()));
     textItem.setHeight((std::max)(1, textItem.implicitHeight()));
 
-    if (!submitBatch(&textItem, output)) return;
+    if (!submitBatch(&textItem, output, false)) return;
     ++m_consumedRowCount;
 }
 

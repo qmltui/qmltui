@@ -3,6 +3,7 @@
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Engine/ItemPaintTraversal_p.h>
 #include <QmlTui/Core/Primitives/AnsiEncoder_p.h>
+#include <QmlTui/Core/Primitives/TerminalBackend.h>
 #include <QElapsedTimer>
 #include <algorithm>
 
@@ -11,11 +12,20 @@ namespace qmltui {
 InlineRenderer::InlineRenderer() = default;
 
 void InlineRenderer::start(Terminal* rootWindow, TerminalDevice& device) {
-    Q_UNUSED(device);
     m_rootWindow = rootWindow;
     m_lastPromptHeight = 0;
     m_hasCommittedPrompt = false;
+    m_canQueryCursorPosition = canQueryCursorPosition(device);
     invalidateMouseOrigin();
+}
+
+bool InlineRenderer::canQueryCursorPosition(const TerminalDevice& device) const {
+    if (!outputEnabled()) return false;
+    if (m_rootWindow && m_rootWindow->engine()) {
+        return m_rootWindow->engine()->canQueryTerminal();
+    }
+    const TerminalBackend* backend = device.backend();
+    return !backend || (backend->isInteractive() && backend->isInputInteractive());
 }
 
 void InlineRenderer::invalidateMouseOrigin() {
@@ -30,7 +40,9 @@ void InlineRenderer::discardCommittedState() {
 }
 
 std::optional<int> InlineRenderer::mouseRowOffset() const {
-    if (!outputEnabled()) return (std::max)(0, m_terminalHeight - 1 - m_lastPromptHeight);
+    if (!outputEnabled() || !m_canQueryCursorPosition) {
+        return (std::max)(0, m_terminalHeight - 1 - m_lastPromptHeight);
+    }
     return m_mouseRowOffset;
 }
 
@@ -38,7 +50,7 @@ void InlineRenderer::queryCursorPosition(TerminalDevice& device) {
     // Only one outstanding request: terminals that do not answer must not
     // accumulate queries. Column one below a nonempty prompt gives a report
     // with row >= 2 and column == 1, distinct from modified F3 (CSI 1;mod R).
-    if (outputEnabled() && m_lastPromptHeight > 0 && !m_cursorQueryPending &&
+    if (m_canQueryCursorPosition && m_lastPromptHeight > 0 && !m_cursorQueryPending &&
         device.write("\r\033[6n")) {
         m_cursorQueryPending = true;
         m_cursorQueryStale = false;
@@ -159,7 +171,9 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
         postControls.isEmpty()) {
         const qint64 encodedNs = timer.nsecsElapsed();
         stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
-        if (outputEnabled() && !m_mouseRowOffset) queryCursorPosition(device);
+        m_canQueryCursorPosition = canQueryCursorPosition(device);
+        if (m_canQueryCursorPosition && !m_mouseRowOffset) queryCursorPosition(device);
+        stats.queuedBytes = static_cast<qint64>(device.pendingBytes());
         stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
         m_lastStats = stats;
         return true;
@@ -209,13 +223,14 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
     stats.diffMicros = encodedNs / 1000 - stats.paintMicros;
     stats.diffBytes = static_cast<qint64>(m_ansi.size());
     bool written = true;
+    m_canQueryCursorPosition = canQueryCursorPosition(device);
     if (outputEnabled()) {
         written = device.write(m_ansi);
         if (written) {
             m_committedPrompt = m_promptBuffer;
             m_committedColorDepth = colorDepth;
             m_hasCommittedPrompt = true;
-            if (!m_mouseRowOffset) queryCursorPosition(device);
+            if (m_canQueryCursorPosition && !m_mouseRowOffset) queryCursorPosition(device);
             stats.bytesWritten = stats.diffBytes;
         } else {
             m_hasCommittedPrompt = false;
@@ -225,6 +240,7 @@ bool InlineRenderer::renderFrame(Terminal* rootWindow, TerminalDevice& device,
         m_committedColorDepth = colorDepth;
         m_hasCommittedPrompt = true;
     }
+    stats.queuedBytes = static_cast<qint64>(device.pendingBytes());
     stats.writeMicros = (timer.nsecsElapsed() - encodedNs) / 1000;
     m_lastStats = stats;
     return written;

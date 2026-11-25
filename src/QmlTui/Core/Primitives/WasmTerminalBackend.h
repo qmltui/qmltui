@@ -38,6 +38,9 @@ public:
     void setWritableNotifications(bool) override {}
     QSize size() const override; // last size pushed from JS, 80x24 until then
     bool isInteractive() const override { return true; }
+    // Browser DevTools console is separate from the xterm.js canvas, so
+    // AltScreen must not buffer stderr warnings out of console.warn().
+    bool isStderrInteractive() const override { return false; }
     void startInput() override { m_inputStarted = true; }
     void stopInput() override { m_inputStarted = false; }
 

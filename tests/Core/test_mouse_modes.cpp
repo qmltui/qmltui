@@ -70,6 +70,7 @@ private slots:
         QVERIFY(terminal);
         QVERIFY(!terminal->mouseReporting());
         QVERIFY(terminal->hasMouseMotionRequests());
+        QVERIFY(!terminal->engine()->mouseMotionReporting());
         const auto& out = backend->output();
         QCOMPARE(out.find("\033[?1000h"), std::string::npos);
         QCOMPARE(out.find("\033[?1003h"), std::string::npos);

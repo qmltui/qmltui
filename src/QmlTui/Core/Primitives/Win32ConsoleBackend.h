@@ -34,6 +34,7 @@ public:
 
     bool enterRawMode() override;
     bool leaveRawMode() override;
+    void setKeyboardProtocolActive(bool active) override;
 
     WriteStatus writeSome(const char* data, size_t size, size_t& offset) override;
     bool writeAll(std::string& pending, int timeoutMs) override;

@@ -195,6 +195,10 @@ private slots:
         child.drain(200);
         QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos,
                  "normal screen not restored on stop");
+        QVERIFY2(child.output.find("\033[?1004l") != std::string::npos,
+                 "focus reporting not disabled on stop");
+        QVERIFY2(child.output.find("\033[?2031l") != std::string::npos,
+                 "palette notifications not disabled on stop");
         QVERIFY2(child.output.find(kCursorShow) != std::string::npos, "cursor not shown on stop");
         QVERIFY2(child.output.find(kKeyboardPop) != std::string::npos,
                  "keyboard mode not popped on stop");
@@ -226,6 +230,10 @@ private slots:
         QCOMPARE(WTERMSIG(status), SIGTERM); // re-raised, not swallowed
         QVERIFY2(child.output.find(kAltScreenOff) != std::string::npos,
                  "normal screen not restored on SIGTERM");
+        QVERIFY2(child.output.find("\033[?1004l") != std::string::npos,
+                 "focus reporting not disabled on SIGTERM");
+        QVERIFY2(child.output.find("\033[?2031l") != std::string::npos,
+                 "palette notifications not disabled on SIGTERM");
         QVERIFY2(child.output.find(kKeyboardPop) < child.output.find(kAltScreenOff),
                  "keyboard mode not popped before the normal screen on SIGTERM");
         QVERIFY2(child.output.find(kCursorShow) != std::string::npos,

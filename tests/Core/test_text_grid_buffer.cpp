@@ -52,6 +52,7 @@ private slots:
     void testDiffAppendsIntoCallerString();
     void testDiffLargeCoordinates();
     void testOsc8Hyperlinks();
+    void testCellSetCharacterMaxGraphemeCap();
     void testGlyphTableBoundedFallback();
 };
 
@@ -745,6 +746,34 @@ void TestTextGridBuffer::testOsc8Hyperlinks() {
     after.appendRowAnsi(row, 0, ColorDepth::TrueColor);
     QVERIFY(row.find("\033]8;;https://qmltui.org\033\\") != std::string::npos);
     QVERIFY(row.find("\033]8;;\033\\") != std::string::npos);
+}
+
+void TestTextGridBuffer::testCellSetCharacterMaxGraphemeCap() {
+    // Pathological combining-mark ("Zalgo") cluster exceeding Cell::MaxGraphemeBytes (64 B).
+    QString zalgo(QChar('a'));
+    zalgo.reserve(201);
+    for (int i = 0; i < 200; ++i) {
+        zalgo.append(QChar(0x0301)); // U+0301 COMBINING ACUTE ACCENT (2 UTF-8 bytes each)
+    }
+    const QByteArray zalgoUtf8 = zalgo.toUtf8();
+    QVERIFY(zalgoUtf8.size() > Cell::MaxGraphemeBytes);
+
+    Cell cell;
+    cell.setCharacter(zalgoUtf8);
+    QVERIFY(cell.character().size() <= Cell::MaxGraphemeBytes);
+    QVERIFY(cell.character().size() > Cell::InlineGlyphCapacity);
+    // Clamped result must be valid UTF-8 ending on a full codepoint boundary.
+    QCOMPARE(QString::fromUtf8(cell.character().toByteArray()).toUtf8(),
+             cell.character().toByteArray());
+
+    TextGridBuffer buffer;
+    QVERIFY(buffer.resize(10, 1));
+    QCOMPARE(buffer.setGrapheme(0, 0, QStringView(zalgo), 1, Color::DefaultTag, Color::DefaultTag,
+                                TextAttribute::None),
+             1);
+    const QByteArrayView stored = buffer.cellAt(0, 0).character();
+    QVERIFY(stored.size() <= Cell::MaxGraphemeBytes);
+    QCOMPARE(QString::fromUtf8(stored.toByteArray()).toUtf8(), stored.toByteArray());
 }
 
 void TestTextGridBuffer::testGlyphTableBoundedFallback() {

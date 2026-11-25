@@ -28,45 +28,58 @@ GlyphTable& glyphTable() {
     return table;
 }
 
-size_t validInlineUtf8Prefix(QByteArrayView utf8) noexcept {
-    if (utf8.size() <= Cell::InlineGlyphCapacity) {
+size_t validUtf8Prefix(QByteArrayView utf8, size_t maxBytes) noexcept {
+    if (static_cast<size_t>(utf8.size()) <= maxBytes) {
         return static_cast<size_t>(utf8.size());
     }
+    if (maxBytes == 0) return 0;
     // If the first overflow byte is not a UTF-8 continuation byte (10xxxxxx),
-    // the full InlineGlyphCapacity prefix already ends on a codepoint boundary.
-    if ((static_cast<uint8_t>(utf8[Cell::InlineGlyphCapacity]) & 0xC0u) != 0x80u) {
-        return static_cast<size_t>(Cell::InlineGlyphCapacity);
+    // the full maxBytes prefix already ends on a codepoint boundary.
+    if ((static_cast<uint8_t>(utf8[static_cast<qsizetype>(maxBytes)]) & 0xC0u) != 0x80u) {
+        return maxBytes;
     }
-    int pos = Cell::InlineGlyphCapacity - 1;
-    while (pos > 0 && (static_cast<uint8_t>(utf8[pos]) & 0xC0u) == 0x80u) {
+    size_t pos = maxBytes - 1;
+    while (pos > 0 && (static_cast<uint8_t>(utf8[static_cast<qsizetype>(pos)]) & 0xC0u) == 0x80u) {
         --pos;
     }
-    if ((static_cast<uint8_t>(utf8[pos]) & 0xC0u) == 0x80u) {
+    if ((static_cast<uint8_t>(utf8[static_cast<qsizetype>(pos)]) & 0xC0u) == 0x80u) {
         return 0;
     }
-    return static_cast<size_t>(pos);
+    return pos;
 }
 
 } // namespace
 
 void Cell::setLongCharacter(QByteArrayView utf8) {
-    const uint32_t index = internGlyph(utf8);
+    const size_t clampedLength = validUtf8Prefix(utf8, MaxGraphemeBytes);
+    const QByteArrayView clamped = utf8.first(static_cast<qsizetype>(clampedLength));
+    if (clamped.size() <= InlineGlyphCapacity) {
+        if (clamped.size() > 0) {
+            std::memmove(m_glyph, clamped.data(), static_cast<size_t>(clamped.size()));
+        }
+        std::memset(m_glyph + clamped.size(), 0,
+                    sizeof m_glyph - static_cast<size_t>(clamped.size()));
+        m_glyphLength = static_cast<uint8_t>(clamped.size());
+        return;
+    }
+    const uint32_t index = internGlyph(clamped);
     if (index != InvalidInternIndex) {
         std::memset(m_glyph, 0, sizeof m_glyph);
         std::memcpy(m_glyph, &index, sizeof index);
         m_glyphLength = InternedTag;
         return;
     }
-    const size_t length = validInlineUtf8Prefix(utf8);
-    if (length > 0) std::memmove(m_glyph, utf8.data(), length);
+    const size_t length = validUtf8Prefix(clamped, InlineGlyphCapacity);
+    if (length > 0) std::memmove(m_glyph, clamped.data(), length);
     std::memset(m_glyph + length, 0, sizeof m_glyph - length);
     m_glyphLength = static_cast<uint8_t>(length);
 }
 
 uint32_t Cell::internGlyph(QByteArrayView utf8) {
+    const size_t clampedLength = validUtf8Prefix(utf8, MaxGraphemeBytes);
     GlyphTable& table = glyphTable();
     const std::lock_guard<std::mutex> lock(table.mutex);
-    const std::string_view key(utf8.data(), static_cast<size_t>(utf8.size()));
+    const std::string_view key(utf8.data(), clampedLength);
     if (const auto it = table.indices.find(key); it != table.indices.end()) return it->second;
     if (table.glyphs.size() >= MaxInternedGlyphs) return InvalidInternIndex;
     table.glyphs.emplace_back(key);

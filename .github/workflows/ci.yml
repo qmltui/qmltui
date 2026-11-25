@@ -458,6 +458,52 @@ jobs:
           test -s build-wasm/hello_qmltui.js
           test -s build-wasm/hello_qmltui.html
 
+  static-packaging:
+    name: static packaging (linux / system utf8proc + libvterm)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libutf8proc-dev libvterm-dev pkg-config
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Qt 6.8
+        id: install-qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'linux_gcc_64'
+          cache: true
+
+      - name: Configure static unbundled build
+        run: >
+          cmake -S . -B build-static -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DBUILD_SHARED_LIBS=OFF
+          -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-root-dir }}"
+          -DQMLTUI_BUILD_TESTS=ON
+          -DQMLTUI_BUILD_EXAMPLES=OFF
+          -DQMLTUI_BUILD_BENCHMARKS=OFF
+          -DQMLTUI_ENABLE_PRIVATE_QT=OFF
+          -DQMLTUI_ENABLE_IMAGE=ON
+          -DQMLTUI_ENABLE_PTYVIEW=ON
+          -DQMLTUI_ENABLE_RUNNER=ON
+          -DQMLTUI_USE_SYSTEM_UTF8PROC=ON
+          -DQMLTUI_USE_SYSTEM_LIBVTERM=ON
+
+      - name: Build static libraries
+        run: cmake --build build-static --target QmlTuiCore QmlTuiControls QmlTuiImage QmlTuiPtyView QmlTuiRunner qmltui-runner --parallel 4
+
+      - name: Verify installed static consumer
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build-static -R '^test_installed_custom_item_consumer$' --output-on-failure
+
   reuse:
     name: REUSE licensing compliance
     runs-on: ubuntu-24.04

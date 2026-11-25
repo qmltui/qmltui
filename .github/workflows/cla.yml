@@ -64,7 +64,7 @@ jobs:
             });
 
             const requiresCla = files.some(({ filename }) => {
-              if (filename.endsWith('.md') || /(?:^|\/)doc\//.test(filename)) {
+              if (filename.endsWith('.md')) {
                 return false;
               }
               return /^(?:src|tests|tools)\//.test(filename);

@@ -114,30 +114,123 @@ jobs:
             -DQMLTUI_ENABLE_RUNNER=ON
           cmake --build build --target qmltui-runner --parallel
 
-      - name: Package archive (Unix)
-        if: runner.os != 'Windows'
+      - name: Package archive (Linux)
+        if: runner.os == 'Linux'
         shell: bash
         run: |
+          set -euo pipefail
+          qt_dir="${{ steps.install-qt.outputs.qt-root-dir }}"
+          if ! command -v patchelf >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends patchelf
+          fi
+          cmake --install build --prefix stage
           pkg="qmltui-runner-${GITHUB_REF_NAME}-${{ matrix.platform }}"
-          mkdir -p "dist/${pkg}"
-          runner_bin=$(find build -type f -name qmltui-runner -print -quit)
-          test -n "$runner_bin"
-          cp "$runner_bin" "dist/${pkg}/"
-          cp LICENSE.md THIRD-PARTY.md "dist/${pkg}/"
+          mkdir -p "dist/${pkg}/lib"
+          cp stage/bin/qmltui-runner "dist/${pkg}/qmltui-runner"
+          cp LICENSE.md THIRD-PARTY.md LICENSES/LGPL-3.0-only.txt "dist/${pkg}/"
+          patchelf --set-rpath '$ORIGIN/lib' "dist/${pkg}/qmltui-runner"
+          python3 - "$qt_dir" "dist/${pkg}" <<'PY'
+          import os, pathlib, shutil, subprocess, sys
+          qt_lib = pathlib.Path(sys.argv[1]).resolve() / "lib"
+          pkg_dir = pathlib.Path(sys.argv[2]).resolve()
+          lib_dir = pkg_dir / "lib"
+          seen = set()
+          queue = [pkg_dir / "qmltui-runner"]
+          while queue:
+              binary = queue.pop(0)
+              out = subprocess.check_output(["ldd", str(binary)], text=True)
+              for line in out.splitlines():
+                  if "=>" not in line:
+                      continue
+                  rhs = line.split("=>", 1)[1].strip().split()[0]
+                  if not rhs.startswith("/"):
+                      continue
+                  src = pathlib.Path(rhs)
+                  try:
+                      src.resolve().relative_to(qt_lib)
+                  except ValueError:
+                      continue
+                  soname = line.split("=>", 1)[0].strip()
+                  dst = lib_dir / soname
+                  if soname in seen:
+                      continue
+                  seen.add(soname)
+                  shutil.copy2(src.resolve(), dst)
+                  subprocess.run(["patchelf", "--set-rpath", "$ORIGIN", str(dst)], check=True)
+                  queue.append(dst)
+          assert any(p.name.startswith("libQt6Core.so") for p in lib_dir.iterdir()), "Qt6Core not bundled"
+          PY
           tar -C dist -czf "dist/${pkg}.tar.gz" "${pkg}"
+          smoke=$(mktemp -d)
+          trap 'rm -rf "$smoke"' EXIT
+          tar -C "$smoke" -xzf "dist/${pkg}.tar.gz"
+          ldd_out=$(env -i PATH=/usr/bin:/bin ldd "$smoke/${pkg}/qmltui-runner")
+          echo "$ldd_out"
+          if echo "$ldd_out" | grep -q "not found"; then
+            echo "Missing runtime dependency in Linux archive" >&2
+            exit 1
+          fi
+          if echo "$ldd_out" | grep -qF "$qt_dir"; then
+            echo "Archive binary still references CI Qt path: $qt_dir" >&2
+            exit 1
+          fi
+          env -i PATH=/usr/bin:/bin "$smoke/${pkg}/qmltui-runner" --version
+
+      - name: Package archive (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          qt_dir="${{ steps.install-qt.outputs.qt-root-dir }}"
+          cmake --install build --prefix stage
+          pkg="qmltui-runner-${GITHUB_REF_NAME}-${{ matrix.platform }}"
+          mkdir -p "dist/${pkg}/Frameworks"
+          cp stage/bin/qmltui-runner "dist/${pkg}/qmltui-runner"
+          cp LICENSE.md THIRD-PARTY.md LICENSES/LGPL-3.0-only.txt "dist/${pkg}/"
+          ditto "${qt_dir}/lib/QtCore.framework" "dist/${pkg}/Frameworks/QtCore.framework"
+          rm -rf "dist/${pkg}/Frameworks/QtCore.framework/Headers" \
+                 "dist/${pkg}/Frameworks/QtCore.framework/Versions/A/Headers" \
+                 "dist/${pkg}/Frameworks/QtCore.framework/Resources/QtCore.prl"
+          for rpath in $(otool -l "dist/${pkg}/qmltui-runner" | awk '/cmd LC_RPATH/{f=1} f && /path /{print $2; f=0}'); do
+            install_name_tool -delete_rpath "$rpath" "dist/${pkg}/qmltui-runner"
+          done
+          install_name_tool -add_rpath "@executable_path/Frameworks" "dist/${pkg}/qmltui-runner"
+          codesign --force --sign - --deep "dist/${pkg}/Frameworks/QtCore.framework"
+          codesign --force --sign - "dist/${pkg}/qmltui-runner"
+          tar -C dist -czf "dist/${pkg}.tar.gz" "${pkg}"
+          smoke=$(mktemp -d)
+          trap 'rm -rf "$smoke"' EXIT
+          tar -C "$smoke" -xzf "dist/${pkg}.tar.gz"
+          if otool -l "$smoke/${pkg}/qmltui-runner" | grep -qF "$qt_dir"; then
+            echo "Archive binary still references CI Qt path: $qt_dir" >&2
+            exit 1
+          fi
+          env -i PATH=/usr/bin:/bin "$smoke/${pkg}/qmltui-runner" --version
 
       - name: Package archive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+          cmake --install build --prefix stage
           $pkg = "qmltui-runner-$env:GITHUB_REF_NAME-${{ matrix.platform }}"
           New-Item -ItemType Directory -Force -Path "dist/$pkg" | Out-Null
-          $runnerBin = Get-ChildItem -Path build -Recurse -Filter "qmltui-runner.exe" | Select-Object -First 1
-          if (-not $runnerBin) { throw "qmltui-runner.exe not found under build/" }
-          Copy-Item $runnerBin.FullName "dist/$pkg/"
-          Copy-Item "LICENSE.md", "THIRD-PARTY.md" "dist/$pkg/"
+          Copy-Item "stage/bin/qmltui-runner.exe" "dist/$pkg/"
+          Copy-Item "LICENSE.md", "THIRD-PARTY.md", "LICENSES/LGPL-3.0-only.txt" "dist/$pkg/"
           & "${{ steps.install-qt.outputs.qt-root-dir }}/bin/windeployqt.exe" --release --no-translations --no-compiler-runtime --no-opengl-sw --no-system-d3d-compiler "dist/$pkg/qmltui-runner.exe"
           Compress-Archive -Path "dist/$pkg" -DestinationPath "dist/$pkg.zip"
+          $smoke = Join-Path ([System.IO.Path]::GetTempPath()) ("qmltui-smoke-" + [System.Guid]::NewGuid().ToString("N"))
+          Expand-Archive -Path "dist/$pkg.zip" -DestinationPath $smoke
+          try {
+            $oldPath = $env:PATH
+            $qtRoot = "${{ steps.install-qt.outputs.qt-root-dir }}" -replace '/', '\'
+            $env:PATH = (($env:PATH -split ';') | Where-Object { $_ -and -not $_.StartsWith($qtRoot, [System.StringComparison]::OrdinalIgnoreCase) }) -join ';'
+            & (Join-Path $smoke "$pkg/qmltui-runner.exe") --version
+            if ($LASTEXITCODE -ne 0) { throw "Windows archive smoke test failed with exit code $LASTEXITCODE" }
+          } finally {
+            $env:PATH = $oldPath
+            Remove-Item -Recurse -Force $smoke
+          }
 
       - name: Upload CLI archive
         uses: actions/upload-artifact@v4

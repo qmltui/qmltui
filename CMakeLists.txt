@@ -231,7 +231,7 @@ configure_package_config_file(
     cmake/QmlTuiConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/QmlTuiConfig.cmake"
     INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
-    PATH_VARS QMLTUI_INSTALL_QMLDIR
+    PATH_VARS QMLTUI_INSTALL_QMLDIR CMAKE_INSTALL_INCLUDEDIR
 )
 if(PROJECT_VERSION_MAJOR EQUAL 0)
     set(_qmltui_version_compat SameMinorVersion)
@@ -291,5 +291,6 @@ endif()
 install(FILES
     LICENSE.md
     THIRD-PARTY.md
+    LICENSES/LGPL-3.0-only.txt
     DESTINATION "${CMAKE_INSTALL_DATADIR}/doc/QmlTui"
 )

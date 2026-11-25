@@ -30,7 +30,7 @@ if(NOT TARGET QmlTui::Core)
     # If QmlTui is installed (`cmake --install build --prefix /your/prefix`),
     # replace the FetchContent block above with:
     #
-    #   find_package(QmlTui 0.6 REQUIRED)
+    #   find_package(QmlTui 0.6 REQUIRED COMPONENTS Core OPTIONAL_COMPONENTS Runner)
 endif()
 
 set(QT_QML_GENERATE_QMLLS_INI ON)

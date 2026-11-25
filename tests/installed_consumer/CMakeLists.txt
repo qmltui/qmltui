@@ -19,6 +19,9 @@ endif()
 # Now opt into optional installed modules so the full-header probe compiles every
 # installed header (including Image.h / PtyView.h when installed).
 find_package(QmlTui 0.6 OPTIONAL_COMPONENTS Image PtyView Runner)
+if(NOT Qt6_FOUND)
+    message(FATAL_ERROR "find_package(QmlTui OPTIONAL_COMPONENTS ...) must not clobber Qt6_FOUND")
+endif()
 
 if(NOT DEFINED QMLTUI_PUBLIC_HEADERS)
     message(FATAL_ERROR "QMLTUI_PUBLIC_HEADERS (the generated list of installed headers) was not provided")
@@ -43,4 +46,7 @@ target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE
 )
 if(TARGET QmlTui::Image)
     target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE QmlTui::Image)
+endif()
+if(TARGET QmlTui::PtyView)
+    target_link_libraries(qmltui_installed_custom_item_consumer PRIVATE QmlTui::PtyView)
 endif()

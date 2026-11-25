@@ -31,6 +31,8 @@ class QMLTUI_CORE_EXPORT Text : public Item {
     Q_PROPERTY(bool italic READ italic WRITE setItalic NOTIFY italicChanged)
     Q_PROPERTY(bool underline READ underline WRITE setUnderline NOTIFY underlineChanged)
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed NOTIFY reversedChanged)
+    Q_PROPERTY(
+        bool strikethrough READ strikethrough WRITE setStrikethrough NOTIFY strikethroughChanged)
     Q_PROPERTY(Qt::Alignment horizontalAlignment READ horizontalAlignment WRITE
                    setHorizontalAlignment NOTIFY horizontalAlignmentChanged)
     Q_PROPERTY(Qt::Alignment verticalAlignment READ verticalAlignment WRITE setVerticalAlignment
@@ -87,6 +89,9 @@ public:
     bool reversed() const { return m_reversed; }
     void setReversed(bool reversed);
 
+    bool strikethrough() const { return m_strikethrough; }
+    void setStrikethrough(bool strikethrough);
+
     Qt::Alignment horizontalAlignment() const { return m_horizontalAlignment; }
     void setHorizontalAlignment(Qt::Alignment alignment);
 
@@ -118,6 +123,7 @@ signals:
     void italicChanged();
     void underlineChanged();
     void reversedChanged();
+    void strikethroughChanged();
     void horizontalAlignmentChanged();
     void verticalAlignmentChanged();
     void textFormatChanged();
@@ -198,6 +204,7 @@ private:
     bool m_italic = false;
     bool m_underline = false;
     bool m_reversed = false;
+    bool m_strikethrough = false;
     Qt::Alignment m_horizontalAlignment = Qt::AlignLeft;
     Qt::Alignment m_verticalAlignment = Qt::AlignTop;
     TextFormat m_textFormat = AutoText;

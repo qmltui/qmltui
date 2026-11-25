@@ -225,6 +225,20 @@ void TestTextAreaHighlighting::layerPrecedence() {
     buffer = frame(area);
     QCOMPARE(buffer.cellAt(0, 0).fgColor, Color("green").argb32());
     QCOMPARE(buffer.cellAt(2, 0).fgColor, Color("magenta").argb32());
+
+    // Strikethrough + OSC 8 link layers compose with priority ordering (even without color/attr).
+    HighlightRange strikeAndLink(0, 5, TextStyle{}, QStringLiteral("https://low.example"));
+    strikeAndLink.setStrikethrough(true);
+    HighlightRange overrideLink(2, 2, TextStyle{}, QStringLiteral("https://high.example"));
+    QVERIFY(area.setHighlightLayer(QStringLiteral("link_low"), {strikeAndLink}, rev, 30));
+    QVERIFY(area.setHighlightLayer(QStringLiteral("link_high"), {overrideLink}, rev, 40));
+
+    buffer = frame(area);
+    QVERIFY((buffer.cellAt(0, 0).attributes & TextAttribute::Strikethrough) != TextAttribute::None);
+    QCOMPARE(buffer.linkUrl(buffer.cellAt(0, 0).linkId), QStringLiteral("https://low.example"));
+    QCOMPARE(buffer.linkUrl(buffer.cellAt(2, 0).linkId), QStringLiteral("https://high.example"));
+    QCOMPARE(buffer.linkUrl(buffer.cellAt(4, 0).linkId), QStringLiteral("https://low.example"));
+    QCOMPARE(buffer.cellAt(5, 0).linkId, 0);
 }
 
 void TestTextAreaHighlighting::graphemeSnapping() {

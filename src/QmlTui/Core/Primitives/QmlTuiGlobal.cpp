@@ -1,4 +1,5 @@
 #include <QmlTui/Core/Primitives/QmlTuiGlobal.h>
+#include <QDebug>
 
 namespace qmltui {
 
@@ -19,9 +20,19 @@ Span QmlTuiGlobal::span(const QString& text) const {
 }
 
 Span QmlTuiGlobal::span(const QString& text, const QVariantMap& options) const {
+    QString link;
+    QVariantMap styleOptions = options;
+    if (styleOptions.contains(QStringLiteral("link"))) {
+        const QVariant linkVal = styleOptions.take(QStringLiteral("link"));
+        if (linkVal.metaType() == QMetaType::fromType<QString>()) {
+            link = linkVal.toString();
+        } else {
+            qWarning().noquote() << "QmlTui.span: expected string for link";
+        }
+    }
     TextStyle style;
-    style.applyVariantMap(options, /*warnOnInvalid=*/true);
-    return Span(text, style);
+    style.applyVariantMap(styleOptions, /*warnOnInvalid=*/true);
+    return Span(text, style, std::move(link));
 }
 
 } // namespace qmltui

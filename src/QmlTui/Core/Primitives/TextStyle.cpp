@@ -32,7 +32,8 @@ void TextStyle::applyVariantMap(const QVariantMap& map, bool warnOnInvalid) {
     for (auto it = map.cbegin(); it != map.cend(); ++it) {
         const QString& key = it.key();
         const QVariant& value = it.value();
-        if (!warnOnInvalid && key == QStringLiteral("text")) continue;
+        if (!warnOnInvalid && (key == QStringLiteral("text") || key == QStringLiteral("link")))
+            continue;
         if (key == QStringLiteral("color") || key == QStringLiteral("backgroundColor")) {
             Color color = Color::Invalid;
             if (value.metaType() == QMetaType::fromType<Color>())
@@ -65,6 +66,8 @@ void TextStyle::applyVariantMap(const QVariantMap& map, bool warnOnInvalid) {
             applyBool(TextAttribute::Underline);
         } else if (key == QStringLiteral("reversed")) {
             applyBool(TextAttribute::Reversed);
+        } else if (key == QStringLiteral("strikethrough")) {
+            applyBool(TextAttribute::Strikethrough);
         } else if (warnOnInvalid) {
             qWarning().noquote() << "QmlTui.span: unknown option" << key;
         }

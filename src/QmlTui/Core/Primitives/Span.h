@@ -26,16 +26,20 @@ class QMLTUI_CORE_EXPORT Span {
     Q_PROPERTY(bool italic READ italic WRITE setItalic RESET resetItalic)
     Q_PROPERTY(bool underline READ underline WRITE setUnderline RESET resetUnderline)
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed RESET resetReversed)
+    Q_PROPERTY(
+        bool strikethrough READ strikethrough WRITE setStrikethrough RESET resetStrikethrough)
+    Q_PROPERTY(QString link READ link WRITE setLink RESET resetLink)
 
 public:
     Span() = default;
     explicit Span(QString text) : m_text(std::move(text)) {}
     Span(QString text, Color foreground, Color background = Color::Invalid)
         : m_text(std::move(text)), m_style(foreground, background) {}
-    Span(QString text, TextStyle style) : m_text(std::move(text)), m_style(std::move(style)) {}
+    Span(QString text, TextStyle style, QString link = {})
+        : m_text(std::move(text)), m_style(std::move(style)), m_link(std::move(link)) {}
 
-    // Populates out from a { text, color, backgroundColor, bold, dim, italic, underline, reversed }
-    // map.
+    // Populates out from a { text, color, backgroundColor, bold, dim, italic, underline, reversed,
+    // strikethrough, link } map.
     static bool fromVariantMap(const QVariantMap& map, Span& out);
     // Extracts a list of Spans from a QVariant holding a Span, QList<Span>, QJSValue,
     // QVariantList of Spans/maps, or (when allowVariantMap is true) a single QVariantMap.
@@ -81,6 +85,15 @@ public:
     void setReversed(bool value) { m_style.setReversed(value); }
     void resetReversed() { m_style.resetReversed(); }
 
+    bool strikethrough() const { return m_style.strikethrough(); }
+    bool hasStrikethrough() const { return m_style.hasStrikethrough(); }
+    void setStrikethrough(bool value) { m_style.setStrikethrough(value); }
+    void resetStrikethrough() { m_style.resetStrikethrough(); }
+
+    QString link() const { return m_link; }
+    void setLink(const QString& link) { m_link = link; }
+    void resetLink() { m_link.clear(); }
+
     TextAttribute resolveAttributes(TextAttribute base) const {
         return m_style.resolveAttributes(base);
     }
@@ -88,13 +101,14 @@ public:
     uint32_t resolveBackground(uint32_t baseBg) const { return m_style.resolveBackground(baseBg); }
 
     friend bool operator==(const Span& lhs, const Span& rhs) noexcept {
-        return lhs.m_text == rhs.m_text && lhs.m_style == rhs.m_style;
+        return lhs.m_text == rhs.m_text && lhs.m_style == rhs.m_style && lhs.m_link == rhs.m_link;
     }
     friend bool operator!=(const Span& lhs, const Span& rhs) noexcept { return !(lhs == rhs); }
 
 private:
     QString m_text;
     TextStyle m_style;
+    QString m_link;
 };
 
 } // namespace qmltui

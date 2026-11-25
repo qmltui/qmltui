@@ -259,21 +259,47 @@ void TestTextLayout::testLinkActivated() {
         QVERIFY(event.isAccepted());
     }
 
-    // Markdown link
+    // Inline Markdown tokens (**bold**, `code`, [label](url)) remain literal in AutoText & RichText
+    {
+        for (Text::TextFormat fmt : {Text::AutoText, Text::RichText}) {
+            Text text;
+            text.setWidth(45);
+            text.setHeight(2);
+            text.setTextFormat(fmt);
+            const QString literal = QStringLiteral("**bold** `code` [here](https://qmltui.org)");
+            text.setText(literal);
+
+            TextGridBuffer frame = paintToBuffer(text, 45, 2);
+            QCOMPARE(rowText(frame, 0).trimmed(), literal);
+            QCOMPARE(frame.cellAt(0, 0).attributes, TextAttribute::None);
+            QCOMPARE(frame.cellAt(2, 0).attributes, TextAttribute::None);
+            QCOMPARE(frame.linkCount(), 0);
+
+            QSignalSpy spy(&text, &Text::linkActivated);
+            MouseEvent event(MouseEvent::Type::Press, 18, 0, Qt::LeftButton, Qt::NoModifier);
+            text.mousePressEvent(&event);
+            QCOMPARE(spy.count(), 0);
+            QVERIFY(!event.isAccepted());
+        }
+    }
+
+    // Strikethrough via property, HTML <s>/<del>, and ANSI SGR 9/29
     {
         Text text;
-        text.setWidth(30);
-        text.setHeight(3);
-        text.setTextFormat(Text::AutoText);
-        text.setText(QStringLiteral("Click [here](https://qmltui.org) for info"));
+        text.setWidth(20);
+        text.setHeight(1);
+        text.setText(QStringLiteral("<s>A</s><del>B</del>\033[9mC\033[29mD"));
+        TextGridBuffer frame = paintToBuffer(text, 20, 1);
+        QCOMPARE(rowText(frame, 0).trimmed(), QStringLiteral("ABCD"));
+        QCOMPARE(frame.cellAt(0, 0).attributes, TextAttribute::Strikethrough);
+        QCOMPARE(frame.cellAt(1, 0).attributes, TextAttribute::Strikethrough);
+        QCOMPARE(frame.cellAt(2, 0).attributes, TextAttribute::Strikethrough);
+        QCOMPARE(frame.cellAt(3, 0).attributes, TextAttribute::None);
 
-        QSignalSpy spy(&text, &Text::linkActivated);
-        MouseEvent event(MouseEvent::Type::Press, 7, 0, Qt::LeftButton, Qt::NoModifier);
-        text.mousePressEvent(&event);
-
-        QCOMPARE(spy.count(), 1);
-        QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://qmltui.org"));
-        QVERIFY(event.isAccepted());
+        text.setStrikethrough(true);
+        frame = paintToBuffer(text, 20, 1);
+        QCOMPARE(frame.cellAt(2, 0).attributes, TextAttribute::Strikethrough);
+        QCOMPARE(frame.cellAt(3, 0).attributes, TextAttribute::None); // SGR 29 clears inherited
     }
 }
 

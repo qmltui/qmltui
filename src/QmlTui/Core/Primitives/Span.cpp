@@ -9,6 +9,11 @@ bool Span::fromVariantMap(const QVariantMap& map, Span& out) {
     TextStyle style;
     style.applyVariantMap(map, /*warnOnInvalid=*/false);
     result.setStyle(style);
+    if (map.contains(QStringLiteral("link"))) {
+        const QVariant linkVal = map.value(QStringLiteral("link"));
+        if (linkVal.metaType() == QMetaType::fromType<QString>())
+            result.setLink(linkVal.toString());
+    }
     out = std::move(result);
     return true;
 }

@@ -9,7 +9,7 @@ Column {
     spacing: 1
 
     Text {
-        text: "A tip appears after `delay` ms of hover or focus; `visible: true` pins one."
+        text: "A tip appears after <b>delay</b> ms of hover or focus; <b>visible: true</b> pins one."
         color: "#8b949e"
     }
 

@@ -3,6 +3,7 @@
 #include <QQmlEngine>
 #include <QQmlComponent>
 #include <QmlTui/Core/Items/Text.h>
+#include <QmlTui/Core/Engine/MouseEvent.h>
 #include <QmlTui/Core/Primitives/QmlTuiGlobal.h>
 #include "../TestPaint.h"
 #include <memory>
@@ -56,13 +57,19 @@ void TestSpan::values() {
     a.setItalic(false);
     a.setUnderline(false);
     a.setReversed(false);
+    a.setStrikethrough(false);
     QCOMPARE(a.resolveAttributes(TextAttribute::Dim | TextAttribute::Italic |
-                                 TextAttribute::Underline | TextAttribute::Reversed),
+                                 TextAttribute::Underline | TextAttribute::Reversed |
+                                 TextAttribute::Strikethrough),
              TextAttribute::None);
     a.resetDim();
     a.resetItalic();
     a.resetUnderline();
     a.resetReversed();
+    a.resetStrikethrough();
+    a.setLink(QStringLiteral("https://example.com"));
+    QVERIFY(a != Span(QStringLiteral("x")));
+    a.resetLink();
     QCOMPARE(a, Span(QStringLiteral("x")));
 }
 
@@ -230,11 +237,37 @@ void TestSpan::factoryValidation() {
     QmlTuiGlobal global;
     QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: expected boolean for bold");
     QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: invalid color for color");
+    QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: expected string for link");
     QTest::ignoreMessage(QtWarningMsg, "QmlTui.span: unknown option typo");
-    auto span = global.span(QStringLiteral("x"),
-                            {{"bold", "false"}, {"color", "bad-color"}, {"typo", true}});
+    auto span =
+        global.span(QStringLiteral("x"),
+                    {{"bold", "false"}, {"color", "bad-color"}, {"link", 42}, {"typo", true}});
     QVERIFY(!span.hasBold());
     QVERIFY(!span.color().isValid());
+    QVERIFY(span.link().isEmpty());
+
+    // Valid strikethrough + OSC 8 link via QmlTui.span() paint and activate on click.
+    auto linked =
+        global.span(QStringLiteral("Go"),
+                    {{"strikethrough", true}, {"link", QStringLiteral("https://qmltui.org")}});
+    QVERIFY(linked.strikethrough());
+    QCOMPARE(linked.link(), QStringLiteral("https://qmltui.org"));
+
+    Text text;
+    text.setWidth(10);
+    text.setHeight(1);
+    text.setSpans({Span(QStringLiteral("Hi ")), linked});
+    const auto buffer = frame(text, 10, 1);
+    QCOMPARE(buffer.cellAt(0, 0).linkId, 0);
+    QCOMPARE(buffer.cellAt(3, 0).attributes, TextAttribute::Strikethrough);
+    QVERIFY(buffer.cellAt(3, 0).linkId != 0);
+    QCOMPARE(buffer.linkUrl(buffer.cellAt(3, 0).linkId), QStringLiteral("https://qmltui.org"));
+
+    QSignalSpy spy(&text, &Text::linkActivated);
+    MouseEvent press(MouseEvent::Type::Press, 3, 0, Qt::LeftButton, Qt::NoModifier);
+    text.mousePressEvent(&press);
+    QCOMPARE(spy.count(), 1);
+    QCOMPARE(spy.takeFirst().at(0).toString(), QStringLiteral("https://qmltui.org"));
 }
 
 void TestSpan::gradient() {

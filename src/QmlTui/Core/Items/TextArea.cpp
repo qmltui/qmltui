@@ -643,7 +643,7 @@ bool TextArea::setHighlightLayer(const QString& name, const QList<HighlightRange
         TextStyle style = r.style();
         if (style.color().isTransparent()) style.resetColor();
         if (style.backgroundColor().isTransparent()) style.resetBackgroundColor();
-        processed.append(HighlightRange(outStart, outEnd - outStart, style));
+        processed.append(HighlightRange(outStart, outEnd - outStart, style, r.link()));
     }
 
     auto it = m_highlightLayers.find(name);
@@ -709,11 +709,18 @@ void TextArea::recomposeHighlightRuns() {
         bool operator<(const ActiveBool& other) const { return key < other.key; }
     };
 
+    struct ActiveLink {
+        RangeKey key;
+        QString link;
+        bool operator<(const ActiveLink& other) const { return key < other.key; }
+    };
+
     struct Event {
         int position = 0;
         bool isStart = false;
         RangeKey key;
         TextStyle style;
+        QString link;
     };
 
     std::vector<Event> events;
@@ -725,8 +732,8 @@ void TextArea::recomposeHighlightRuns() {
             const HighlightRange& r = layer.ranges[rIdx];
             if (r.length() <= 0) continue;
             RangeKey key{layer.priority, layerName, rIdx, nextId++};
-            events.push_back(Event{r.start(), true, key, r.style()});
-            events.push_back(Event{r.start() + r.length(), false, key, r.style()});
+            events.push_back(Event{r.start(), true, key, r.style(), r.link()});
+            events.push_back(Event{r.start() + r.length(), false, key, r.style(), r.link()});
         }
     }
 
@@ -744,6 +751,8 @@ void TextArea::recomposeHighlightRuns() {
     std::set<ActiveBool> activeItalic;
     std::set<ActiveBool> activeUnderline;
     std::set<ActiveBool> activeReversed;
+    std::set<ActiveBool> activeStrikethrough;
+    std::set<ActiveLink> activeLink;
 
     auto resolveCurrentStyle = [&]() -> TextStyle {
         TextStyle s;
@@ -754,22 +763,26 @@ void TextArea::recomposeHighlightRuns() {
         if (!activeItalic.empty()) s.setItalic(activeItalic.rbegin()->value);
         if (!activeUnderline.empty()) s.setUnderline(activeUnderline.rbegin()->value);
         if (!activeReversed.empty()) s.setReversed(activeReversed.rbegin()->value);
+        if (!activeStrikethrough.empty()) s.setStrikethrough(activeStrikethrough.rbegin()->value);
         return s;
     };
 
     int currentPos = events.front().position;
     TextStyle currentStyle;
+    QString currentLink;
 
     size_t i = 0;
     while (i < events.size()) {
         const int pos = events[i].position;
         if (pos > currentPos) {
-            if (!currentStyle.isEmpty()) {
+            if (!currentStyle.isEmpty() || !currentLink.isEmpty()) {
                 if (!m_composedRuns.empty() && m_composedRuns.back().end == currentPos &&
-                    m_composedRuns.back().style == currentStyle) {
+                    m_composedRuns.back().style == currentStyle &&
+                    m_composedRuns.back().link == currentLink) {
                     m_composedRuns.back().end = pos;
                 } else {
-                    m_composedRuns.push_back(ComposedRun{currentPos, pos, currentStyle});
+                    m_composedRuns.push_back(
+                        ComposedRun{currentPos, pos, currentStyle, currentLink});
                 }
             }
             currentPos = pos;
@@ -790,6 +803,9 @@ void TextArea::recomposeHighlightRuns() {
                     activeUnderline.insert(ActiveBool{ev.key, ev.style.underline()});
                 if (ev.style.hasReversed())
                     activeReversed.insert(ActiveBool{ev.key, ev.style.reversed()});
+                if (ev.style.hasStrikethrough())
+                    activeStrikethrough.insert(ActiveBool{ev.key, ev.style.strikethrough()});
+                if (!ev.link.isEmpty()) activeLink.insert(ActiveLink{ev.key, ev.link});
             } else {
                 if (ev.style.color().isValid())
                     activeFg.erase(ActiveColor{ev.key, ev.style.color()});
@@ -802,11 +818,15 @@ void TextArea::recomposeHighlightRuns() {
                     activeUnderline.erase(ActiveBool{ev.key, ev.style.underline()});
                 if (ev.style.hasReversed())
                     activeReversed.erase(ActiveBool{ev.key, ev.style.reversed()});
+                if (ev.style.hasStrikethrough())
+                    activeStrikethrough.erase(ActiveBool{ev.key, ev.style.strikethrough()});
+                if (!ev.link.isEmpty()) activeLink.erase(ActiveLink{ev.key, ev.link});
             }
             ++i;
         }
 
         currentStyle = resolveCurrentStyle();
+        currentLink = activeLink.empty() ? QString() : activeLink.rbegin()->link;
     }
 }
 
@@ -855,6 +875,7 @@ void TextArea::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                 uint32_t fg = displayColor;
                 uint32_t bg = 0;
                 TextAttribute attrs = displayAttributes;
+                uint8_t linkId = 0;
 
                 if (!isPlaceholder && runIt != m_composedRuns.cend()) {
                     while (runIt != m_composedRuns.cend() && runIt->end <= clusterStart)
@@ -865,14 +886,17 @@ void TextArea::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                             bg = runIt->style.backgroundColor().argb32();
                         attrs = runIt->style.resolveAttributes(TextAttribute::None);
                         if (!isEffectivelyEnabled()) attrs = attrs | TextAttribute::Dim;
+                        if (!runIt->link.isEmpty()) linkId = buffer.registerLink(runIt->link);
                     }
                 }
 
                 const QStringView graphemeView = isLeadingSpace ? QStringView(u"·") : cluster.utf16;
                 const TextAttribute cellAttrs =
                     isLeadingSpace ? (attrs | TextAttribute::Dim) : attrs;
+                buffer.setActiveLinkId(linkId);
                 buffer.setGrapheme(x, y, graphemeView, cluster.width, fg, bg, cellAttrs,
                                    (std::max)(absX + leftPadding(), contentClip.x));
+                buffer.setActiveLinkId(0);
 
                 if (!m_editor->text().isEmpty() && clusterEnd > selectionStart() &&
                     clusterStart < selectionEnd()) {

@@ -3,6 +3,7 @@
 #include <QmlTui/Core/Primitives/QmlTuiExport.h>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/TextStyle.h>
+#include <QString>
 #include <QtQmlIntegration/qqmlintegration.h>
 #include <utility>
 
@@ -26,11 +27,14 @@ class QMLTUI_CORE_EXPORT HighlightRange {
     Q_PROPERTY(bool italic READ italic WRITE setItalic RESET resetItalic)
     Q_PROPERTY(bool underline READ underline WRITE setUnderline RESET resetUnderline)
     Q_PROPERTY(bool reversed READ reversed WRITE setReversed RESET resetReversed)
+    Q_PROPERTY(
+        bool strikethrough READ strikethrough WRITE setStrikethrough RESET resetStrikethrough)
+    Q_PROPERTY(QString link READ link WRITE setLink RESET resetLink)
 
 public:
     HighlightRange() = default;
-    HighlightRange(int start, int length, TextStyle style = {})
-        : m_start(start), m_length(length), m_style(std::move(style)) {}
+    HighlightRange(int start, int length, TextStyle style = {}, QString link = {})
+        : m_start(start), m_length(length), m_style(std::move(style)), m_link(std::move(link)) {}
     HighlightRange(int start, int length, Color foreground, Color background = Color::Invalid)
         : m_start(start), m_length(length), m_style(foreground, background) {}
 
@@ -76,13 +80,22 @@ public:
     void setReversed(bool value) { m_style.setReversed(value); }
     void resetReversed() { m_style.resetReversed(); }
 
+    bool strikethrough() const { return m_style.strikethrough(); }
+    bool hasStrikethrough() const { return m_style.hasStrikethrough(); }
+    void setStrikethrough(bool value) { m_style.setStrikethrough(value); }
+    void resetStrikethrough() { m_style.resetStrikethrough(); }
+
+    QString link() const { return m_link; }
+    void setLink(const QString& link) { m_link = link; }
+    void resetLink() { m_link.clear(); }
+
     TextAttribute resolveAttributes(TextAttribute base) const {
         return m_style.resolveAttributes(base);
     }
 
     friend bool operator==(const HighlightRange& lhs, const HighlightRange& rhs) noexcept {
         return lhs.m_start == rhs.m_start && lhs.m_length == rhs.m_length &&
-               lhs.m_style == rhs.m_style;
+               lhs.m_style == rhs.m_style && lhs.m_link == rhs.m_link;
     }
     friend bool operator!=(const HighlightRange& lhs, const HighlightRange& rhs) noexcept {
         return !(lhs == rhs);
@@ -92,6 +105,7 @@ private:
     int m_start = 0;
     int m_length = 0;
     TextStyle m_style;
+    QString m_link;
 };
 
 } // namespace qmltui

@@ -53,6 +53,11 @@ public:
     void setReversed(bool value) { setAttribute(TextAttribute::Reversed, value); }
     void resetReversed() { resetAttribute(TextAttribute::Reversed); }
 
+    bool strikethrough() const { return (m_values & bit(TextAttribute::Strikethrough)) != 0; }
+    bool hasStrikethrough() const { return (m_specified & bit(TextAttribute::Strikethrough)) != 0; }
+    void setStrikethrough(bool value) { setAttribute(TextAttribute::Strikethrough, value); }
+    void resetStrikethrough() { resetAttribute(TextAttribute::Strikethrough); }
+
     bool isEmpty() const {
         return !m_color.isValid() && !m_backgroundColor.isValid() && m_specified == 0;
     }

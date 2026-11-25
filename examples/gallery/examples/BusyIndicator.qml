@@ -8,7 +8,7 @@ Column {
     spacing: 1
 
     Text {
-        text: "Frames advance every `interval` milliseconds while running is true."
+        text: "Frames advance every <b>interval</b> milliseconds while running is true."
         color: "#8b949e"
     }
 

@@ -179,8 +179,10 @@ private:
         int start = 0;
         int end = 0;
         TextStyle style;
+        QString link;
         bool operator==(const ComposedRun& other) const noexcept {
-            return start == other.start && end == other.end && style == other.style;
+            return start == other.start && end == other.end && style == other.style &&
+                   link == other.link;
         }
         bool operator!=(const ComposedRun& other) const noexcept { return !(*this == other); }
     };

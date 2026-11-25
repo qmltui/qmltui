@@ -59,8 +59,13 @@ qsizetype parseHtmlTag(QStringView line, qsizetype startIdx, MarkupState& curren
     const bool isUnderline = tagName.compare(QLatin1StringView("u"), Qt::CaseInsensitive) == 0;
     const bool isReversed =
         tagName.compare(QLatin1StringView("reversed"), Qt::CaseInsensitive) == 0;
+    const bool isStrikethrough =
+        tagName.compare(QLatin1StringView("s"), Qt::CaseInsensitive) == 0 ||
+        tagName.compare(QLatin1StringView("del"), Qt::CaseInsensitive) == 0;
 
-    if (!isBold && !isItalic && !isUnderline && !isReversed && !isFont && !isAnchor) return -1;
+    if (!isBold && !isItalic && !isUnderline && !isReversed && !isStrikethrough && !isFont &&
+        !isAnchor)
+        return -1;
 
     if (isClose) {
         if (!styleStack.isEmpty()) {
@@ -88,6 +93,8 @@ qsizetype parseHtmlTag(QStringView line, qsizetype startIdx, MarkupState& curren
             current.style.setUnderline(true);
         } else if (isReversed) {
             current.style.setReversed(true);
+        } else if (isStrikethrough) {
+            current.style.setStrikethrough(true);
         }
     }
 
@@ -126,6 +133,10 @@ void applySgrParameters(QStringView paramsStr, TextStyle& currentStyle) {
             currentStyle.setUnderline(true);
         } else if (code == 7) {
             currentStyle.setReversed(true);
+        } else if (code == 9) {
+            currentStyle.setStrikethrough(true);
+        } else if (code == 29) {
+            currentStyle.setStrikethrough(false);
         } else if (code >= 30 && code <= 37) {
             currentStyle.setColor(Color::fromAnsiIndex(code - 30));
         } else if (code >= 40 && code <= 47) {
@@ -158,7 +169,7 @@ bool hasMarkupTrigger(QStringView line, bool parseAnsi, bool parseHtml) {
     if (!parseAnsi && !parseHtml) return false;
     for (QChar ch : line) {
         if (parseAnsi && ch == u'\033') return true;
-        if (parseHtml && (ch == u'<' || ch == u'[' || ch == u'*' || ch == u'`')) return true;
+        if (parseHtml && ch == u'<') return true;
     }
     return false;
 }
@@ -247,6 +258,13 @@ void Text::setReversed(bool reversed) {
     if (m_reversed == reversed) return;
     m_reversed = reversed;
     emit reversedChanged();
+    markDirty();
+}
+
+void Text::setStrikethrough(bool strikethrough) {
+    if (m_strikethrough == strikethrough) return;
+    m_strikethrough = strikethrough;
+    emit strikethroughChanged();
     markDirty();
 }
 
@@ -401,50 +419,11 @@ int Text::parseLine(QStringView line, std::vector<GlyphEntry>* entries, QByteArr
             }
         }
 
-        // Markdown Link [text](url)
-        if (parseHtml && line[i] == u'[') {
-            const qsizetype closeBracket = line.indexOf(u']', i);
-            if (closeBracket != -1 && closeBracket + 1 < line.size() &&
-                line[closeBracket + 1] == u'(') {
-                const qsizetype closeParen = line.indexOf(u')', closeBracket + 2);
-                if (closeParen != -1) {
-                    const QStringView linkText = line.sliced(i + 1, closeBracket - i - 1);
-                    const QStringView linkUrl =
-                        line.sliced(closeBracket + 2, closeParen - closeBracket - 2);
-                    TextStyle linkStyle = current.style;
-                    linkStyle.setUnderline(true);
-                    appendSlice(linkText, linkStyle, linkUrl);
-                    i = closeParen + 1;
-                    continue;
-                }
-            }
-        }
-
-        // Markdown **bold**
-        if (parseHtml && i + 1 < line.size() && line[i] == u'*' && line[i + 1] == u'*') {
-            if (current.style.hasBold() && current.style.bold())
-                current.style.resetBold();
-            else
-                current.style.setBold(true);
-            i += 2;
-            continue;
-        }
-
-        // Markdown `code`
-        if (parseHtml && line[i] == u'`') {
-            if (current.style.hasBold() && current.style.bold())
-                current.style.resetBold();
-            else
-                current.style.setBold(true);
-            i += 1;
-            continue;
-        }
-
         qsizetype nextMarkup = i + 1;
         while (nextMarkup < line.size()) {
             const QChar ch = line[nextMarkup];
             if (parseAnsi && ch == u'\033') break;
-            if (parseHtml && (ch == u'<' || ch == u'[' || ch == u'*' || ch == u'`')) break;
+            if (parseHtml && ch == u'<') break;
             ++nextMarkup;
         }
         appendSlice(line.sliced(i, nextMarkup - i), current.style, current.href);
@@ -465,6 +444,7 @@ TextAttribute Text::baseAttributes() const {
     if (m_italic) attributes = attributes | TextAttribute::Italic;
     if (m_underline) attributes = attributes | TextAttribute::Underline;
     if (m_reversed) attributes = attributes | TextAttribute::Reversed;
+    if (m_strikethrough) attributes = attributes | TextAttribute::Strikethrough;
     return attributes;
 }
 
@@ -689,7 +669,7 @@ void Text::parseSpans() const {
     // Segment the whole logical line so a style boundary never breaks a grapheme.
     if (m_spans.size() == 1) {
         const QStringView view(m_spans[0].text());
-        const StyleRun singleRun{view.size(), m_spans[0].style(), 0};
+        const StyleRun singleRun{view.size(), m_spans[0].style(), registerLink(m_spans[0].link())};
         qsizetype lineStart = 0;
         do {
             qsizetype lineEnd = view.indexOf(u'\n', lineStart);
@@ -711,7 +691,7 @@ void Text::parseSpans() const {
     runs.reserve(m_spans.size());
     for (const Span& span : m_spans) {
         content += span.text();
-        runs.push_back(StyleRun{content.size(), span.style(), 0});
+        runs.push_back(StyleRun{content.size(), span.style(), registerLink(span.link())});
     }
     const QStringView view(content);
     qsizetype lineStart = 0;

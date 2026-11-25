@@ -486,7 +486,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DBUILD_SHARED_LIBS=OFF
           -DCMAKE_PREFIX_PATH="${{ steps.install-qt.outputs.qt-root-dir }}"
-          -DQMLTUI_BUILD_TESTS=ON
+          -DQMLTUI_BUILD_TESTS=OFF
           -DQMLTUI_BUILD_EXAMPLES=OFF
           -DQMLTUI_BUILD_BENCHMARKS=OFF
           -DQMLTUI_ENABLE_PRIVATE_QT=OFF
@@ -496,13 +496,22 @@ jobs:
           -DQMLTUI_USE_SYSTEM_UTF8PROC=ON
           -DQMLTUI_USE_SYSTEM_LIBVTERM=ON
 
-      - name: Build static libraries
-        run: cmake --build build-static --target QmlTuiCore QmlTuiControls QmlTuiImage QmlTuiPtyView QmlTuiRunner qmltui-runner --parallel 4
+      - name: Build static libraries, QML plugins, and CLI
+        run: cmake --build build-static --parallel 4
 
       - name: Verify installed static consumer
         env:
           QT_QPA_PLATFORM: offscreen
-        run: ctest --test-dir build-static -R '^test_installed_custom_item_consumer$' --output-on-failure
+        run: >
+          cmake
+          -DQMLTUI_BUILD_DIR="${{ github.workspace }}/build-static"
+          -DCONSUMER_SOURCE_DIR="${{ github.workspace }}/tests/installed_consumer"
+          -DCONSUMER_BINARY_DIR="${{ github.workspace }}/build-static/installed_consumer_build"
+          -DINSTALL_PREFIX="${{ github.workspace }}/build-static/installed_consumer_prefix"
+          -DQt6_DIR="${{ steps.install-qt.outputs.qt-root-dir }}/lib/cmake/Qt6"
+          -DCONSUMER_GENERATOR=Ninja
+          -DCONSUMER_BUILD_TYPE=Release
+          -P tests/installed_consumer/RunConsumer.cmake
 
   reuse:
     name: REUSE licensing compliance

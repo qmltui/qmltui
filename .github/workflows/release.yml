@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,6 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.meta.outputs.version }}
+      pkg_tag: ${{ steps.meta.outputs.pkg_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,11 +32,17 @@ jobs:
             echo "Failed to parse project(qmltui VERSION ...) from CMakeLists.txt" >&2
             exit 1
           fi
-          if [[ "$tag" != "v${cmake_ver}" && "$tag" != v${cmake_ver}-* ]]; then
-            echo "Tag '${tag}' does not match CMakeLists.txt version 'v${cmake_ver}'" >&2
-            exit 1
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            if [[ "$tag" != "v${cmake_ver}" && "$tag" != v${cmake_ver}-* ]]; then
+              echo "Tag '${tag}' does not match CMakeLists.txt version 'v${cmake_ver}'" >&2
+              exit 1
+            fi
+            pkg_tag="$tag"
+          else
+            pkg_tag="v${cmake_ver}-dryrun"
           fi
           echo "version=${cmake_ver}" >> "$GITHUB_OUTPUT"
+          echo "pkg_tag=${pkg_tag}" >> "$GITHUB_OUTPUT"
           python3 - "$tag" "${GITHUB_REPOSITORY}" <<'PY'
           import posixpath, re, sys
           tag, repo = sys.argv[1], sys.argv[2]
@@ -123,23 +131,54 @@ jobs:
           if ! command -v patchelf >/dev/null 2>&1; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends patchelf
           fi
-          cmake --install build --prefix stage
-          pkg="qmltui-runner-${GITHUB_REF_NAME}-${{ matrix.platform }}"
+          cmake --install build --component runner-cli --prefix stage
+          pkg="qmltui-runner-${{ needs.verify.outputs.pkg_tag }}-${{ matrix.platform }}"
           mkdir -p "dist/${pkg}/lib"
           cp stage/bin/qmltui-runner "dist/${pkg}/qmltui-runner"
           cp LICENSE.md THIRD-PARTY.md LICENSES/LGPL-3.0-only.txt "dist/${pkg}/"
-          patchelf --set-rpath '$ORIGIN/lib' "dist/${pkg}/qmltui-runner"
           python3 - "$qt_dir" "dist/${pkg}" <<'PY'
           import os, pathlib, shutil, subprocess, sys
-          qt_lib = pathlib.Path(sys.argv[1]).resolve() / "lib"
+
+          ICU_NOTICE = """Unicode License v3 / ICU License Notice
+          (Applies to bundled libicu* shared libraries shipped with Qt 6)
+
+          Copyright (c) 2016 and later: Unicode, Inc. and others.
+          License & terms of use: http://www.unicode.org/copyright.html
+
+          Copyright (c) 1995-2016 International Business Machines Corporation and others
+          All rights reserved.
+
+          Permission is hereby granted, free of charge, to any person obtaining a copy
+          of this software and associated documentation files (the "Software"), to deal
+          in the Software without restriction, including without limitation the rights
+          to use, copy, modify, merge, publish, distribute, and/or sell copies of the
+          Software, and to permit persons to whom the Software is furnished to do so,
+          provided that the above copyright notice(s) and this permission notice appear
+          in all copies of the Software and that both the above copyright notice(s) and
+          this permission notice appear in supporting documentation.
+
+          THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+          IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+          FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS.
+          """
+
+          qt_root = pathlib.Path(sys.argv[1]).resolve()
+          qt_lib = qt_root / "lib"
           pkg_dir = pathlib.Path(sys.argv[2]).resolve()
           lib_dir = pkg_dir / "lib"
+
+          ldd_env = dict(os.environ)
+          existing_ld = ldd_env.get("LD_LIBRARY_PATH", "")
+          ldd_env["LD_LIBRARY_PATH"] = f"{qt_lib}:{existing_ld}" if existing_ld else str(qt_lib)
+
           seen = set()
           queue = [pkg_dir / "qmltui-runner"]
           while queue:
               binary = queue.pop(0)
-              out = subprocess.check_output(["ldd", str(binary)], text=True)
+              out = subprocess.check_output(["ldd", str(binary)], text=True, env=ldd_env)
               for line in out.splitlines():
+                  if "not found" in line:
+                      raise RuntimeError(f"Unresolved shared library in {binary}: {line.strip()}")
                   if "=>" not in line:
                       continue
                   rhs = line.split("=>", 1)[1].strip().split()[0]
@@ -147,19 +186,27 @@ jobs:
                       continue
                   src = pathlib.Path(rhs)
                   try:
-                      src.resolve().relative_to(qt_lib)
+                      resolved_src = src.resolve()
+                      resolved_src.relative_to(qt_lib)
                   except ValueError:
                       continue
                   soname = line.split("=>", 1)[0].strip()
-                  dst = lib_dir / soname
                   if soname in seen:
                       continue
                   seen.add(soname)
-                  shutil.copy2(src.resolve(), dst)
-                  subprocess.run(["patchelf", "--set-rpath", "$ORIGIN", str(dst)], check=True)
-                  queue.append(dst)
-          assert any(p.name.startswith("libQt6Core.so") for p in lib_dir.iterdir()), "Qt6Core not bundled"
+                  dst = lib_dir / soname
+                  shutil.copy2(resolved_src, dst)
+                  needed = subprocess.check_output(["patchelf", "--print-needed", str(dst)], text=True).strip()
+                  if needed:
+                      subprocess.run(["patchelf", "--set-rpath", "$ORIGIN", str(dst)], check=True)
+                  queue.append(resolved_src)
+
+          bundled = [p.name for p in lib_dir.iterdir()]
+          assert any(name.startswith("libQt6Core.so") for name in bundled), "Qt6Core not bundled"
+          if any(name.startswith("libicu") for name in bundled):
+              (pkg_dir / "ICU-LICENSE.txt").write_text(ICU_NOTICE, encoding="utf-8")
           PY
+          patchelf --set-rpath '$ORIGIN/lib' "dist/${pkg}/qmltui-runner"
           tar -C dist -czf "dist/${pkg}.tar.gz" "${pkg}"
           smoke=$(mktemp -d)
           trap 'rm -rf "$smoke"' EXIT
@@ -182,8 +229,8 @@ jobs:
         run: |
           set -euo pipefail
           qt_dir="${{ steps.install-qt.outputs.qt-root-dir }}"
-          cmake --install build --prefix stage
-          pkg="qmltui-runner-${GITHUB_REF_NAME}-${{ matrix.platform }}"
+          cmake --install build --component runner-cli --prefix stage
+          pkg="qmltui-runner-${{ needs.verify.outputs.pkg_tag }}-${{ matrix.platform }}"
           mkdir -p "dist/${pkg}/Frameworks"
           cp stage/bin/qmltui-runner "dist/${pkg}/qmltui-runner"
           cp LICENSE.md THIRD-PARTY.md LICENSES/LGPL-3.0-only.txt "dist/${pkg}/"
@@ -212,8 +259,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          cmake --install build --prefix stage
-          $pkg = "qmltui-runner-$env:GITHUB_REF_NAME-${{ matrix.platform }}"
+          $PSNativeCommandUseErrorActionPreference = $true
+          cmake --install build --component runner-cli --prefix stage
+          $pkg = "qmltui-runner-${{ needs.verify.outputs.pkg_tag }}-${{ matrix.platform }}"
           New-Item -ItemType Directory -Force -Path "dist/$pkg" | Out-Null
           Copy-Item "stage/bin/qmltui-runner.exe" "dist/$pkg/"
           Copy-Item "LICENSE.md", "THIRD-PARTY.md", "LICENSES/LGPL-3.0-only.txt" "dist/$pkg/"
@@ -243,6 +291,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [verify, runner-cli]
     runs-on: ubuntu-24.04
     permissions:

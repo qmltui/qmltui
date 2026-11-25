@@ -8,5 +8,6 @@ if(QMLTUI_ENABLE_RUNNER)
     install(TARGETS qmltui-runner
         EXPORT QmlTuiRunnerTargets
         RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        COMPONENT runner-cli
     )
 endif()

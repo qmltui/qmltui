@@ -174,6 +174,7 @@ See [Build Configuration and Installation](docs/build-configuration.md) for `Fet
 | QML Import | Repository & Target | License | Summary |
 | :--- | :--- | :--- | :--- |
 | `import QmlTui.TVision` | [`qmltui/tvision`](https://github.com/qmltui/tvision) (`QmlTui::TVision`) | `BSD-3-Clause` | Borland Turbo Vision-inspired Multi-Document Interface (MDI) windowing (`TvDesktop`, `TvWindow`, `TvMenuBar`, `TvDialog`, `TvButton`, `TvStatusLine`), per-file `TvPalette` themes, and `TvDropShadow` (showcased in [`turbo_hex`](https://github.com/qmltui/apps/tree/main/apps/turbo_hex)) |
+| `import QmlTui.Markdown` | [`qmltui/markdown`](https://github.com/qmltui/markdown) (`QmlTui::Markdown`) | `BSD-3-Clause` | CommonMark and GFM rendering via KDE `md4qt` (`MdDoc`, scrollable `MdView`, content-sized `MdBlock` for `Terminal.Inline`/`Scrollback`, `MdDocStyle` presets, terminal-safe `MdPalette`, OSC 8 hyperlinks, and 13-language `SyntaxHighlighter`; showcased in [`markdown_viewer`](https://github.com/qmltui/apps/tree/main/apps/markdown_viewer), [`agent_stream`](https://github.com/qmltui/apps/tree/main/apps/agent_stream), and [`file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager)) |
 
 ## Headless Testing
 

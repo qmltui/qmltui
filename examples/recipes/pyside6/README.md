@@ -16,7 +16,9 @@ cmake -S . -B build -G Ninja \
   -DQMLTUI_BUILD_BENCHMARKS=OFF
 cmake --build build --target QmlTuiCoreplugin QmlTuiControlsplugin
 
-# Install PySide6 matching your Qt 6 minor version (e.g. 6.8.*), then run:
+# Install PySide6 matching your Qt 6 minor version (e.g. 6.8.*) in a venv, then run:
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install "PySide6==6.<minor>.*"
 python3 examples/recipes/pyside6/main.py
 # Or specify a custom build tree:

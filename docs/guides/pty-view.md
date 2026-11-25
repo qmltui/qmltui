@@ -14,7 +14,7 @@ cmake -S . -B build \
   -DQMLTUI_USE_SYSTEM_LIBVTERM=OFF
 ```
 
-Link `QmlTui::PtyView` in CMake and import `QmlTui.PtyView` in QML (guard `DEPENDENCIES TARGET` on `NOT IMPORTED` when supporting `find_package(QmlTui)`; see [In-Tree vs. Installed](../build-configuration.md#in-tree-fetchcontent--add_subdirectory-vs-installed-find_package)):
+Link `QmlTui::PtyView` in CMake and import `QmlTui.PtyView` in QML (guard `DEPENDENCIES TARGET` on `NOT IMPORTED` when supporting `find_package(QmlTui)`; see [In-Tree vs. Installed Builds](../build-configuration.md#in-tree-vs-installed-builds)):
 
 ```cmake
 set(app_qml_dependencies)
@@ -37,7 +37,7 @@ target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core QmlTui::Pty
 
 ## Process Configuration
 
-`PtyView` launches `program` and `arguments` directly via `QProcess::start()` without invoking an intermediate shell or expanding shell metacharacters. As a convenience for interactive command strings, if `program` does not match an existing file path or an executable on `PATH`, `PtyView::start()` falls back to `QProcess::splitCommand(program)` and prepends the extra tokens to `arguments`. Pass an explicit executable path or `PATH` command name in `program` and put flags in `arguments` whenever strict argv separation is required:
+`PtyView` launches `program` and `arguments` directly via `QProcess::start()` without invoking an intermediate shell or expanding shell metacharacters. As a convenience for interactive command strings, when `arguments` is empty and `program` does not match an existing file path or an executable on `PATH`, `PtyView::start()` falls back to `QProcess::splitCommand(program)` and populates `arguments` from the remaining tokens. When explicit `arguments` are supplied, `program` is never split; pass an explicit executable path or `PATH` command name in `program` and put flags in `arguments` whenever strict argv separation is required:
 
 - `program` and `arguments`: executable path/name and argument list. Call `pty.defaultUserShell()` to query the current user's login shell.
 - `workingDirectory`: initial working directory for the child process.

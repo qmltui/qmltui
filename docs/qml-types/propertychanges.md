@@ -67,7 +67,7 @@ Mixing direct property assignments and `properties: ({ ... })` in a single
 ### Binding Lifecycle and Restoration
 
 When entering a state:
-- With `QMLTUI_ENABLE_PRIVATE_QT=ON`, any preexisting QML binding on the target property is suspended (not destroyed) and restored when the state exits (`restoreEntryValues: true`). With `QMLTUI_ENABLE_PRIVATE_QT=OFF`, entry values are captured as snapshots and restored via `setProperty()`, replacing any preexisting binding on that property.
+- With `QMLTUI_ENABLE_PRIVATE_QT=ON`, any preexisting QML binding on the target property is suspended (not destroyed) and restored when the state exits (`restoreEntryValues: true`). With `QMLTUI_ENABLE_PRIVATE_QT=OFF`, entry values are captured as snapshots and restored via `QQmlProperty::write()`, replacing any preexisting binding on that property.
 - If `explicit` is `false` (default), expressions remain live and reactive to dependency changes while the state is active. If `explicit` is `true`, values are evaluated once on state entry (supported for `properties: ({ ... })` maps in all builds, and for direct bindings when `QMLTUI_ENABLE_PRIVATE_QT=ON`).
 - When exiting the state, if `restoreEntryValues` is `true` (default), original values or bindings are restored and re-evaluated. If `restoreEntryValues` is `false`, the values applied by the state are retained.
 

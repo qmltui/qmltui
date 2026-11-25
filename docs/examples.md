@@ -82,7 +82,7 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 
 ## Standalone Recipes and C++ Examples (`examples/recipes/`)
 
-[`examples/recipes/`](../examples/recipes/) contains multi-file QML components, custom C++ `Item` and `SyntaxHighlighter` subclasses, `QAbstractItemModel` / `QSortFilterProxyModel` setups, and companion executables for `docs/guides/`:
+[`examples/recipes/`](../examples/recipes/) contains multi-file QML components, custom C++ `Item` subclasses and `TextArea` highlighters, `QAbstractItemModel` / `QSortFilterProxyModel` setups, and companion executables for `docs/guides/`:
 
 | Recipe | Directory | CMake Target | Guide / Recording | Description |
 | :--- | :--- | :--- | :--- | :--- |

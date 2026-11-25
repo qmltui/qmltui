@@ -53,7 +53,7 @@ terminal screen.
 
 MouseEvents are delivered to interactive items such as [MouseArea](mousearea.md),
 controls, views, and text editors. When an event is handled, setting `accepted = true`
-stops further propagation to items beneath or behind in the stacking order.
+stops further propagation up the parent chain to ancestor items (note: unaccepted mouse events bubble to ancestors, not overlapping siblings in z-order).
 
 ### Example
 

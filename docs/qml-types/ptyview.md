@@ -99,10 +99,12 @@ reserves the rightmost column for the scrollbar and resizes the child PTY to
 terminal pane or quit the host application.
 
 Programs and arguments are launched directly via `QProcess::start()` without
-invoking an intermediate shell or expanding shell metacharacters. If `program`
-does not match an existing file path or executable on `PATH`, `PtyView::start()`
-falls back to `QProcess::splitCommand(program)` and prepends any extra tokens
-to `arguments`. The child receives `TERM=xterm-256color`, `COLORTERM=truecolor`,
+invoking an intermediate shell or expanding shell metacharacters. When
+`arguments` is empty and `program` does not match an existing file path or
+executable on `PATH`, `PtyView::start()` falls back to
+`QProcess::splitCommand(program)` and populates `arguments` from the remaining
+tokens; when explicit `arguments` are provided, `program` is never split. The
+child receives `TERM=xterm-256color`, `COLORTERM=truecolor`,
 and `TERM_PROGRAM=qmltui` unless a different `terminalType` is selected.
 
 The process lifecycle is exposed through `processState`, `running`, `processId`,

@@ -114,7 +114,7 @@ void CustomBlock::keyPressEvent(qmltui::KeyEvent* event) {
 
 ## 3. CMake Registration and QML Usage
 
-List the header and source under `SOURCES` in `qt_add_qml_module()` and link `QmlTui::Core` (guard `DEPENDENCIES TARGET` on `NOT IMPORTED` so the same `CMakeLists.txt` works with both `FetchContent` and `find_package(QmlTui)`; see [In-Tree vs. Installed](../build-configuration.md#in-tree-fetchcontent--add_subdirectory-vs-installed-find_package)):
+List the header and source under `SOURCES` in `qt_add_qml_module()` and link `QmlTui::Core` (guard `DEPENDENCIES TARGET` on `NOT IMPORTED` so the same `CMakeLists.txt` works with both `FetchContent` and `find_package(QmlTui)`; see [In-Tree vs. Installed Builds](../build-configuration.md#in-tree-vs-installed-builds)):
 
 ```cmake
 set(app_qml_dependencies)

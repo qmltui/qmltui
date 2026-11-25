@@ -12,7 +12,7 @@ This guide highlights every structural and behavioral difference a Qt Quick deve
 | `import QtQuick` | `import QtQml` + `import QmlTui` | Never import `QtQuick` or link `Qt6::Quick` |
 | `import QtQuick.Controls` | `import QmlTui.Controls` | Terminal-default controls; no framework theme singleton |
 | `import QtQuick.Layouts` | `import QmlTui` | `RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`, `Layout` live in `QmlTui` |
-| `import QtQml.Models` | `import QtQml.Models` | `ListModel`, `ListElement`, `DelegateChooser` work unchanged |
+| `import QtQml.Models` | `import QtQml.Models` (+ `Qt.labs.qmlmodels` on Qt 6.8) | `ListModel` and `ListElement` live in `QtQml.Models`; `DelegateChooser` lives in `Qt.labs.qmlmodels` on Qt 6.8 (also in `QtQml.Models` on Qt 6.9+) |
 | `Window` / `ApplicationWindow` | [`Terminal`](../qml-types/terminal.md) | `Terminal.AltScreen` (default) or `Terminal.Inline` |
 | Window close button (`X`) | Explicit `Keys.onPressed` / `Shortcut` | Root `Terminal` does not auto-bind `Q` or `Escape` to `Qt.quit()` |
 
@@ -58,30 +58,30 @@ Terminal {
 
 ## Text, Rich Formatting, and Text Inputs
 
-- **`Text.AutoText` parses Markdown and ANSI**: Unlike Qt Quick's HTML-based `AutoText`, `Text.textFormat` defaults to `Text.AutoText` and automatically switches to `MarkdownText` or `AnsiText` when Markdown or ANSI escape sequences are detected. Set `textFormat: Text.PlainText` explicitly when displaying untrusted or literal user text so escape sequences render safely as visible glyphs.
+- **`Text.AutoText` parses subset HTML, inline Markdown, and ANSI SGR**: `Text.textFormat` exposes `Text.PlainText`, `Text.RichText`, `Text.AnsiText`, and `Text.AutoText` (the default; there is no separate `MarkdownText` enum). Under `Text.AutoText`, `Text` parses subset HTML tags, inline Markdown (`**bold**`, `` `code` ``, `[label](url)`), and ANSI SGR escape sequences simultaneously (see [`Text`](../qml-types/text.md)). Set `textFormat: Text.PlainText` explicitly when displaying literal or untrusted user text so markup and escape payloads are not interpreted (`Text` leaves printable bytes literal and drops raw zero-advance C0/C1 control characters rather than injecting terminal controls).
 - **`TextInput` and `TextArea`**:
-  - `Ctrl+C` copies the active selection when text is selected, and otherwise bubbles up to ancestor `Keys.onPressed` handlers and `Shortcut` items.
+  - When `TextInput` or `TextArea` has active focus and a selection, `Ctrl+C` copies the selection and accepts the event; when nothing is selected, `Ctrl+C` bubbles up to ancestor `Keys.onPressed` handlers. Note that [`Shortcut`](../qml-types/shortcut.md) matches *before* focused-item dispatch (suppressing only unmodified printable chords inside text inputs), so a global `Shortcut { sequence: "Ctrl+C" }` will intercept `Ctrl+C` even while text is selected—handle `Ctrl+C` in root `Keys.onPressed` if you want copy-when-selected behavior.
   - `TextInput.editingFinished()` emits on Return/Enter and when active focus is lost (`activeFocus` transitions `true -> false`), matching Qt Quick.
-  - Syntax highlighting on `TextArea` uses QmlTui's `SyntaxHighlighter` / `highlightRanges` API rather than `QQuickTextDocument`.
+  - Syntax highlighting on [`TextArea`](../qml-types/textarea.md) uses `setHighlightLayer(name, ranges, revision, priority)` / `clearHighlightLayer()` / `clearHighlights()` with [`highlightRange`](../qml-types/highlightrange.md) values rather than `QQuickTextDocument` or a `SyntaxHighlighter` base class (see [`examples/recipes/text_area_highlighting/`](../../examples/recipes/text_area_highlighting/)).
 
 ## Layouts (`RowLayout`, `ColumnLayout`, `GridLayout`, `StackLayout`)
 
 - **Auto-clipping**: `RowLayout`, `ColumnLayout`, and `GridLayout` default `clip: true` so overflowing children do not bleed over adjacent panes.
 - **Stretch factors**: `Layout.horizontalStretch` and `Layout.verticalStretch` default to `1` (participating equally when `fillWidth` / `fillHeight` is enabled).
-- **Per-side margins only**: Use `Layout.leftMargin`, `Layout.rightMargin`, `Layout.topMargin`, and `Layout.bottomMargin` (there is no shorthand `Layout.margins` property).
+- **No `Layout` margin properties**: [`Layout`](../qml-types/layout.md) does not provide `Layout.margins`, `Layout.leftMargin`, `Layout.rightMargin`, `Layout.topMargin`, or `Layout.bottomMargin`. Control whitespace with `spacing` on the layout container, `padding` on a surrounding `Rectangle` or `Panel`, or an explicit spacer `Item`.
 
 ## Virtualized Views and Models
 
-- **Fixed cell stride**: `ListView` (`rowHeight`), `TableView` (`rowHeight`), `TreeView` (`rowHeight`), and `GridView` (`cellWidth`, `cellHeight`) use uniform integer cell strides for O(1) virtualized scrolling. There is no kinetic flick physics, `section`, or `header`/`footer` delegate API.
+- **Uniform cell strides**: [`ListView`](../qml-types/listview.md) measures its first delegate once and reuses that height for every row; [`TableView`](../qml-types/tableview.md) and [`TreeView`](../qml-types/treeview.md) use fixed 1-row strides; [`GridView`](../qml-types/gridview.md) uses explicit `cellWidth` and `cellHeight` (none of `ListView`, `TableView`, or `TreeView` expose a `rowHeight` property). There is no kinetic flick physics, `section`, or `header`/`footer` delegate API.
 - **Static JS model cap**: Integer counts and JavaScript arrays are capped at `10,000` entries; use a C++ or Python `QAbstractItemModel` for unbounded datasets (100,000+ rows).
 - **Standard Qt Widgets roles work out of the box**: Unlike Qt Quick views, QmlTui views decode `Qt::ForegroundRole`, `Qt::BackgroundRole`, `Qt::TextAlignmentRole`, `Qt::CheckStateRole`, `Qt::DecorationRole` (string/glyph), and `flags()` (`ItemIsEnabled`, `ItemIsUserCheckable`) automatically. See [Models in QmlTui Views](models.md).
 
 ## Input, Focus, and Shortcuts
 
 - **`Keys.priority` defaults to `Keys.BeforeItem`**: Unlike Qt Quick (where `Keys.AfterItem` is default), QmlTui runs attached `Keys.onPressed` handlers *before* the item's built-in C++ `keyPressEvent()`. Set `Keys.priority: Keys.AfterItem` when you want a control (`TextInput`, `ListView`, `Button`) to handle keys first.
-- **`Keys.forwardTo` limitation**: `Keys.forwardTo` forwards key events to target items' attached `Keys.onPressed` handlers; it does not forward into built-in C++ `keyPressEvent()` implementations (such as `ListView` or `TextInput` navigation). Use `FocusScope` or explicit handlers when coordinating C++ controls.
-- **`MouseArea` press/release acceptance**: `MouseArea` pre-accepts press and release events before emitting `pressed(mouse)` and `released(mouse)`, matching Qt Quick—set `mouse.accepted = false` inside `onPressed` to let an underlying `MouseArea` receive the press and implicit grab.
-- **`Shortcut`**: Accepts both portable key-chord strings (`"Ctrl+Q"`, `"Alt+1"`, `"F5"`) and Qt integer key bitmasks.
+- **`Keys.forwardTo` routing**: If a key event remains unaccepted after an item's own `Keys` handlers and `keyPressEvent()`, [`Keys.forwardTo`](../qml-types/keys.md) delivers each target's built-in C++ `keyPressEvent()` first and then its `Keys.onPressed` signal (skipping target `Keys.priority` and specific-key signals such as `Keys.onReturnPressed`).
+- **`MouseArea` press/release acceptance and bubbling**: [`MouseArea`](../qml-types/mousearea.md) pre-accepts press and release events before emitting `pressed(mouse)` and `released(mouse)`, matching Qt Quick—set `mouse.accepted = false` inside `onPressed` to pass the press and implicit grab up to an ancestor `MouseArea`. Note that unaccepted mouse events bubble strictly along the **parent chain** (not to overlapping sibling items behind in z-order).
+- **`Shortcut`**: Accepts both portable key-chord strings (`"Ctrl+Q"`, `"Alt+1"`, `"F5"`, `"Shift+Tab"`) and Qt integer key bitmasks.
 
 ## States, Transitions, and `Behavior`
 
@@ -96,8 +96,8 @@ Terminal {
 
 ## Styling and Colors
 
-- **Terminal-default colors**: Core items and `QmlTui.Controls` default to the terminal's own foreground and background (`"default"`, an invalid `qmltui::Color`). There is no `Material`, `Fusion`, or `Universal` style plugin and no global framework `Palette` singleton.
-- **Explicit overrides survive focus and disabled states**: Setting `color`, `textColor`, or `borderColor` explicitly overrides default focus/disabled styling. Share application-wide colors through reusable QML components or a `pragma Singleton` `Theme.qml` (see [Styling and Colors](styling-and-colors.md)).
+- **Terminal-default colors vs. unset sentinels**: Core items and `QmlTui.Controls` default to the terminal's own foreground and background (`"default"`, i.e. [`QmlTui.defaultColor`](../qml-types/qmltui.md), which is a **valid** `qmltui::Color` with `valid === true`). Controls that fall back to reverse-video highlighting (such as `ComboBox.selectionColor`) use `QmlTui.invalidColor` (`valid === false`) as their unset sentinel. There is no `Material`, `Fusion`, or `Universal` style plugin and no global framework `Palette` singleton.
+- **Explicit overrides survive focus and disabled states**: Setting `color`, `textColor`, or `borderColor` explicitly keeps your configured colors across focus and disabled transitions (disabled controls still apply dim SGR 2 without clobbering custom colors). Share application-wide colors through reusable QML components or a `pragma Singleton` `Theme.qml` (see [Styling and Colors](styling-and-colors.md)).
 
 ## Next Steps
 

@@ -48,9 +48,10 @@ optional. Add `import QtQml.Models` when using `ListModel` or `DelegateModel`.
 
 Start new files with `pragma ComponentBehavior: Bound`. It resolves ids and
 properties at compile time, lets `qmlcachegen` compile more bindings to C++,
-and is what makes `required property` delegates reliable. Many existing files,
-including the Controls module, predate this pragma; do not add it to a file as a
-drive-by change unless the file is otherwise being reworked.
+and is what makes `required property` delegates reliable. All built-in
+`QmlTui.Controls` files use this pragma; if you encounter legacy third-party
+files without it, do not add it as an unrelated drive-by change unless the file
+is otherwise being reworked.
 
 Prefer concrete property types. `var` forces dynamic JS values and blocks
 compilation of the bindings that use it.

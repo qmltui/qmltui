@@ -44,7 +44,7 @@ hardware and software configuration:
 ## Optimizations Implemented in QmlTui
 
 1. **Demand-Driven QML Delegate Schema Inspection (`DelegateUtils::resolveDelegateSchema`)**:
-   - Inspects the compiled delegate `QMetaObject` once per view/delegate component to cache declared property indexes (`QHash<QString, int>`), required standard numeric roles (`NumericItemRoles::RoleMask`), and whether the delegate declares `model` or `modelData`.
+   - Inspects the compiled delegate `QMetaObject` once per view/delegate component to cache declared property indexes (`QHash<QString, int>`), required standard numeric roles (`NumericItemRoles::ClaimedName` `quint16` mask), and whether the delegate declares `model` or `modelData`.
    - Bound delegates (`pragma ComponentBehavior: Bound`) that declare `required property string display` skip querying unused roles and skip constructing the `model` map, achieving **1.0 `data()` read per scroll step** (`4.0` for 4-column `GridView`).
 2. **Eliminated Per-Row `QQmlPropertyMap` Allocations**:
    - Replaced per-delegate `QQmlPropertyMap` instances (which previously built a dynamic `QQmlOpenMetaObject` on every row) with on-demand `QVariantMap` when `model` or `modelData` is used, preserving full compatibility with existing QML delegates while cutting per-delegate memory by **30%** and initial creation time by **2.6×–3.3×**.
@@ -86,7 +86,7 @@ hardware and software configuration:
 1. **Initial Creation (100k rows)**: QmlTui is fastest across all four views — **2.9×–12.4× faster** on `ListView`, **3.3×–12.7× faster** on `GridView`, **1.6×–9.1× faster** on `TableView`, and **7.3×–11.1× faster** than Qt Quick on `TreeView` while beating/matching `QTreeView`.
 2. **Scrolling (CPU Sync & Full Render)**:
    - Even when comparing strictly against Qt Quick's **`Scroll Sync`** (`polishItems() + sync()`, the CPU cost Qt Quick pays on a hardware GPU/RHI backend), QmlTui is **10.1× faster** on `ListView` (`3.9 µs` vs. `39.5 µs`), **13.6× faster** on `GridView` (`13.4 µs` vs. `181.8 µs`), and **3.1×–104× faster** on `TableView` and `TreeView`.
-   - End-to-end (`Scroll Total`), QmlTui scrolls in **8.7–34.3 µs** per step (**19×–54× faster** than Qt Quick Software and Qt Widgets).
+   - End-to-end (`Scroll Total`), QmlTui scrolls in **8.7–34.3 µs** per step (**6.4×–54× faster** than Qt Quick Software and Qt Widgets).
 3. **Live `dataChanged` Updates**: All QmlTui views update and repaint a mutated row in **6.2–22.2 µs**, outperforming Qt Quick on `ListView`, `TableView`, and `TreeView` and avoiding `QListView`'s `2,532.6 µs` 100k-row invalidation penalty under `ScrollPerPixel`.
 4. **Memory & Model Reads**: QmlTui uses **30% less heap memory per QML delegate** than Qt Quick (`3,767 B` vs. `5,347 B`), **81% less memory per `TreeView` row** (`48 B` vs. `248 B`), and performs the theoretical minimum **1.0 model read per newly visible row** on bound delegates.
 

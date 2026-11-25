@@ -27,19 +27,19 @@ Complete quick-reference for `qmltui::Runner` JavaScript scenarios (`app` and `R
 
 ### Mouse Input
 
-Mouse buttons accept `"left"` (default), `"middle"`, or `"right"`. Coordinate methods use 0-based terminal screen coordinates `(x, y)`; text helpers (`clickText`, `hoverText`) translate frame matches through the renderer's screen origin automatically (including `Terminal.Inline` bottom viewports).
+Mouse buttons accept `"left"` (default), `"middle"`, or `"right"`. Coordinate methods use 0-based terminal screen coordinates `(x, y)`; text helpers (`clickText`, `hoverText`) translate frame matches through the renderer's screen origin automatically (including `Terminal.Inline` bottom viewports). Click, drag, and scroll helpers inject directly into the input router regardless of `Terminal.mouseReporting` (only `hover` / `hoverText` check active hover reporting + `mouseReporting`), so `Terminal.Inline` apps expecting real-terminal clicks must still set `mouseReporting: true` explicitly.
 
 | Signature | Behavior |
 | :--- | :--- |
 | `clickText(text, occurrence?, button?, modifiers?)` / `clickText(text, { occurrence?, button?, modifiers? })` | Clicks the center cell of the 0-based `occurrence` of rendered single-row `text` and waits for the frame. |
-| `hoverText(text, occurrence?, modifiers?)` / `hoverText(text, { occurrence?, modifiers? })` | Moves pointer over the center of rendered `text` (delivered when `MouseArea.hoverEnabled` is active) and waits for the frame. |
+| `hoverText(text, occurrence?, modifiers?)` / `hoverText(text, { occurrence?, modifiers? })` | Moves pointer over the center of rendered `text` (delivered when `MouseArea.hoverEnabled` and `Terminal.mouseReporting` are active) and waits for the frame. |
 | `click(x, y, button?, modifiers?)` / `click(x, y, { button?, modifiers? })` | Sends press + release at `(x, y)` and waits for the frame. |
 | `doubleClick(x, y, button?, modifiers?)` / `doubleClick(x, y, { button?, modifiers? })` | Sends two consecutive press/release cycles at `(x, y)`. |
 | `mouseDown(x, y, button?, modifiers?)` / `mouseDown(x, y, { button?, modifiers? })` | Presses button at `(x, y)` without releasing. |
 | `mouseUp(x, y, button?, modifiers?)` / `mouseUp(x, y, { button?, modifiers? })` | Releases button at `(x, y)`. |
-| `hover(x, y, modifiers?)` / `hover(x, y, { modifiers? })` | Moves pointer to `(x, y)` with no button held (active only when hover reporting is enabled). |
+| `hover(x, y, modifiers?)` / `hover(x, y, { modifiers? })` | Moves pointer to `(x, y)` with no button held (active only when hover reporting and `Terminal.mouseReporting` are enabled). |
 | `drag(startX, startY, endX, endY, button?, modifiers?)` / `drag(..., { button?, modifiers? })` | Presses at `(startX, startY)`, emits cell-by-cell motion, and releases at `(endX, endY)`. |
-| `scroll(x, y, deltaX, deltaY, modifiers?)` / `scroll(..., { modifiers? })` | Sends mouse wheel scroll at `(x, y)` (e.g. `deltaY: 120` or `-120`). |
+| `scroll(x, y, deltaX, deltaY, modifiers?)` / `scroll(..., { modifiers? })` | Sends mouse wheel scroll at `(x, y)` in signed notches (e.g. `deltaY: 1` up or `-1` down). |
 
 ### Clock, Timing & Frame Synchronization
 

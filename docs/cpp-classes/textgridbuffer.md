@@ -21,11 +21,11 @@ Controls how `diff()` and `diffRelative()` serialize cell changes into VT/ANSI e
 
 #### Grid Geometry and Cell Access
 
-- `bool resize(int width, int height)` — resizes the buffer in columns and rows and resets all cells to default spaces. Returns `true` if dimensions changed.
+- `bool resize(int width, int height)` — resizes the buffer in columns and rows and resets all cells to default spaces. Returns `true` for any valid non-negative dimensions within the cell limit (`10,000,000` cells), even if dimensions are unchanged.
 - `void clear()` — resets all cells to default spaces and clears the per-frame OSC 8 hyperlink table.
 - `void clearRect(int x, int y, int width, int height)` — clears cells within the given rectangle to default spaces (breaking any split wide-glyph spans at the edges).
-- `void copyFrom(const TextGridBuffer &source, int x, int y, int width, int height)` — copies a rectangular region from `source` into this buffer.
-- `void splitWideGlyphSpan(int x, int y)` — clears any multi-column glyph spanning `(x, y)` cleanly so partial overwrites do not leave orphaned continuation cells.
+- `void copyFrom(const TextGridBuffer &other)` — copies dimensions, cell contents, and the link table from `other` (reusing storage when dimensions already match).
+- `void splitWideGlyphSpan(int startX, int y, int spanWidth = 1)` — clears any multi-column glyph straddling `[startX, startX + spanWidth)` on row `y` cleanly so partial overwrites do not leave orphaned continuation cells.
 - `void swap(TextGridBuffer &other) noexcept` — swaps contents with `other` in O(1).
 - `int width() const` / `int height() const` — buffer dimensions in columns and rows.
 - `bool contains(int x, int y) const` — returns `true` when `(x, y)` is inside the buffer bounds.
@@ -60,7 +60,7 @@ Overloads are provided for both raw `uint32_t` ARGB values and [`qmltui::Color`]
 - `std::string diffRelative(const TextGridBuffer &nextBuffer) const` / `void diffRelative(const TextGridBuffer &nextBuffer, std::string &out, const AnsiEncodeOptions &options = {}) const` — emits relative cursor movement sequences for `InlineRenderer`.
 - `std::string toAnsiString() const` / `void toAnsiString(std::string &out) const` — serializes the full buffer into newline-separated ANSI rows.
 - `int lastContentColumn(int row) const` / `void appendRowAnsi(std::string &out, int row, ColorDepth depth) const` — row-level serialization helpers used by scrollback output.
-- `uint8_t registerLink(const QString &url)` / `QString linkUrl(uint8_t linkId) const` / `int linkCount() const` / `void setActiveLinkId(uint8_t linkId)` / `uint8_t activeLinkId() const` — per-frame OSC 8 hyperlink table (`1..255`; `0` means no link).
+- `uint8_t registerLink(const QString &url)` / `QString linkUrl(uint8_t linkId) const` / `qsizetype linkCount() const` / `void setActiveLinkId(uint8_t linkId)` / `uint8_t activeLinkId() const` — per-frame OSC 8 hyperlink table (`1..255`; `0` means no link).
 
 ## Example
 

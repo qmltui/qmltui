@@ -92,8 +92,10 @@ probe, local cached-text fallback, or clipboard monitoring.
 
 Ordinary terminal-initiated paste remains independent: its text arrives through
 focused input handling, including `KeyEvent.paste`. It does not require
-`requestText()` and is never mistaken for an OSC 52 reply. No application
-Ctrl+V binding is installed automatically.
+`requestText()` and is never mistaken for an OSC 52 reply. No global
+application-wide Ctrl+V shortcut is installed automatically (focused
+[TextInput](textinput.md) and [TextArea](textarea.md) items handle Ctrl+V
+internally by requesting clipboard text via OSC 52 and pasting the reply).
 
 ### Copy feedback
 

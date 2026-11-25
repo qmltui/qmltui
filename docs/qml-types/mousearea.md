@@ -23,7 +23,7 @@ An invisible cell rectangle that reacts to mouse clicks, drags, hover, and the w
 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `acceptedButtons` | `Qt::MouseButtons` | `Qt.LeftButton` | The buttons this area reacts to, e.g. `Qt.LeftButton \| Qt.RightButton`. A press with any other button is left unaccepted, so an area behind can take it. |
+| `acceptedButtons` | `Qt::MouseButtons` | `Qt.LeftButton` | The buttons this area reacts to, e.g. `Qt.LeftButton \| Qt.RightButton`. A press with any other button is left unaccepted, so an ancestor area along the parent chain can take it. |
 | `pressed` | `bool` | `false` | Read-only. True while an accepted button is held after pressing this area. Works on every terminal that reports clicks; unlike `containsMouse` it needs no motion reporting. The `pressed(event)` signal shares the name, as in Qt Quick: `onPressed` binds the signal, `area.pressed` reads the property. |
 | `pressedButtons` | `Qt::MouseButtons` | `Qt.NoButton` | Read-only. The accepted buttons currently held. |
 | `containsPress` | `bool` | `false` | Read-only. `pressed` while the pointer is still inside the area. Button-held motion is reported in the default mouse mode, so this follows a drag out of the area and back without `hoverEnabled` — the property to bind press feedback to. |
@@ -36,8 +36,8 @@ An invisible cell rectangle that reacts to mouse clicks, drags, hover, and the w
 
 | Signal | Description |
 | :--- | :--- |
-| `pressed(MouseEvent event)` | An accepted button went down inside the area. The `pressed` property is already true. |
-| `released(MouseEvent event)` | The button came up. Delivered to the area that took the press even when the pointer has left it. |
+| `pressed(MouseEvent event)` | An accepted button went down inside the area. The `pressed` property is already true and `event.accepted` starts `true`; setting `event.accepted = false` in a handler rolls back press state and lets an ancestor handle the press. |
+| `released(MouseEvent event)` | The button came up. Delivered to the area that took the press even when the pointer has left it; `event.accepted` starts `true`, and setting `event.accepted = false` suppresses `clicked`. |
 | `clicked(MouseEvent event)` | The button came up inside the area. Follows `released`. |
 | `entered()` | Emitted when `containsMouse` becomes true. |
 | `exited()` | Emitted when `containsMouse` becomes false, including when `hoverEnabled` is switched off or the area is hidden or disabled while hovered. |

@@ -31,7 +31,7 @@ Bitwise `|` and `&` operators combine and test `TextAttribute` flags (for exampl
 | :--- | :--- | :--- |
 | `InlineGlyphCapacity` | `static constexpr int` | Maximum UTF-8 byte length (`11`) stored inline before interning. |
 | `MaxGraphemeBytes` | `static constexpr int` | Maximum UTF-8 byte length (`64`) stored per grapheme cluster. |
-| `MaxInternedGlyphs` | `static constexpr int` | Hard upper bound (`16384`) on unique multi-byte clusters retained in the process-wide intern table. |
+| `MaxInternedGlyphs` | `static constexpr size_t` | Hard upper bound (`16384`) on unique multi-byte clusters retained in the process-wide intern table. |
 | `fgColor` | `uint32_t` | 32-bit ARGB foreground color (`0x00000000` represents the terminal default foreground). |
 | `bgColor` | `uint32_t` | 32-bit ARGB background color (`0x00000000` represents transparent / terminal default background). |
 | `displayWidth` | `uint8_t` | Column width occupied by the grapheme cluster (default `1`). |

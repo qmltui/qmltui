@@ -1,13 +1,13 @@
 # Testing and Recording with Runner
 
-`qmltui::Runner` drives a QmlTui `Terminal` application headlessly for automated tests, interactive debugging, and Asciinema v2 `.cast` recordings. It feeds keyboard and mouse input through `InputDecoder`, advances animations and timers on a virtual clock, asserts committed terminal frames (`TextGridBuffer`), and writes structured artifacts (`result.json`, `final.txt`, `failure.txt`).
+`qmltui::Runner` drives a QmlTui `Terminal` application headlessly for automated tests, interactive debugging, and Asciinema v2 `.cast` recordings. It feeds typed text and bracketed pastes through `InputDecoder`, dispatches named keys and mouse events directly into the input router, advances animations and timers on a virtual clock, asserts committed terminal frames (`TextGridBuffer`), and writes structured artifacts (`result.json`, `final.txt`, `failure.txt`).
 
 When an executable links `QmlTui::Runner`, QML-created `Terminal` roots automatically install a startup hook. Normal interactive startup is unchanged unless you launch the binary through `qmltui-runner` or set `QMLTUI_RUNNER_*` environment variables. (If you construct `qmltui::Terminal` in C++ without QML, call `qmltui::Runner::startFromEnvironment(&engine, terminal)` after creating the root.)
 
 > [!TIP]
 > Building with AI coding agents? See [Agentic Development Loop with Runner](agentic-development.md) for a step-by-step build, capture, and verification workflow plus ready-to-copy `AGENTS.md` instructions and bundled skills.
 
-## 1. Write a JavaScript Scenario
+## Write a JavaScript Scenario
 
 A scenario script defines `function main(app)` in a `.js` file, or `export function main(app)` in an `.mjs` ES module (which can `import` shared helper modules using relative paths). Add `/** @param {Runner} app */` above `main` to enable IDE autocomplete and hover help:
 
@@ -32,7 +32,7 @@ Every `app.*` method is synchronous and blocks inside a nested Qt event loop unt
 
 ### Simulate Keyboard, Clipboard, and Mouse Input
 
-Input methods route through the same `InputDecoder` as a live terminal and wait for the next committed frame:
+`typeText()` and `paste()` decode UTF-8 bytes through `InputDecoder`, while `press()` and mouse helpers inject normalized events directly into the input router (mouse clicks/drags/scrolls dispatch regardless of `Terminal.mouseReporting`, so `Terminal.Inline` apps expecting real-terminal clicks must still set `mouseReporting: true` explicitly). Every helper waits for the next committed frame:
 
 | Operation | Example | Behavior |
 | :--- | :--- | :--- |
@@ -40,7 +40,7 @@ Input methods route through the same `InputDecoder` as a live terminal and wait 
 | **Typed text** | `app.typeText("hello 世界")` | Decodes UTF-8 characters into per-character key events and waits once for the committed frame. |
 | **Bracketed paste** | `app.paste("line 1\nline 2")` | Delivers multi-line text as a single bracketed paste so `\n` and `\t` insert text instead of triggering `Return` or `Tab` navigation. |
 | **Click rendered text** | `app.clickText("Apply")` | Finds the visible text match on screen, clicks its center cell, and waits for the committed frame. |
-| **Coordinate mouse actions** | `app.click(10, 5)`<br>`app.doubleClick(10, 5)`<br>`app.drag(5, 5, 25, 5)`<br>`app.scroll(15, 10, 0, 120)` | Sends SGR mouse press/release, double-click, button-motion drag, hover (`app.hover(x, y)`), or wheel scroll events at cell coordinates `(x, y)`. |
+| **Coordinate mouse actions** | `app.click(10, 5)`<br>`app.doubleClick(10, 5)`<br>`app.drag(5, 5, 25, 5)`<br>`app.scroll(15, 10, 0, -1)` | Sends mouse press/release, double-click, button-motion drag, hover (`app.hover(x, y)`), or wheel scroll events (`deltaX`/`deltaY` in signed notches: `+1` up / `-1` down) at cell coordinates `(x, y)`. |
 | **Viewport resize** | `app.resize(100, 30)` | Resizes the terminal viewport to `columns` × `rows` and waits for the reflowed frame. |
 
 ### Assert Committed Frames, Regions, and Styles
@@ -97,7 +97,7 @@ function main(app) {
 }
 ```
 
-## 2. Run Scenarios with the `qmltui-runner` CLI
+## Run Scenarios with the `qmltui-runner` CLI
 
 The `qmltui-runner` command-line tool (built by default in top-level builds or when `-DQMLTUI_ENABLE_RUNNER=ON` is set) launches any `QmlTui::Runner`-linked executable, manages the activation handshake and timeouts, and verifies the resulting `result.json`.
 
@@ -208,7 +208,7 @@ Example `result.json` excerpt emitted when a scenario fails (abbreviated; live r
 }
 ```
 
-## 3. CMake and CTest Integration
+## CMake and CTest Integration
 
 To run scenarios automatically in CTest, link `QmlTui::Runner` conditionally into your application target and register each scenario with `qmltui_add_scenario()`. You do not need a separate test executable.
 

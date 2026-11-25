@@ -137,7 +137,7 @@ Inside an `Item`, omitting `target` defaults to the enclosing item. Inside a `St
 
 ## Binding and Restoration Lifecycle
 
-When built with `QMLTUI_ENABLE_PRIVATE_QT=ON`, entering a state suspends preexisting bindings on modified properties rather than overwriting them, and exiting to the base state (or transitioning through chained states `A -> B -> base`) with `restoreEntryValues: true` (the default) restores the original base binding or value. When built with `QMLTUI_ENABLE_PRIVATE_QT=OFF`, state exit restores the snapshotted entry value via `setProperty()`, which replaces prior QML bindings on that property with a static value. Setting `restoreEntryValues: false` on a `PropertyChanges` leaves its modified properties at their state values upon exit.
+When built with `QMLTUI_ENABLE_PRIVATE_QT=ON`, entering a state suspends preexisting bindings on modified properties rather than overwriting them, and exiting to the base state (or transitioning through chained states `A -> B -> base`) with `restoreEntryValues: true` (the default) restores the original base binding or value. When built with `QMLTUI_ENABLE_PRIVATE_QT=OFF`, state exit restores the snapshotted entry value via `QQmlProperty::write()`, which replaces prior QML bindings on that property with a static value. Setting `restoreEntryValues: false` on a `PropertyChanges` leaves its modified properties at their state values upon exit.
 
 ## Independent State Controllers
 

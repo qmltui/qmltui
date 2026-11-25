@@ -25,14 +25,14 @@ The interaction template every button-like control is built on: text, `pressed` 
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `text` | `string` | `""` | Holds the label the default `contentItem` of each control draws. |
-| `pressed` | `bool` | `false` | Holds whether a mouse button is currently held down on the control; keyboard activation never sets it, since terminals report no key releases. |
+| `pressed` | `bool` | `false` | Holds whether a mouse button is currently held down on the control; keyboard activation triggers `clicked()` on press without setting `pressed`, since many terminals do not report key releases. |
 | `down` | `bool` | `pressed` | Holds the visual pressed state used by styles; it follows `pressed` unless assigned explicitly. |
 | `checkable` | `bool` | `false` | Whether activation toggles `checked` before emitting `clicked()`; CheckBox and RadioButton set it. |
 | `checked` | `bool` | `false` | Holds the toggle state of a checkable control; setting it from code emits neither `toggled()` nor `clicked()`. |
 | `autoExclusive` | `bool` | `false` | Whether a checked control stays checked when activated, so a group never ends up with nothing selected; RadioButton sets it. |
 | `highlighted` | `bool` | `false` | Whether the default `contentItem` draws its label bold as a visual emphasis, independent of focus and hover. |
 | `hoverEnabled` | `bool` | `false` | Whether the control tracks the pointer and exposes `hovered`; off by default because it enables any-motion mouse reporting for the whole application, and inert while [Terminal](terminal.md)`.mouseReporting` is false. |
-| `hovered` | `alias` |  | Read-only. True while `hoverEnabled` is set and the pointer is over the control; always false on terminals without motion reporting. |
+| `hovered` | `bool` | `false` | Read-only. True while `hoverEnabled` is set and the pointer is over the control; always false on terminals without motion reporting. |
 | `textColor` | `color` | `"default"` | Holds the terminal colour the default `contentItem` uses for its label, where `"default"` is the terminal's own foreground colour. |
 | `padding` | `int` | `0` | Holds the default for the four directional paddings, in cells. |
 | `topPadding` | `int` | `padding` | Holds the rows between the top edge and `contentItem`. |
@@ -55,7 +55,7 @@ The interaction template every button-like control is built on: text, `pressed` 
 
 | Method | Description |
 | :--- | :--- |
-| `var toggle()` | Flips `checked` and emits `toggled()` on a checkable control; does nothing when `checkable` is false, or when `autoExclusive` is set and the control is already checked. |
+| `void toggle()` | Flips `checked` and emits `toggled()` on a checkable control; does nothing when `checkable` is false, or when `autoExclusive` is set and the control is already checked. |
 
 ## Detailed Description
 

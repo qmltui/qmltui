@@ -37,7 +37,8 @@ cmake -S . -B build \
   -DQMLTUI_ENABLE_IMAGE=ON \
   -DQMLTUI_ENABLE_PTYVIEW=ON   # Linux and macOS only
 cmake --build build --parallel
-ctest --test-dir build -LE Demo --output-on-failure
+# On headless Linux/SSH/WSL with QMLTUI_ENABLE_IMAGE=ON, prefix with QT_QPA_PLATFORM=offscreen:
+QT_QPA_PLATFORM=offscreen ctest --test-dir build -LE Demo --output-on-failure
 ```
 
 Install the repository git hooks once to auto-check formatting before commits, and use `clang-format==23.1.3` (matching CI) to avoid formatter diffs:
@@ -56,4 +57,4 @@ reuse lint
 git diff --check
 ```
 
-Pull requests touching private-Qt features (`Behavior` or `PropertyChanges`) or feature gating must keep both `QMLTUI_ENABLE_PRIVATE_QT=ON` and `QMLTUI_ENABLE_PRIVATE_QT=OFF` build trees green. Linux CI verifies both `Private Qt ON` and `OFF` matrices (plus ASan/UBSan and Clang coverage), while Windows and macOS CI verify `Private Qt ON` (see [docs/contributing/ci-runners.md](docs/contributing/ci-runners.md) and [docs/contributing/recording.md](docs/contributing/recording.md)).
+Pull requests touching private-Qt features (`Behavior` or `PropertyChanges`) or feature gating must keep both `QMLTUI_ENABLE_PRIVATE_QT=ON` and `QMLTUI_ENABLE_PRIVATE_QT=OFF` build trees green. Linux CI verifies both `Private Qt ON` and `OFF` matrices (plus ASan/UBSan, Clang coverage, and a static system-unbundled packaging check), while Windows and macOS CI verify `Private Qt ON` (see [docs/contributing/ci-runners.md](docs/contributing/ci-runners.md) and [docs/contributing/recording.md](docs/contributing/recording.md)).

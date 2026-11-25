@@ -195,7 +195,7 @@ See [Testing with Runner](docs/guides/testing.md) and [Agentic Development Loop]
 
 ## Platform Support and Design Notes
 
-- **Supported platforms**: Linux, macOS, Windows (Windows Terminal and modern ConPTY sessions; legacy `conhost.exe` is not targeted), and WebAssembly (`xterm.js`). `QmlTui.PtyView` uses `forkpty` and `libvterm` and is supported on Linux and macOS only.
+- **Supported platforms**: Linux, macOS, Windows (Windows Terminal and modern ConPTY sessions; legacy `conhost.exe` is not targeted), and WebAssembly (`xterm.js`). `QmlTui.PtyView` uses `openpty` and `libvterm` and is supported on Linux and macOS only.
 - **Integer character-cell geometry**: Coordinates and dimensions (`x`, `y`, `width`, `height`, margins, padding, spacing) are integer character cells; `Canvas` and `Image` draw sub-cell patterns inside those cell bounds.
 - **Explicit keyboard quit path**: Raw-mode terminals have no window close button, and `TextInput`/`TextArea` bind `Ctrl+C` to copy. Applications must provide an explicit exit handler (such as `Q` or contextual `Escape` on the root `Terminal`).
 - **Runtime capability probing**: [`TerminalCapabilities`](docs/qml-types/terminalcapabilities.md) probes DEC mode 2026, Kitty keyboard, SGR mouse, Kitty/Sixel graphics, and OSC 52 clipboard at startup and degrades cleanly when unsupported.

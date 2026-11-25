@@ -193,7 +193,8 @@ def main() -> int:
         print(
             f"Error: QmlTui QML plugins not found under '{qml_dir / 'QmlTui'}'.\n"
             "Build the QML plugin targets first (or set QMLTUI_BUILD_DIR):\n"
-            "  cmake -S . -B build -DQMLTUI_ENABLE_PRIVATE_QT=OFF\n"
+            "  cmake -S . -B build -DQMLTUI_ENABLE_PRIVATE_QT=OFF "
+            "-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_BUILD_BENCHMARKS=OFF\n"
             "  cmake --build build --target QmlTuiCoreplugin QmlTuiControlsplugin",
             file=sys.stderr,
         )

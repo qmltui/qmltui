@@ -8,9 +8,9 @@ Before writing code, review the architecture boundaries and style rules in [`AGE
 
 1. **Architecture checks**:
    - Never import `QtQuick` or link `Qt6::Quick` / `Qt6::Gui` into `QmlTui::Core`.
-   - Keep platform-specific code strictly inside `src/QmlTui/Core/Primitives/{Posix,Win32Console,Wasm,Memory}*Backend.*` behind `TerminalBackend` (no `#ifdef _WIN32` elsewhere and no `<windows.h>` in headers).
+   - Keep platform-specific code strictly inside `src/QmlTui/Core/Primitives/{PosixTerminal,Win32Console,WasmTerminal}Backend.*` behind `TerminalBackend` (`MemoryTerminalBackend.*` lives in `src/QmlTui/Runner/` for headless testing; never add `#ifdef _WIN32` elsewhere or include `<windows.h>` from headers).
    - Do not mark `QML_ELEMENT` classes `final` (Qt's QML type registration subclasses them internally).
-   - Keep public headers clean of internal engine headers (`cmake/CheckEngineIncludes.cmake` enforces this at build time).
+   - Keep public headers free of private/internal includes (`cmake/QmlTuiPublicHeaders.cmake` enforces this at CMake configure time) and keep `src/QmlTui/Core/Engine/*` isolated from concrete `Items/` and `<private/...>` headers (`cmake/CheckEngineIncludes.cmake` enforces this at configure time).
    - Use plain `//` prose comments (no Doxygen tags) and follow `.clang-format`.
 2. **CMake registration (`src/QmlTui/Core/CMakeLists.txt`)**:
    - Add the new `.h` and `.cpp` files to `qt_add_qml_module(QmlTuiCore ... SOURCES ...)`.
@@ -22,7 +22,7 @@ Before writing code, review the architecture boundaries and style rules in [`AGE
    - Update the type table in [`.agents/skills/qmltui-qml/SKILL.md`](../../.agents/skills/qmltui-qml/SKILL.md) so `check-skills.py` stays green.
 4. **Tests and gallery demo**:
    - Add C++ unit tests under `tests/Core/` (registered in `tests/Core/CMakeLists.txt`).
-   - Add an `Item`-rooted demo under `examples/gallery/examples/` and a `Runner` scenario that asserts the rendered terminal frame (not just QML properties).
+   - Add an `Item`-rooted demo under `examples/gallery/examples/<Name>.qml`, register a tile entry in `allEntries` inside `examples/gallery/Main.qml`, add a row to [`docs/examples.md`](../examples.md) (enforced by `check_docs.py`), and add a `Runner` scenario asserting the rendered terminal frame (not just QML properties).
 
 ## Checklist: Adding a `QmlTui.Controls` Type
 
@@ -37,7 +37,7 @@ Before writing code, review the architecture boundaries and style rules in [`AGE
    - If the control includes C++ headers/sources, add them to `SOURCES` and `qmltui_install_headers(QmlTui/Controls FILES ...)`.
 3. **Documentation, skills, gallery, and tests**:
    - Add `docs/qml-types/<control>.md`, update `docs/qml-types/index.md`, `docs/nav.json`, and [`.agents/skills/qmltui-qml/SKILL.md`](../../.agents/skills/qmltui-qml/SKILL.md).
-   - Add `examples/gallery/examples/<Control>.qml` and corresponding unit / `Runner` frame assertions.
+   - Add `examples/gallery/examples/<Control>.qml`, add an entry to `allEntries` in `examples/gallery/Main.qml`, list it in [`docs/examples.md`](../examples.md), and register unit / `Runner` tests in `tests/Controls/CMakeLists.txt`.
 
 ## Checklist: Adding a Standalone Recipe (`examples/recipes/`)
 
@@ -46,7 +46,12 @@ Recipes under `examples/recipes/` are automatically licensed `BSD-3-Clause` via 
 1. Create `examples/recipes/<name>/` with `CMakeLists.txt`, `main.cpp`, `Main.qml` (with a reachable keyboard quit path), and a short `README.md`.
 2. Register `add_subdirectory(<name>)` in `examples/recipes/CMakeLists.txt` (gate optional module recipes behind `if(QMLTUI_ENABLE_IMAGE)`, `if(QMLTUI_ENABLE_PTYVIEW)`, or `if(QMLTUI_ENABLE_PRIVATE_QT)`).
 3. Link `QmlTui::Runner` conditionally under `if(BUILD_TESTING AND TARGET QmlTui::Runner)` and register a `Runner` smoke test via `qmltui_add_scenario(...)` (prefer `CLOCK VIRTUAL`).
-4. Call `qmltui_wasm_app(<target>)` if the recipe has no desktop-only dependencies (`PtyView` / `Qt6::Widgets`).
+4. Guard WebAssembly packaging with `if(COMMAND qmltui_wasm_app)` (`cmake/QmlTuiWasm.cmake` is included only under `EMSCRIPTEN`) if the recipe has no desktop-only dependencies (`PtyView` / `Qt6::Widgets`):
+   ```cmake
+   if(COMMAND qmltui_wasm_app)
+       qmltui_wasm_app(qmltui_<name>_demo)
+   endif()
+   ```
 5. Add a row to [`docs/examples.md`](../examples.md).
 
 ## Updating the Changelog

@@ -119,7 +119,7 @@ Same as `paste()`, but without requesting rendering or waiting for a frame. Pair
 
 ### Mouse Input
 
-Mouse helpers (`click`, `clickText`, `doubleClick`, `mouseDown`, `mouseUp`, `drag`, and `scroll`) inject directly into the application's input router regardless of `Terminal.mouseReporting`. Only `hover()` and `hoverText()` check active hover motion reporting (`MouseArea.hoverEnabled`). Because `Terminal.Inline` defaults `mouseReporting` to `false`, inline applications that expect real-terminal mouse clicks must still set `mouseReporting: true` explicitly.
+Mouse helpers (`click`, `clickText`, `doubleClick`, `mouseDown`, `mouseUp`, `drag`, and `scroll`) inject directly into the application's input router regardless of `Terminal.mouseReporting`. Only `hover()` and `hoverText()` check active hover motion reporting (`MouseArea.hoverEnabled` **and** `Terminal.mouseReporting: true`, which defaults to `false` in `Terminal.Inline`). Because `Terminal.Inline` defaults `mouseReporting` to `false`, inline applications that expect real-terminal mouse clicks must still set `mouseReporting: true` explicitly.
 
 #### `void clickText(const QString &text, int occurrence = 0, const QString &button = "left", const QStringList &modifiers = {})`
 
@@ -132,7 +132,7 @@ app.clickText("Delete", 1, "right");
 
 #### `void hoverText(const QString &text, int occurrence = 0, const QStringList &modifiers = {})`
 
-Moves the mouse to the center of the selected rendered-text match with no button held and waits for the resulting committed frame. Delivered only while any-motion reporting (`MouseArea.hoverEnabled`) is active.
+Moves the mouse to the center of the selected rendered-text match with no button held and waits for the resulting committed frame. Delivered only while any-motion reporting (`MouseArea.hoverEnabled` and `Terminal.mouseReporting: true`) is active.
 
 #### `void click(int x, int y, const QString &button = "left", const QStringList &modifiers = {})`
 
@@ -149,7 +149,7 @@ Sends two consecutive mouse press and release cycles at terminal coordinates `(x
 
 #### `void hover(int x, int y, const QStringList &modifiers = {})`
 
-Moves the mouse to `(x, y)` with no button held. Delivered only while the application has hover (`MouseArea.hoverEnabled`) enabled; otherwise the move is dropped and only a frame is awaited.
+Moves the mouse to `(x, y)` with no button held. Delivered only while both `MouseArea.hoverEnabled` and `Terminal.mouseReporting: true` are active; otherwise the move is dropped and only a frame is awaited.
 
 #### `void mouseDown(int x, int y, const QString &button = "left", const QStringList &modifiers = {})`
 
@@ -169,10 +169,10 @@ app.drag(5, 5, 25, 5);
 
 #### `void scroll(int x, int y, int deltaX, int deltaY, const QStringList &modifiers = {})`
 
-Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizontal `deltaX` and vertical `deltaY`.
+Sends a mouse wheel scroll event at terminal coordinates `(x, y)` with horizontal `deltaX` and vertical `deltaY` in signed wheel notches (`+1` up / `-1` down, matching [`MouseEvent::wheelDeltaY`](input-events.md) rather than Qt Quick's `±120` angle-delta units).
 
 ```javascript
-app.scroll(15, 10, 0, 120);
+app.scroll(15, 10, 0, -1); // scroll down 1 notch
 ```
 
 ### Clock, Timing, and Frame Synchronization

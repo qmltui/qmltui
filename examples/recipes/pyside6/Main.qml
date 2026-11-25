@@ -36,12 +36,12 @@ Terminal {
             color: "cyan"
         }
         title: Text {
-            text: " PySide6 + QmlTui Service Monitor "
+            text: "PySide6 + QmlTui Service Monitor"
             color: "cyan"
             bold: true
         }
         footer: Text {
-            text: " Enter: Toggle | S / Header: Sort | Esc: Clear/Unfocus/Quit | Q: Quit "
+            text: "Tab: Filter | Enter: Toggle | S: Sort | Esc: Back/Quit | Q: Quit"
             dim: true
         }
 
@@ -78,6 +78,7 @@ Terminal {
                 id: serviceTable
                 objectName: "serviceTable"
                 focus: true
+                selectedRow: 0
                 height: 11
                 showOuterBorder: true
                 showColumnGrid: true

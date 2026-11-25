@@ -6,7 +6,7 @@
 
 ## Public Types and Constants
 
-- `enum class KeyAction { Press = 1, Repeat = 2, Release = 3 }` — Kitty keyboard event type passed to `KeyEventCallback`.
+- `enum class KeyAction : uint8_t { Press, Repeat, Release }` — key event action passed to `KeyEventCallback` (`Press = 0`, `Repeat = 1`, `Release = 2`; decoded from Kitty wire event-type codes `1`, `2`, `3`).
 - `using KeyCallback = std::function<void(int qtKey, const QString &text, int modifiers)>`
 - `using KeyEventCallback = std::function<void(int qtKey, const QString &text, int modifiers, KeyAction action)>`
 - `using PasteCallback = std::function<void(const QString &text)>`
@@ -53,7 +53,7 @@ Returns the Qt key code produced by a character keystroke (`a`–`z` map to `Qt:
 
 `CSI unicode-key[:shifted-key[:base-layout-key]] ; modifiers[:event-type] [; text-codepoints] u` is decoded as a key event. The first parameter is the Unicode code point (`27`, `13`, `9`, and `127` map to Escape, Return, Tab, and Backspace; `Shift+Tab` becomes `Qt::Key_Backtab`). Code points in `57344..63743` map through the functional-key table (`F13`–`F35`, keypad keys with `Qt::KeypadModifier`, and lock/menu keys). Standalone modifier and media key reports are consumed without emitting a key event.
 
-The modifier field is `1 + bitmask`: `1` Shift, `2` Alt, `4` Ctrl, `8` Super, `16` Hyper, `32` Meta, `64` CapsLock, `128` NumLock. Super and Meta map to `Qt::MetaModifier`. The event-type sub-parameter defaults to `KeyAction::Press` (`1`); `KeyAction::Repeat` (`2`) dispatches with `autoRepeat = true`, and `KeyAction::Release` (`3`) is delivered through `setKeyEventCallback()` (and omitted from the press-only `setKeyCallback()`).
+The modifier field is `1 + bitmask`: `1` Shift, `2` Alt, `4` Ctrl, `8` Super, `16` Hyper, `32` Meta, `64` CapsLock, `128` NumLock. Super and Meta map to `Qt::MetaModifier`. The Kitty wire event-type sub-parameter defaults to `1` (`KeyAction::Press`); wire code `2` maps to `KeyAction::Repeat` (`autoRepeat = true`), and wire code `3` maps to `KeyAction::Release` (delivered through `setKeyEventCallback()` and omitted from the press-only `setKeyCallback()`).
 
 A printable code point (using the shifted key when Shift is active) becomes the event's `text` unless Ctrl or Alt is held, preventing `Ctrl+A` from inserting `"a"`. Explicitly reported text code points (flag 16) take precedence when present. `CSI ? flags u` is routed to the reply callback rather than key dispatch.
 

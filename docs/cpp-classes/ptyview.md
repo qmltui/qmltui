@@ -21,7 +21,7 @@
 | Property | Type | Access | Notify Signal | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `program` | `QString` | read/write | `programChanged` | Executable path or name (falls back to `defaultUserShell()` when empty). |
-| `arguments` | `QStringList` | read/write | `argumentsChanged` | Arguments passed directly via `QProcess::start()` without shell expansion (if `program` is not found on disk or `PATH`, `start()` falls back to `QProcess::splitCommand(program)` and prepends extra tokens to `arguments`). |
+| `arguments` | `QStringList` | read/write | `argumentsChanged` | Arguments passed directly via `QProcess::start()` without shell expansion (when `arguments` is empty and `program` is not found on disk or `PATH`, `start()` falls back to `QProcess::splitCommand(program)` and populates `arguments` from the remaining tokens). |
 | `workingDirectory` | `QString` | read/write | `workingDirectoryChanged` | Initial working directory for the child process. |
 | `environment` | `QVariantMap` | read/write | `environmentChanged` | Extra environment variables merged into the child environment. |
 | `inheritEnvironment` | `bool` | read/write | `inheritEnvironmentChanged` | Whether the child inherits the parent environment (`true` by default). |

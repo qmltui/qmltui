@@ -59,7 +59,7 @@ styled spans; configurable via `QMLTUI_SCROLLBACK_QUEUE_LIMIT` or
 `TerminalEngine::setScrollbackQueueLimit`). In full-screen mode, scrollback output is queued
 until inline mode resumes or the session exits.
 
-- **Width & wrapping**: `delegate` items default to `Terminal.width` when their width is `0` and bake line breaks at commit time (committed scrollback rows do not reflow on terminal resize). `print(spans)` and `append(spans)` paint at their `implicitWidth` without wrapping to `Terminal.width`.
+- **Width & wrapping**: `delegate` items without an explicit `width` (`!hasExplicitWidth()`) are sized to `Terminal.width` (including wrapped `Text { wrapMode: Text.WordWrap }` delegates, and pooled delegates re-adopt the new terminal width after resize; set `width: implicitWidth` if you want shrink-wrapped background fills). Line breaks are baked at commit time (committed scrollback rows do not reflow on terminal resize). `print(spans)` and `append(spans)` paint at their `implicitWidth` without wrapping to `Terminal.width`.
 - **Heterogeneous entries (`DelegateChooser`)**: Assign a `DelegateChooser` (`import Qt.labs.qmlmodels`) to `delegate` to commit distinct templates (for example prompt rows, tool calls, and diff blocks) from one `Scrollback` instance.
 
 ### Example

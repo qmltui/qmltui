@@ -55,7 +55,7 @@ In addition to the property notify signals above, `Terminal` emits `clipboardCop
 ## Public Methods
 
 - `TerminalEngine *engine() const` — returns the `TerminalEngine` for this session, creating it on demand if `componentComplete()` has not run yet. In installed `find_package(QmlTui)` builds, `TerminalEngine` is forward-declared only (an opaque pointer — [`TerminalEngine.h`](terminalengine.md) is an in-tree internal header), so installed C++ consumers should call `engine()` only as an eager-initialization trigger and drive the session through `Terminal`, `Scrollback`, and `Runner::startFromEnvironment()`.
-- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded to 16 MiB per frame).
+- `bool enqueueControlSequence(QByteArray bytes)` / `QByteArray takeControlSequences()` — queues or drains terminal resource commands emitted before the next cell diff (bounded to 32 MiB per frame).
 - `bool enqueuePostControlSequence(QByteArray bytes)` / `QByteArray takePostControlSequences()` — queues or drains terminal resource commands (such as Sixel graphics) emitted after the cell diff each frame.
 - `void copyToClipboard(const QString &text)` (`Q_INVOKABLE`) — emits `clipboardCopyRequested(text)` and, when `clipboardMode() == ClipboardMode::Osc52`, writes an OSC 52 sequence.
 - `void bell()` (`Q_INVOKABLE`) — emits a terminal bell (`\x07`).

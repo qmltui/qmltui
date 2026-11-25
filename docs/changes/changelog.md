@@ -5,7 +5,7 @@ Linux, macOS, Windows Terminal, and WebAssembly (`xterm.js`).
 
 ## Engine, Controls, and Platform Support
 
-- **Core spine encapsulation and partial-damage rendering**: `Item`, `Terminal`, `Popup`, and `FocusScope` now encapsulate internal state behind `d_ptr` (`ItemPrivate`, etc.), and consecutive `TextGridBuffer` frames track dirty bounds to reduce per-frame diff scanning and ANSI emission overhead.
+- **Core spine encapsulation and partial-damage rendering**: `Item`, `Terminal`, `Popup`, and `FocusScope` now encapsulate internal state behind `d_ptr` (`ItemPrivate`, etc.), and `TerminalEngine` / `AltScreenRenderer` track localized damage rectangles with offscreen subtree culling to reduce per-frame repaint overhead.
 - **Normalized QML APIs and `Bound` controls**: Built-in `QmlTui.Controls` components use `pragma ComponentBehavior: Bound` with consistent explicit color override behavior across focus and disabled states, hardened `State` / `PropertyChanges` lifetimes, and bounded glyph interning.
 - **`Terminal.Inline` dynamic viewport resizing**: `InlineRenderer` and `Runner::resize(columns, rows)` now reflow `Terminal.Inline` sessions cleanly, keeping frame height content-sized up to `rows - 1`.
 - **WebAssembly shell (`qmltui_wasm_app()`)**: Generates a standalone `xterm.js` terminal host page (`<target>.html`) with `@xterm/addon-unicode-graphemes` (`15-graphemes`), OSC 4/10/11 color query replies, and OSC 52 clipboard bridging.

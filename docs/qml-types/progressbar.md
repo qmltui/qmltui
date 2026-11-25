@@ -47,7 +47,7 @@ A one-row horizontal bar that fills from left to right as a value moves from `fr
 
 | Method | Description |
 | :--- | :--- |
-| `var getColorAt(var pos)` | Returns the colour for a normalised position `0.0`..`1.0` along the bar: `gradient.colorAt(pos)` (linearly interpolated RGB across stops) when `gradient` has stops, else the colour of the first threshold whose `value` (in `from`..`to` units) is at or beyond `pos` (or the last threshold's colour past the final threshold), else `color`. |
+| `color getColorAt(real pos)` | Returns the colour for a normalised position `0.0`..`1.0` along the bar: `gradient.colorAt(pos)` (linearly interpolated RGB across stops) when `gradient` has stops, else the colour of the first threshold whose `value` (in `from`..`to` units) is at or beyond `pos` (or the last threshold's colour past the final threshold), else `color`. |
 
 ## Detailed Description
 

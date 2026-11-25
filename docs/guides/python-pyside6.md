@@ -6,8 +6,10 @@ Because QmlTui's scene graph and QML types are compiled C++ plugins, you still b
 
 ## Prerequisites and Qt Version Alignment
 
-- **Python 3.10+** and **`PySide6`** matching the Qt 6 minor version used to build QmlTui:
+- **Python 3.10+** and **`PySide6`** matching the Qt 6 minor version used to build QmlTui (use a virtual environment on PEP 668 distros such as Ubuntu 24.04, Debian, and Fedora):
   ```bash
+  python3 -m venv .venv
+  source .venv/bin/activate   # Windows: .venv\Scripts\activate
   pip install "PySide6==6.<minor>.*"
   ```
 - **Build QmlTui with `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`**: PySide6 wheels bundle their own Qt 6 libraries. Building QmlTui strictly against public Qt APIs avoids private-ABI mismatches between the system/SDK Qt headers used to compile QmlTui and the Qt libraries shipped inside the PySide6 wheel.
@@ -48,7 +50,7 @@ cmake --build build
 cmake --install build --prefix /your/prefix
 ```
 
-Then register the installed QML import path on `QQmlApplicationEngine` before loading your `Main.qml`:
+Then register the installed QML import path on `QQmlApplicationEngine` before loading your `Main.qml` (note that Fedora/RHEL/openSUSE install under `lib64/qml` rather than `lib/qml`; `QQmlApplicationEngine` reads `QML_IMPORT_PATH` automatically, so only pass a fallback prefix when `QML_IMPORT_PATH` is unset, or split multi-entry strings on `os.pathsep`):
 
 ```python
 import os
@@ -57,12 +59,16 @@ from pathlib import Path
 from PySide6.QtCore import QCoreApplication, QUrl
 from PySide6.QtQml import QQmlApplicationEngine
 
+# Import any module declaring @QmlElement classes BEFORE engine.load(...)
+# so PySide6 registers those QML types in time.
+import service_controller  # noqa: F401
+
 def main() -> int:
     app = QCoreApplication(sys.argv)
     engine = QQmlApplicationEngine()
 
-    qml_dir = os.environ.get("QML_IMPORT_PATH", "/your/prefix/lib/qml")
-    engine.addImportPath(qml_dir)
+    if not os.environ.get("QML_IMPORT_PATH"):
+        engine.addImportPath("/your/prefix/lib/qml")  # or lib64/qml on lib64 distros
 
     engine.load(QUrl.fromLocalFile(str(Path(__file__).with_name("Main.qml"))))
     if not engine.rootObjects():
@@ -80,13 +86,10 @@ if __name__ == "__main__":
 
 ## Exposing Python Models and Controllers to QML
 
-Use PySide6's `@QmlElement` decorator with module-level `QML_IMPORT_NAME` and `QML_IMPORT_MAJOR_VERSION` constants. Standard Qt model classes (`QAbstractListModel`, `QAbstractTableModel`, `QSortFilterProxyModel`) work identically to their C++ counterparts in QmlTui views:
+Use PySide6's `@QmlElement` decorator with module-level `QML_IMPORT_NAME` and `QML_IMPORT_MAJOR_VERSION` constants (always ensure the module containing `@QmlElement` classes is imported before calling `engine.load(...)`). Standard Qt model classes (`QAbstractListModel`, `QAbstractTableModel`, `QSortFilterProxyModel`) work identically to their C++ counterparts in QmlTui views (excerpted from [`examples/recipes/pyside6/main.py`](../../examples/recipes/pyside6/main.py)):
 
 ```python
-from PySide6.QtCore import (
-    Property, QAbstractTableModel, QModelIndex,
-    QSortFilterProxyModel, Qt, Signal, Slot,
-)
+from PySide6.QtCore import Property, QSortFilterProxyModel, Qt, Signal, Slot
 from PySide6.QtQml import QmlElement
 
 QML_IMPORT_NAME = "PySideDemo"
@@ -99,6 +102,8 @@ class ServiceController(QSortFilterProxyModel):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._filter_text = ""
+        # Attach your QAbstractTableModel / QAbstractListModel source model here:
+        # self.setSourceModel(ServiceTableModel(self))
 
     def _get_filter_text(self) -> str:
         return self._filter_text

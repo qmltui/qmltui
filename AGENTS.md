@@ -4,7 +4,8 @@
 
 - QmlTui is a Qt 6.8+ retained-mode terminal UI framework. Its runtime
   targets are Linux, macOS, and Windows Terminal (plus WebAssembly for the browser playground). Platform code lives only in
-  `src/QmlTui/Core/Primitives/{Posix,Win32Console,Wasm,Memory}*Backend.*` behind `TerminalBackend`;
+  `src/QmlTui/Core/Primitives/{PosixTerminal,Win32Console,WasmTerminal}Backend.*` behind `TerminalBackend`
+  (with `src/QmlTui/Runner/MemoryTerminalBackend.*` for headless testing);
   do not add `#ifdef _WIN32` elsewhere or include `<windows.h>` from a header.
   Legacy `conhost.exe` gets whatever its VT support allows and is not a target.
 - `QmlTui.Controls` admits a type only if it needs engine knowledge an

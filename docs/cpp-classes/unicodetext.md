@@ -31,7 +31,7 @@ public:
 | Method | Description |
 | :--- | :--- |
 | `static int displayWidth(QStringView text, bool sanitizeControls = false)` | Returns the total terminal column width of `text` (`0`, `1`, or `2` columns per grapheme cluster, accounting for East Asian wide characters, emoji sequences, and combining marks). |
-| `static QString elideText(QStringView text, int maxColumns)` | Truncates `text` at grapheme boundaries with a trailing ellipsis (`…`) so its terminal column width does not exceed `maxColumns`. |
+| `static QString elideText(QStringView text, int maxColumns)` | Hard-truncates `text` at grapheme cluster boundaries (without appending an ellipsis) so its terminal column width does not exceed `maxColumns`. |
 | `static int nextBoundary(QStringView text, int utf16Position)` | Returns the next grapheme cluster boundary after `utf16Position` in UTF-16 code units. |
 | `static int previousBoundary(QStringView text, int utf16Position)` | Returns the previous grapheme cluster boundary before `utf16Position` in UTF-16 code units. |
 | `static int encodeCodePointUtf8(char32_t codePoint, char out[4]) noexcept` | Encodes one Unicode scalar value into `out` (`1..4` bytes), returning `0` for surrogates or out-of-range values. |

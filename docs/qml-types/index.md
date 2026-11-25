@@ -22,7 +22,7 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 - [AnchorLine](anchorline.md): Edge or center reference line used in anchor bindings.
 - [Gradient](gradient.md): Linear color gradient interpolated across cells between `GradientStop` entries.
 - [GradientStop](gradientstop.md): Color stop at a normalized `[0.0, 1.0]` position inside a `Gradient`.
-- [Clipboard](clipboard.md): Singleton providing OSC 52 / platform clipboard copy and Promise-based reads.
+- [Clipboard](clipboard.md): Singleton providing OSC 52 terminal clipboard copy and Promise-based reads.
 - [QmlTui](qmltui.md): Global engine singleton exposing helper factories (`span()`, `color()`, `rgba()`, `ansi()`).
 - [color](color.md): Terminal color value type supporting `default`, `transparent`, ANSI palette names, and RGB hex strings.
 - [span](span.md): Styled inline text run passed to `Text.spans`.
@@ -112,4 +112,4 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 
 ## `QmlTui.PtyView`
 
-- [PtyView](ptyview.md): Hosts an interactive child process inside a Unix pseudo-terminal (`forkpty` + `libvterm`) on Linux and macOS.
+- [PtyView](ptyview.md): Hosts an interactive child process inside a Unix pseudo-terminal (`openpty` + `libvterm`) on Linux and macOS.

@@ -64,20 +64,26 @@ component inside a file, or create a reusable QML component file for
 application-wide styling:
 
 ```qml
-// 1. Inline reusable component within a QML file:
+// 1. Inline reusable component using Button's direct color properties:
 component AppButton: Button {
-    textColor: "cyan"
+    textColor: "#ffffff"
+    color: "#202830"
+    borderColor: "cyan"
 }
 
-// 2. Or file-based AppButton.qml (pragma ComponentBehavior: Bound, import QtQml, QmlTui, QmlTui.Controls):
+// 2. Or file-based RoundedButton.qml overriding background for structural restyling:
 Button {
     id: control
     textColor: "#ffffff"
+    topPadding: 1
+    bottomPadding: 1
     background: Rectangle {
         color: "#202830"
         border {
             color: "cyan"
-            style: control.activeFocus ? Border.Double : Border.Single
+            style: control.height >= 3
+                ? (control.activeFocus ? Border.Double : Border.Rounded)
+                : Border.None
         }
     }
 }
@@ -85,16 +91,20 @@ Button {
 
 | Component | Color overrides |
 | :--- | :--- |
-| Text, TextInput, TextArea, Canvas, BusyIndicator | `color` (`Text` also has `backgroundColor`) |
+| Text | `color`, `backgroundColor` |
+| TextInput, TextArea | `color`, `selectionColor`, `selectedTextColor`, `cursorColor` (`TextInput` also has `placeholderColor`) |
+| Canvas, BusyIndicator | `color` (`Canvas` also has `fillColor`) |
 | Sparkline | `color`, `backgroundColor` |
 | Rectangle and Panel | `color`, `border.color` (`Panel` border slots take `Item`s styled via their own properties) |
 | Button | `textColor`, `color`, `borderColor` |
-| CheckBox, RadioButton, SpinBox | `textColor` |
-| Slider | `color` (background), `textColor`, `border.color` |
+| CheckBox, RadioButton | `textColor` |
+| SpinBox, Slider | `color` (background), `textColor`, `border.color` |
 | ProgressBar | `color` (filled bar), `trackColor` (unfilled cells; unset `QmlTui.invalidColor` dims `color`) |
-| ComboBox | `textColor`, `color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
+| ComboBox | `textColor`, `color`, `border.color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
-| TabBar, TableView, TreeView | `textColor`, `selectedTextColor`, `selectionColor` (background; `TabBar` also has `color`) |
+| TabBar | `color`, `textColor`, `selectedTextColor`, `selectionColor` |
+| TableView | `textColor`, `selectedTextColor`, `selectionColor`, `headerColor`, `headerBackgroundColor`, `rowBackgroundColor`, `alternatingRowBackgroundColor`, `gridColor` |
+| TreeView | `textColor`, `selectedTextColor`, `selectionColor`, `branchColor` |
 | PtyView | `textColor`, `backgroundColor`, `palette` |
 | ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color`, `ToolTip.border.color` (and `ToolTip.border.style`) |
 

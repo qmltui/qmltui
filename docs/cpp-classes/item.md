@@ -118,9 +118,12 @@ public:
 
 protected:
     void paint(qmltui::TextGridBuffer &buffer, int absX, int absY,
-               const ClipRect &clipRect) const override {
-        Q_UNUSED(clipRect)
-        buffer.drawBox(absX, absY, width(), height(), qmltui::Color(QStringLiteral("green")));
+               const qmltui::ClipRect &clipRect) const override {
+        const qmltui::ClipRect effective =
+            clipRect.intersected(qmltui::ClipRect{absX, absY, width(), height()});
+        if (effective.width <= 0 || effective.height <= 0) return;
+        buffer.fillRect(effective.x, effective.y, effective.width, effective.height,
+                        " ", qmltui::Color::Default, qmltui::Color::fromString(QStringLiteral("#202830")));
     }
 };
 ```

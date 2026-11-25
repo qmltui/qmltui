@@ -29,7 +29,7 @@ ctest --test-dir build -LE Demo --output-on-failure
 
 ## Use an Installed `QmlTui` Package (`find_package`)
 
-If you installed QmlTui with `cmake --install build --prefix /your/prefix`, replace the `FetchContent_Declare` / `FetchContent_MakeAvailable` block in `CMakeLists.txt` with `find_package(QmlTui 0.6 REQUIRED)` and omit `DEPENDENCIES TARGET QmlTui::Core` from `qt_add_qml_module()` (see [Build Configuration and Installation](../../docs/build-configuration.md)).
+If you installed QmlTui with `cmake --install build --prefix /your/prefix`, replace the `FetchContent_Declare` / `FetchContent_MakeAvailable` block in `CMakeLists.txt` with `find_package(QmlTui 0.6 REQUIRED COMPONENTS Core OPTIONAL_COMPONENTS Runner)` (`CMakeLists.txt` already detects `IMPORTED` targets and automatically omits `DEPENDENCIES TARGET QmlTui::Core` when using `find_package`; see [Build Configuration and Installation](../../docs/build-configuration.md)).
 
 ## Build for WebAssembly (`qt-cmake`)
 

@@ -102,7 +102,7 @@ Terminal {
 
         TextInput {
             id: filterInput
-            width: 28
+            width: 36
             placeholderText: "Filter (Esc clears, then quits)..."
             focus: true
         }

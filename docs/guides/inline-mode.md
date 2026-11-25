@@ -214,7 +214,7 @@ flowchart TD
 
 ## Logging & `stderr` in Inline Mode
 
-`QtMessageRouting` defers interactive TTY `stderr` diagnostics only while an `AltScreen` session is active. In `Terminal.Inline` mode, `stderr` writes are emitted immediately while raw mode has output post-processing (`OPOST`) disabled, which can cause staircase line breaks or interleave with the live prompt. For clean diagnostics in inline applications, either redirect `stderr` (`./my_cli 2> debug.log`), install a no-op presentation sink from C++ alongside `QMLTUI_LOG_FILE=/tmp/my_cli.log` (`qmltui::QtMessageRouting::install([](const qmltui::QtMessage&) {});` so `QMLTUI_LOG_FILE` captures every log without writing to `stderr`), or write directly to a file sink (see [QtMessageRouting](../cpp-classes/qtmessagerouting.md)).
+`QtMessageRouting` defers interactive TTY `stderr` diagnostics only while an `AltScreen` session is active. In `Terminal.Inline` mode, `stderr` writes are emitted immediately while raw mode has output post-processing (`OPOST`) disabled, which can cause staircase line breaks or interleave with the live prompt. For clean diagnostics in inline applications, either redirect `stderr` (`./my_cli 2> debug.log`), install a no-op diagnostic sink from C++ (omitting `presentationSink`) and keep the returned handle alive in `main()` alongside `QMLTUI_LOG_FILE=/tmp/my_cli.log` (`auto routing = qmltui::QtMessageRouting::install([](const qmltui::QtMessage&) {});` so `QMLTUI_LOG_FILE` captures every log without writing to `stderr`), or write directly to a file sink (see [QtMessageRouting](../cpp-classes/qtmessagerouting.md)).
 
 ## Inline Edge Cases
 

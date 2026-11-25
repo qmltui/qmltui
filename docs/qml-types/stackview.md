@@ -31,8 +31,8 @@ A navigation stack that shows only its topmost page and creates pages on demand 
 
 | Method | Description |
 | :--- | :--- |
-| `Item push(var itemOrUrl, var properties = {})` | Creates or adopts a page from a QML file URL string, a `Component` or an existing `Item`, applies `properties`, hides the previous top, and returns the new page or `null` on failure. |
-| `Item replace(var itemOrUrl, var properties = {})` | Creates or adopts a replacement top page from a QML file URL string, a `Component`, or an existing `Item`, applies `properties`, removes the previous top page (destroying it if the view created it and hiding it otherwise), and returns the new page or `null` on failure. |
+| `Item push(var itemOrUrl, var properties = {})` | Creates or adopts a page from a QML file URL string, a `Component`, or an existing `Item`, applies `properties` when creating from a URL or `Component` (ignored for an existing `Item`), hides the previous top, and returns the new page or `null` on failure. |
+| `Item replace(var itemOrUrl, var properties = {})` | Creates or adopts a replacement top page from a QML file URL string, a `Component`, or an existing `Item`, applies `properties` when creating from a URL or `Component` (ignored for an existing `Item`), removes the previous top page (destroying it if the view created it and hiding it otherwise), and returns the new page or `null` on failure. |
 | `Item pop()` | Removes the top page, destroying it if the view created it and hiding it otherwise, and shows the one beneath, returning that page; returns `null` without popping when the stack holds one page or none. |
 | `void clear()` | Removes every page, destroying the ones the view created and hiding the rest, and sets `currentItem` to `null`. |
 

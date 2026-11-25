@@ -25,7 +25,7 @@ Defines a linear color gradient with multiple color stops. [More...](#detailed-d
 | :--- | :--- | :--- | :--- |
 | `stops` | `list<GradientStop>` |  | Read-only. Holds the list of [GradientStop](gradientstop.md) definitions. This is the default property. |
 | `offset` | `real` | `0.0` | Holds the normalized offset shifting the gradient phase. |
-| `orientation` | `Orientation` | `Gradient.Vertical` | Holds the linear direction: `Gradient.Vertical` (top-to-bottom) or `Gradient.Horizontal` (left-to-right). |
+| `orientation` | `Orientation` | `Gradient.Vertical` | Holds the linear direction for `Rectangle` and `Canvas`: `Gradient.Vertical` (top-to-bottom) or `Gradient.Horizontal` (left-to-right). `Text` always interpolates gradients horizontally per line. |
 
 ## Enumeration Gradient.Orientation
 

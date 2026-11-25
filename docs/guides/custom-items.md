@@ -135,7 +135,6 @@ target_link_libraries(my_app PRIVATE Qt6::Core Qt6::Qml QmlTui::Core)
 
 Instantiate `CustomBlock` directly in `Main.qml`:
 
-<!-- check-docs: ignore -->
 ```qml no-playground
 pragma ComponentBehavior: Bound
 import QtQml

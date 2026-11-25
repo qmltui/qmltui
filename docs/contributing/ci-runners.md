@@ -86,4 +86,5 @@ To remove a runner, generate a removal token on **Settings > Actions > Runners**
 | `macos` (`Private Qt` `ON`) | `macos-latest` | `macos-latest` | Every trigger on public repos; `workflow_dispatch` and `v*` tags on private repos |
 | `quickstart` (`examples/helloworld` via `FetchContent`) | `ubuntu-24.04` | `[self-hosted, linux]` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `wasm` (`examples/helloworld` Wasm compile-guard) | `ubuntu-24.04` | `[self-hosted, linux]` | Wasm/Core/Controls/CMake changes, `workflow_dispatch`, and `v*` tags (full Wasm playground & Pages site build runs in `qmltui/qmltui.github.io`) |
+| `static-packaging` (`BUILD_SHARED_LIBS=OFF`, system `utf8proc` + `libvterm`, installed consumer) | `ubuntu-24.04` | `ubuntu-24.04` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |
 | `reuse` (`reuse lint`) | `ubuntu-24.04` | `ubuntu-24.04` | `main` pushes, `v*` tags, pull requests, `workflow_dispatch` |

@@ -39,6 +39,7 @@ Terminal {
             Layout.preferredWidth: 28
             Layout.fillHeight: true
             focus: true
+            currentIndex: 0
             model: servicesModel
             delegate: Text {
                 required property string service

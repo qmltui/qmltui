@@ -98,7 +98,8 @@ Button {
 | Rectangle and Panel | `color`, `border.color` (`Panel` border slots take `Item`s styled via their own properties) |
 | Button | `textColor`, `color`, `borderColor` |
 | CheckBox, RadioButton | `textColor` |
-| SpinBox, Slider | `color` (background), `textColor`, `border.color` |
+| SpinBox | `color` (background), `textColor`, `border.color` |
+| Slider | `color` (background), `textColor` |
 | ProgressBar | `color` (filled bar), `trackColor` (unfilled cells; unset `QmlTui.invalidColor` dims `color`) |
 | ComboBox | `textColor`, `color`, `border.color`, `popupColor`, `popupBorderColor`, `selectionColor`, `selectedTextColor` |
 | Dialog | `textColor`, `titleColor`, `background.color`, `background.border.color` |
@@ -123,7 +124,7 @@ their appearance, including selection styling.
 
 ## Gradients (`Gradient` and `GradientStop`)
 
-Both [`Rectangle`](../qml-types/rectangle.md) and [`Text`](../qml-types/text.md) accept a [`Gradient`](../qml-types/gradient.md) with [`GradientStop`](../qml-types/gradientstop.md) children (`orientation: Gradient.Horizontal` or `Gradient.Vertical`) to interpolate cell colors across their bounds:
+Both [`Rectangle`](../qml-types/rectangle.md) and [`Text`](../qml-types/text.md) accept a [`Gradient`](../qml-types/gradient.md) with [`GradientStop`](../qml-types/gradientstop.md) children to interpolate cell colors across their bounds (`Rectangle` and `Canvas` honor `orientation: Gradient.Horizontal` and `Gradient.Vertical`, while `Text` always interpolates horizontally per line):
 
 ```qml
 Rectangle {

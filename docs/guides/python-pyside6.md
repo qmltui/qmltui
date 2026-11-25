@@ -124,7 +124,6 @@ class ServiceController(QSortFilterProxyModel):
 
 In `Main.qml`, import the Python module alongside `QtQml`, `QmlTui`, and `QmlTui.Controls` (providing an explicit contextual keyboard quit path):
 
-<!-- check-docs: ignore -->
 ```qml no-playground
 pragma ComponentBehavior: Bound
 import QtQml

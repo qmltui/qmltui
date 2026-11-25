@@ -105,7 +105,7 @@ QML_IMPORT_PATH=/your/prefix/lib/qml ./build/hello_qmltui
 
 ### Static Builds (`BUILD_SHARED_LIBS=OFF`)
 
-Pass `-DBUILD_SHARED_LIBS=OFF` to build `QmlTuiCore`, `QmlTuiControls`, and optional modules as static libraries and static QML modules (WebAssembly always forces static QML modules automatically). Static QML plugins are linked automatically through `QmlTui::Core` / `QmlTui::Controls` via Qt's `qt_add_qml_module(... STATIC)` integration, so your application links the same `QmlTui::*` targets without manually referencing `*plugin` targets or setting `QML_IMPORT_PATH` at runtime. When installing a static build with `QMLTUI_USE_SYSTEM_UTF8PROC=ON` or `QMLTUI_USE_SYSTEM_LIBVTERM=ON`, ensure the consumer environment can resolve `utf8proc` (via `find_package(utf8proc CONFIG)` or `pkg-config` `libutf8proc`, matching whichever backend was used at build time) and `pkg-config` `vterm` (when requesting `COMPONENTS PtyView`).
+Pass `-DBUILD_SHARED_LIBS=OFF` to build `QmlTuiCore`, `QmlTuiControls`, and optional modules as static libraries and static QML modules (WebAssembly always forces static QML modules automatically). Static QML plugins are linked automatically through `QmlTui::Core` / `QmlTui::Controls` via Qt's `qt_add_qml_module(... STATIC)` integration, so your application links the same `QmlTui::*` targets without manually referencing `*plugin` targets or setting `QML_IMPORT_PATH` at runtime. When installing a static build with `QMLTUI_USE_SYSTEM_UTF8PROC=ON` or `QMLTUI_USE_SYSTEM_LIBVTERM=ON`, ensure the consumer environment can resolve `utf8proc` (via `find_package(utf8proc CONFIG)` or `pkg-config` `libutf8proc`, matching whichever backend was used at build time) and `pkg-config` `vterm >= 0.3` (when requesting `COMPONENTS PtyView`).
 
 ### Multi-File QML Modules and Singletons
 
@@ -135,7 +135,7 @@ Register additional `.qml` components and singletons on the same `qt_add_qml_mod
 
 ### Offline / Air-Gapped CI and Reproducible Builds
 
-- **System vs. fetched libraries**: By default, CMake downloads SHA-256-verified release tarballs for `utf8proc` (`v2.11.3.tar.gz`) and, when `PtyView` is enabled, `libvterm` (`libvterm-0.3.3.tar.gz`) via `FetchContent`. On offline runners, install system packages (CMake `utf8proc` config or `pkg-config` `libutf8proc`, and `pkg-config` `vterm`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON` / `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON`, or point CMake to pre-staged source trees with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc` and `-DFETCHCONTENT_SOURCE_DIR_LIBVTERM=/path/to/libvterm`.
+- **System vs. fetched libraries**: By default, CMake downloads SHA-256-verified release tarballs for `utf8proc` (`v2.11.3.tar.gz`) and, when `PtyView` is enabled, `libvterm` (`libvterm-0.3.3.tar.gz`) via `FetchContent`. On offline runners, install system packages (CMake `utf8proc` config or `pkg-config` `libutf8proc`, and `pkg-config` `vterm >= 0.3`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON` / `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON`, or point CMake to pre-staged source trees with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc` and `-DFETCHCONTENT_SOURCE_DIR_LIBVTERM=/path/to/libvterm`.
 - **Deterministic `Qt6::QmlPrivate`**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` falls back to `OFF` with a warning when private headers are absent, pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` explicitly in CI if unused, or install `qt6-declarative-private-dev` everywhere.
 
 ## Repository Test and Benchmark Builds
@@ -172,7 +172,7 @@ cmake --build build-release
 | `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument targets for Clang source-based coverage |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install path for QmlTui QML modules |
 | `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` (`find_package(utf8proc CONFIG)` first, then `pkg-config` `libutf8proc`) instead of `FetchContent` |
-| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `vterm` via `pkg-config` instead of `FetchContent` (`PtyView`) |
+| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `vterm >= 0.3` via `pkg-config` instead of `FetchContent` (`PtyView`) |
 | `QMLTUI_WASM_INITIAL_MEMORY` | `""` (Emscripten default) | Optional Emscripten `INITIAL_MEMORY` override (for example `67108864`) applied by `qmltui_wasm_app()` |
 | `QMLTUI_BUILD_WIDGETS_REFERENCE` | `ON` (when examples enabled & `Qt6::Widgets` found) | Build `qmltui_standard_item_delegate_widgets` side-by-side Qt Widgets comparison target |
 

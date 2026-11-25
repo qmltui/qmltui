@@ -53,8 +53,9 @@ area. When `backgroundColor` is `"transparent"` (the default), blank cells are
 skipped so underlying items remain visible; setting an opaque `backgroundColor`
 fills every cell of the chart including blank ones.
 
-Sparkline has no border; wrap it in a [Rectangle](rectangle.md) or
-[Panel](panel.md) inset by one cell when one is needed.
+Sparkline has no border; wrap it in a bordered [Rectangle](rectangle.md) or
+[Panel](panel.md) (which automatically adds a 1-cell border inset for children)
+when one is needed.
 
 ### Example
 

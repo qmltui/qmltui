@@ -9,7 +9,7 @@ category: core
 summary: Terminal clipboard singleton with copying and Promise-based text reads.
 ---
 
-# Clipboard QML Type
+# Clipboard QML type
 
 Terminal clipboard singleton with copying and Promise-based text reads. [More...](#detailed-description)
 

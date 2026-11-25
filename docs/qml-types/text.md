@@ -80,8 +80,8 @@ spans continue on the same line, and a span can contain multiple lines. Clearing
 instead. Changing either property updates the implicit dimensions.
 
 Span content is literal: `textFormat` only affects `text`, and HTML/ANSI markup
-is not interpreted in spans. Control characters use the existing sanitized
-Unicode rendering behavior. Graphemes are segmented across span boundaries;
+is not interpreted in spans. Raw zero-advance C0/C1 control characters are
+dropped rather than injected into terminal output. Graphemes are segmented across span boundaries;
 a combined character or emoji uses the style of the span containing its first
 UTF-16 code unit.
 
@@ -89,7 +89,7 @@ Omitted span colors and attributes inherit the Text foreground and attributes.
 Explicit `false` disables an inherited attribute. Explicit `color: "default"`
 requests terminal-default foreground even when Text has another color.
 Background defaults to transparent. An active gradient overrides all glyph
-foregrounds, including explicit span colors. Effective disabled state adds dim
+foregrounds, including explicit span colors, interpolating horizontally per line. Effective disabled state adds dim
 at paint time, including to spans that explicitly set `dim: false`.
 
 ### Example

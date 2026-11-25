@@ -24,7 +24,7 @@ Provides state and transition management outside of an Item. [More...](#detailed
 | Property | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `state` | `string` | `""` | Holds the name of the currently active state. |
-| `states` | `list<State>` |  | *(default)* Read-only. Holds the list of possible states for this group. This is the default property. |
+| `states` | `list<State>` |  | *(default)* Read-only. Holds the list of possible states for this group. |
 | `transitions` | `list<Transition>` |  | Read-only. Holds the list of transitions for this group. |
 
 ## Detailed Description

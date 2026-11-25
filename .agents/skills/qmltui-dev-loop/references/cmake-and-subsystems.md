@@ -18,7 +18,7 @@ include(CTest)
 include(FetchContent)
 FetchContent_Declare(QmlTui
     GIT_REPOSITORY https://github.com/qmltui/qmltui.git
-    GIT_TAG        v0.6.0
+    GIT_TAG        main # Pin a release tag (e.g. v0.6.0) once published
 )
 FetchContent_MakeAvailable(QmlTui)
 set(QT_QML_GENERATE_QMLLS_INI ON)

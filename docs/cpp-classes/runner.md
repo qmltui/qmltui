@@ -398,7 +398,7 @@ Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | JavaScript scenario path (`.js`, `.mjs`, or Qt resource `:/...`). |
-| `--eval <code>` | None | Inline JavaScript scenario code (auto-wrapped in `function main(app) { ... }` unless the snippet contains `main(` or `main (` — write an explicit `function main(app)` if your snippet mentions `"main()"` inside a string). |
+| `--eval <code>` | None | Inline JavaScript scenario code. Accepts either bare statements (executed with `app` in scope) or a `function main(app)` / `const main = (app) => ...` definition (including Promise-returning `main`). |
 | `--capture-after-ms <ms>` | None | Delay (`0..30000` ms) before writing `capture.txt` and `capture_styled.txt`. |
 | `--sizes <list>` | None | Comma-separated `<cols>x<rows>` viewport sweep writing `frame_<WxH>.txt` (incompatible with `--script`). |
 | `--sweep` | Off | Shorthand for `--sizes 60x18,80x24,120x36`. |

@@ -141,9 +141,9 @@ draws nothing.
 
 Cell delegates receive one content rectangle. The view owns their geometry and
 clips each subtree to one line, retaining connected borders and row dividers.
-Selection and alternating backgrounds fill the content cells of the resolved
-columns only; they do not extend across unused width to the right of the last
-column, and never cover structural lines.
+Selection and alternating row backgrounds fill the full interior row width
+(including any unused width to the right of the last column) while leaving
+structural grid and border lines intact.
 
 Header content clicks emit `headerClicked`. Data content clicks select and
 activate the corresponding model row. Borders, separators, header underlines,

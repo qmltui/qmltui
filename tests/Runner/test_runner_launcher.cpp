@@ -331,6 +331,55 @@ private slots:
         QVERIFY(second.out.contains("=== Viewport 90x20 ==="));
         QVERIFY(second.out.contains("=== Inline Scrollback ==="));
         QVERIFY(second.out.contains("ping"));
+
+        // --eval --styled does not synthesize duplicate captures and allows app.finish().
+        const QString evalStyledDir = temporary.filePath("eval-styled");
+        auto evalStyled = run({"--clock", "virtual", "--ruler", "--styled", "--artifacts",
+                               evalStyledDir, "--eval",
+                               "function main(app) { app.expectText('TESTRUNNER FIXTURE'); "
+                               "app.finish(); }",
+                               "--", fixtureBinary()});
+        QVERIFY2(evalStyled.code == 0, evalStyled.err.constData());
+        QVERIFY(evalStyled.out.contains("--- Styles ---"));
+        QVERIFY(!QFileInfo::exists(QDir(evalStyledDir).filePath("capture.txt")));
+
+        // Synthesized probe eval supports const main and Promise-returning main(app).
+        const QString asyncProbeDir = temporary.filePath("async-probe");
+        auto asyncProbe = run({"--clock", "virtual", "--sizes", "50x12", "--idle-ms", "20",
+                               "--ruler", "--artifacts", asyncProbeDir, "--eval",
+                               "const main = (app) => Promise.resolve().then(() => {"
+                               "  app.expectText('TESTRUNNER FIXTURE');"
+                               "});",
+                               "--", fixtureBinary()});
+        QVERIFY2(asyncProbe.code == 0, asyncProbe.err.constData());
+        QVERIFY(asyncProbe.out.contains("=== Viewport 50x12 ==="));
+
+        // Mid-sweep failure ruler uses finalViewport dimensions rather than sizes.last().
+        const QString failSweepDir = temporary.filePath("fail-sweep");
+        auto failSweep = run({"--clock", "virtual", "--sizes", "45x10,90x24", "--ruler",
+                              "--artifacts", failSweepDir, "--eval",
+                              "app.expectText('NEVER_MATCHES_SENTINEL');", "--", fixtureBinary()});
+        QCOMPARE(failSweep.code, 1);
+        QVERIFY(failSweep.out.contains("=== Failure Frame (failure.txt) ==="));
+        QVERIFY(failSweep.out.contains("012345678901234567890123456789012345678901234\n"));
+        QVERIFY(!failSweep.out.contains("01234567890123456789012345678901234567890123456789"));
+
+        // Inline mode --record suppresses CSI 6 n while keeping item/region clickText() working.
+        const QString inlineRecDir = temporary.filePath("inline-rec");
+        auto inlineRec = run({"--clock", "virtual", "--columns", "80", "--rows", "24",
+                              "--artifacts", inlineRecDir, "--record", "inline.cast", "--script",
+                              QStringLiteral(QMLTUI_SCENARIOS "/inline_locators.js"), "--",
+                              fixtureBinary(), "--fixture=inline"});
+        QVERIFY2(inlineRec.code == 0, inlineRec.err.constData());
+        const QByteArray castBytes = readFile(QDir(inlineRecDir).filePath("inline.cast"));
+        QVERIFY(castBytes.contains("INLINE CLICKED 2"));
+        QVERIFY(!castBytes.contains("\x1b[6n"));
+        QVERIFY(!castBytes.contains("\\u001b[6n"));
+
+        // Missing mode error mentions --scrollback.
+        auto missingMode = run({"--", fixtureBinary()});
+        QCOMPARE(missingMode.code, 2);
+        QVERIFY(missingMode.err.contains("--scrollback"));
     }
 };
 

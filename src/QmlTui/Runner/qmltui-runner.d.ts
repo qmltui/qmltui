@@ -181,7 +181,7 @@ interface Runner {
     /** Releases a button at (x, y). */
     mouseUp(x: number, y: number, button?: QmlTuiMouseButton, modifiers?: QmlTuiModifier[]): void;
     mouseUp(x: number, y: number, options?: QmlTuiClickOptions): void;
-    /** Motion with no button; delivered only while hover reporting is enabled. */
+    /** Motion with no button; delivered only while MouseArea.hoverEnabled and Terminal.mouseReporting are active. */
     hover(x: number, y: number, modifiers?: QmlTuiModifier[]): void;
     hover(x: number, y: number, options?: QmlTuiModifierOptions): void;
     /** Press, held motion cell by cell along the path, release. */
@@ -189,7 +189,7 @@ interface Runner {
          button?: QmlTuiMouseButton, modifiers?: QmlTuiModifier[]): void;
     drag(startX: number, startY: number, endX: number, endY: number,
          options?: QmlTuiClickOptions): void;
-    /** Mouse wheel at (x, y). */
+    /** Mouse wheel at (x, y) in signed notches (+1 up / -1 down). */
     scroll(x: number, y: number, deltaX: number, deltaY: number,
            modifiers?: QmlTuiModifier[]): void;
     scroll(x: number, y: number, deltaX: number, deltaY: number,
@@ -198,7 +198,7 @@ interface Runner {
     clickText(text: string, occurrence?: number, button?: QmlTuiMouseButton,
               modifiers?: QmlTuiModifier[]): void;
     clickText(text: string, options?: QmlTuiClickTextOptions): void;
-    /** Hovers over the center of a rendered text match and waits for the frame. */
+    /** Hovers over the center of a rendered text match (requires MouseArea.hoverEnabled and Terminal.mouseReporting). */
     hoverText(text: string, occurrence?: number, modifiers?: QmlTuiModifier[]): void;
     hoverText(text: string, options?: QmlTuiOccurrenceOptions & QmlTuiModifierOptions): void;
 

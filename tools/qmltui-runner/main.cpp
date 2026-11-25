@@ -77,47 +77,67 @@ bool parseViewportSizes(const QString& spec, QList<QSize>& out, QString& err) {
 QString buildSynthesizedEval(const QList<QSize>& sizes, int settleMs, const QString& userEval,
                              int idleMs, bool captureStyled, bool captureScrollback) {
     QStringList lines;
-    if (settleMs > 0) lines << QStringLiteral("app.sleep(%1);").arg(settleMs);
-    if (!userEval.isEmpty()) {
-        lines << QStringLiteral("{");
-        lines << userEval;
-        lines << QStringLiteral("}");
-    }
+    lines << QStringLiteral("function main(app) {");
+    lines << QStringLiteral("    const __qmltuiOuterMain = main;");
+    lines << QStringLiteral("    const __qmltuiAfterUser = function() {");
     if (!sizes.isEmpty()) {
         const QSize first = sizes.constFirst();
         const QString firstTag = QStringLiteral("%1x%2").arg(first.width()).arg(first.height());
-        lines << QStringLiteral("app.captureText(\"frame_%1.txt\");").arg(firstTag);
+        lines << QStringLiteral("        app.captureText(\"frame_%1.txt\");").arg(firstTag);
         if (captureStyled)
-            lines << QStringLiteral("app.captureStyled(\"frame_%1_styled.txt\");").arg(firstTag);
+            lines << QStringLiteral("        app.captureStyled(\"frame_%1_styled.txt\");")
+                         .arg(firstTag);
     } else {
-        lines << QStringLiteral("app.captureText(\"capture.txt\");");
-        lines << QStringLiteral("app.captureStyled(\"capture_styled.txt\");");
+        lines << QStringLiteral("        app.captureText(\"capture.txt\");");
+        if (captureStyled)
+            lines << QStringLiteral("        app.captureStyled(\"capture_styled.txt\");");
     }
 
     if (captureScrollback) {
-        lines << QStringLiteral("app.captureScrollback(\"scrollback.txt\");");
+        lines << QStringLiteral("        app.captureScrollback(\"scrollback.txt\");");
         if (captureStyled)
-            lines << QStringLiteral("app.captureScrollbackStyled(\"scrollback_styled.txt\");");
+            lines << QStringLiteral(
+                "        app.captureScrollbackStyled(\"scrollback_styled.txt\");");
     }
 
     for (int i = 1; i < sizes.size(); ++i) {
         const QSize sz = sizes.at(i);
         const QString tag = QStringLiteral("%1x%2").arg(sz.width()).arg(sz.height());
-        lines << QStringLiteral("app.resize(%1, %2);").arg(sz.width()).arg(sz.height());
-        lines << QStringLiteral("app.captureText(\"frame_%1.txt\");").arg(tag);
+        lines << QStringLiteral("        app.resize(%1, %2);").arg(sz.width()).arg(sz.height());
+        lines << QStringLiteral("        app.captureText(\"frame_%1.txt\");").arg(tag);
         if (captureStyled)
-            lines << QStringLiteral("app.captureStyled(\"frame_%1_styled.txt\");").arg(tag);
+            lines << QStringLiteral("        app.captureStyled(\"frame_%1_styled.txt\");").arg(tag);
     }
 
     if (idleMs > 0) {
-        lines << QStringLiteral("const __idleBefore = app.frameCount();");
-        lines << QStringLiteral("app.sleep(%1);").arg(idleMs);
-        lines << QStringLiteral("const __idleDelta = app.frameCount() - __idleBefore;");
+        lines << QStringLiteral("        const __idleBefore = app.frameCount();");
+        lines << QStringLiteral("        app.sleep(%1);").arg(idleMs);
+        lines << QStringLiteral("        const __idleDelta = app.frameCount() - __idleBefore;");
         lines << QStringLiteral(
-                     "if (__idleDelta !== 0) app.fail(\"Idle repaint budget exceeded: frameCount "
-                     "advanced by \" + __idleDelta + \" over %1 ms\");")
+                     "        if (__idleDelta !== 0) app.fail(\"Idle repaint budget exceeded: "
+                     "frameCount advanced by \" + __idleDelta + \" over %1 ms\");")
                      .arg(idleMs);
     }
+    lines << QStringLiteral("    };");
+
+    if (settleMs > 0) lines << QStringLiteral("    app.sleep(%1);").arg(settleMs);
+    if (!userEval.isEmpty()) {
+        lines << QStringLiteral("    const __qmltuiUserResult = (function(app) {");
+        lines << QStringLiteral("        {");
+        lines << userEval;
+        lines << QStringLiteral(
+            "            if (typeof main === \"function\" && main !== __qmltuiOuterMain) {");
+        lines << QStringLiteral("                return main(app);");
+        lines << QStringLiteral("            }");
+        lines << QStringLiteral("        }");
+        lines << QStringLiteral("    })(app);");
+        lines << QStringLiteral(
+            "    if (__qmltuiUserResult && typeof __qmltuiUserResult.then === \"function\") {");
+        lines << QStringLiteral("        return __qmltuiUserResult.then(__qmltuiAfterUser);");
+        lines << QStringLiteral("    }");
+    }
+    lines << QStringLiteral("    __qmltuiAfterUser();");
+    lines << QStringLiteral("}");
     return lines.join('\n');
 }
 
@@ -215,11 +235,20 @@ void printProbeOutput(QTextStream& out, const QString& artifacts, const QJsonObj
             out << formatRulerFrame(readTextFile(candidate), cols, rows, showRuler) << '\n';
         }
         if (showStyled) {
-            QString styledPath = dir.filePath(QStringLiteral("capture_styled.txt"));
-            if (!QFileInfo::exists(styledPath)) {
-                styledPath = dir.filePath(result.value(QStringLiteral("exitCode")).toInt() == 0
-                                              ? QStringLiteral("final_styled.txt")
-                                              : QStringLiteral("failure_styled.txt"));
+            const bool isCaptureMode =
+                result.value(QStringLiteral("mode")).toString() == QLatin1String("capture");
+            const QString finalStyledPath =
+                dir.filePath(result.value(QStringLiteral("exitCode")).toInt() == 0
+                                 ? QStringLiteral("final_styled.txt")
+                                 : QStringLiteral("failure_styled.txt"));
+            const QString captureStyledPath = dir.filePath(QStringLiteral("capture_styled.txt"));
+            QString styledPath;
+            if (isCaptureMode) {
+                styledPath =
+                    QFileInfo::exists(captureStyledPath) ? captureStyledPath : finalStyledPath;
+            } else {
+                styledPath =
+                    QFileInfo::exists(finalStyledPath) ? finalStyledPath : captureStyledPath;
             }
             if (QFileInfo::exists(styledPath)) {
                 const QString styles = extractStylesSection(readTextFile(styledPath));
@@ -250,10 +279,12 @@ void printProbeOutput(QTextStream& out, const QString& artifacts, const QJsonObj
     if (result.value(QStringLiteral("exitCode")).toInt() != 0 && !sizes.isEmpty()) {
         const QString failPath = dir.filePath(QStringLiteral("failure.txt"));
         if (QFileInfo::exists(failPath)) {
-            const QSize last = sizes.constLast();
+            const QSize fallback = sizes.constLast();
+            const QJsonObject finalVp = result.value(QStringLiteral("finalViewport")).toObject();
+            const int failCols = finalVp.value(QStringLiteral("columns")).toInt(fallback.width());
+            const int failRows = finalVp.value(QStringLiteral("rows")).toInt(fallback.height());
             out << "\n=== Failure Frame (failure.txt) ===\n"
-                << formatRulerFrame(readTextFile(failPath), last.width(), last.height(), showRuler)
-                << '\n';
+                << formatRulerFrame(readTextFile(failPath), failCols, failRows, showRuler) << '\n';
         }
     }
     out.flush();
@@ -328,7 +359,7 @@ int main(int argc, char** argv) {
                           int(parser.isSet("capture-after-ms"));
     if (baseModes > 1 || (baseModes == 0 && !hasProbeModifiers))
         return error("Specify one of --script, --eval, --capture-after-ms, or probe options "
-                     "(--sizes/--sweep/--idle-ms).");
+                     "(--sizes/--sweep/--idle-ms/--scrollback).");
     if (parser.isSet("script") && hasProbeModifiers)
         return error(
             "--sizes, --sweep, --idle-ms, and --scrollback cannot be combined with --script.");
@@ -433,8 +464,7 @@ int main(int argc, char** argv) {
         environment.insert("QMLTUI_RUNNER_" + key, value);
     };
 
-    const bool synthesizeProbeEval =
-        hasProbeModifiers || (parser.isSet("eval") && parser.isSet("styled"));
+    const bool synthesizeProbeEval = hasProbeModifiers;
     QString expectedMode;
     if (parser.isSet("script")) {
         set("SCRIPT", script);

@@ -42,8 +42,9 @@ void FocusScope::setFocus(bool focus) {
     Item::setFocus(focus);
 
     if (focus) {
+        const bool canActivate = !enclosingFocusScope() || enclosingFocusScope()->activeFocus();
         Item* target = m_d->subFocusItem.data();
-        if (!target || !target->visible() || !target->isEffectivelyEnabled()) {
+        if (!target || !target->isEffectivelyVisible() || !target->isEffectivelyEnabled()) {
             QList<Item*> candidates;
             if (Terminal* term = terminal()) {
                 for (Item* child : childItems()) {
@@ -59,9 +60,12 @@ void FocusScope::setFocus(bool focus) {
                 target = target->enclosingFocusScope();
             }
             if (target) {
-                target->setFocus(true);
+                if (canActivate)
+                    target->forceActiveFocus();
+                else
+                    target->setFocus(true);
             }
-        } else if (focusPolicy() != Qt::NoFocus) {
+        } else if (focusPolicy() != Qt::NoFocus && canActivate) {
             if (Terminal* term = terminal()) {
                 term->setFocusedItem(this);
             }
@@ -69,7 +73,7 @@ void FocusScope::setFocus(bool focus) {
     } else {
         if (Terminal* term = terminal()) {
             Item* curr = term->focusedItem();
-            if (curr && curr->isDescendantOf(this)) {
+            if (curr && (curr == this || curr->isDescendantOf(this))) {
                 term->setFocusedItem(nullptr);
             }
         }

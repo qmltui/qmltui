@@ -13,9 +13,9 @@
 namespace qmltui {
 
 // Attached property for declarative key handling on any Item (Keys.onPressed,
-// Keys.onReturnPressed, etc.). Events are also forwarded to each Item in
-// forwardTo before or after the item's own keyPressEvent(), according to
-// priority.
+// Keys.onReturnPressed, etc.). Keys handlers run before or after the item's
+// own keyPressEvent() according to priority; if the event remains unaccepted,
+// each Item in forwardTo receives keyPressEvent() followed by Keys.onPressed.
 class QMLTUI_CORE_EXPORT Keys : public QObject {
     Q_OBJECT
     QML_ELEMENT

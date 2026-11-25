@@ -135,7 +135,7 @@ void MouseArea::mouseReleaseEvent(MouseEvent* event) {
     const Qt::MouseButton button = event->button();
     // A legacy release reports no button; it ends whatever press is held.
     const bool endsPress = button == Qt::NoButton ? isPressed() : m_pressedButtons.testFlag(button);
-    if (!endsPress && !(m_acceptedButtons & button)) {
+    if (!endsPress) {
         return;
     }
     const int ex = event->x();

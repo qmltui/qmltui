@@ -541,7 +541,8 @@ void Item::setFocus(bool focus) {
                 scope->setSubFocusItem(this);
             }
             Terminal* term = terminal();
-            if (term && term->focusedItem() != this && (!scope || scope->activeFocus())) {
+            if (term && !isFocusScope() && term->focusedItem() != this &&
+                (!scope || scope->activeFocus())) {
                 term->setFocusedItem(this);
             }
         }
@@ -561,7 +562,7 @@ void Item::setFocus(bool focus) {
     Terminal* term = terminal();
     if (term) {
         if (m_d->focus) {
-            if (!scope || scope->activeFocus()) {
+            if (!isFocusScope() && (!scope || scope->activeFocus())) {
                 term->setFocusedItem(this);
             }
         } else if (term->focusedItem() == this) {
@@ -587,9 +588,19 @@ void Item::setFocusPolicy(Qt::FocusPolicy policy) {
 }
 
 void Item::forceActiveFocus() {
+    if (!isEffectivelyVisible() || !isEffectivelyEnabled()) return;
     setFocus(true);
-    if (Terminal* term = terminal()) {
-        term->setFocusedItem(this);
+    Terminal* term = terminal();
+    if (!term) return;
+    Item* leaf = this;
+    while (leaf && leaf->isFocusScope()) {
+        Item* sub = static_cast<FocusScope*>(leaf)->subFocusItem();
+        if (!sub || sub == leaf || !sub->isEffectivelyVisible() || !sub->isEffectivelyEnabled())
+            break;
+        leaf = sub;
+    }
+    if (term->focusedItem() != leaf) {
+        term->setFocusedItem(leaf);
     }
 }
 

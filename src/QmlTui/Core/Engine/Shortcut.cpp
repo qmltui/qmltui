@@ -137,9 +137,11 @@ int parseChordString(const QString& input, bool* ok) {
         *ok = false;
         return 0;
     }
-    if (key == Qt::Key_Tab && (modifiers & Qt::ShiftModifier) != 0 &&
-        (modifiers & ~Qt::ShiftModifier) == 0) {
-        return QKeyCombination(Qt::ShiftModifier, Qt::Key_Backtab).toCombined();
+    if (key == Qt::Key_Tab && (modifiers & Qt::ShiftModifier) != 0) {
+        return modifiers | Qt::Key_Backtab;
+    }
+    if (key == Qt::Key_Backtab) {
+        return (modifiers | Qt::ShiftModifier) | Qt::Key_Backtab;
     }
     return modifiers | key;
 }

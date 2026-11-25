@@ -26,7 +26,7 @@ void FocusManager::cycleFocus(Terminal* terminal, bool forward, Item* scope) {
     }
 
     if (nextFocus) {
-        nextFocus->setFocus(true);
+        nextFocus->forceActiveFocus();
     }
 }
 

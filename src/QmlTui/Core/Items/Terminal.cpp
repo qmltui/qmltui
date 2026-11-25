@@ -332,7 +332,7 @@ Item* Terminal::focusedItem() const {
 }
 
 void Terminal::setFocusedItem(Item* item) {
-    if (item && (!item->visible() || !item->isEffectivelyEnabled())) item = nullptr;
+    if (item && (!item->isEffectivelyVisible() || !item->isEffectivelyEnabled())) item = nullptr;
     if (m_d->focusedItem == item) return;
 
     QPointer<Terminal> self(this);
@@ -436,7 +436,7 @@ bool Terminal::hasMouseMotionRequests() const {
 }
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
-    if (!root || !root->visible() || !root->isEffectivelyEnabled()) return;
+    if (!root || !root->isEffectivelyVisible() || !root->isEffectivelyEnabled()) return;
 
     if (root->focusPolicy() & Qt::TabFocus) {
         list.append(root);

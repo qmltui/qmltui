@@ -46,6 +46,7 @@ private slots:
     void testShortcutStringSequences();
     void testKeyReleaseAndAutoRepeatRouting();
     void testMouseAreaPressPassThroughWhenRejected();
+    void testUnpressedMouseReleaseAndBacktabShortcut();
 };
 
 void TestInputRouter::testImplicitMouseGrab() {
@@ -1044,6 +1045,48 @@ void TestInputRouter::testMouseAreaPressPassThroughWhenRejected() {
     QCOMPARE(parentReleases, 1);
     QCOMPARE(childReleases, 0);
     QVERIFY(!parentArea.isPressed());
+}
+
+void TestInputRouter::testUnpressedMouseReleaseAndBacktabShortcut() {
+    Terminal term;
+    term.engine()->setTerminalOutputEnabled(false);
+    term.engine()->setTestViewportSize(QSize(40, 12));
+
+    MouseArea area(&term);
+    area.setWidth(20);
+    area.setHeight(6);
+    int releases = 0;
+    int clicks = 0;
+    connect(&area, &MouseArea::released, [&](MouseEvent*) { ++releases; });
+    connect(&area, &MouseArea::clicked, [&](MouseEvent*) { ++clicks; });
+
+    InputRouter router(&term);
+    // Release over an unpressed MouseArea must not emit released or clicked.
+    router.routeMouse(0, 3, 3, true, false);
+    QCOMPARE(releases, 0);
+    QCOMPARE(clicks, 0);
+
+    // Bare "Backtab" and modified Shift+Tab / Backtab chords match InputDecoder events.
+    Shortcut backtab(&term);
+    backtab.setSequence(QStringLiteral("Backtab"));
+    int hits = 0;
+    connect(&backtab, &Shortcut::activated, [&]() { ++hits; });
+    QVERIFY(router.routeKey(Qt::Key_Backtab, QString(), Qt::ShiftModifier));
+    QCOMPARE(hits, 1);
+
+    Shortcut ctrlShiftTab(&term);
+    ctrlShiftTab.setSequence(QStringLiteral("Ctrl+Shift+Tab"));
+    int ctrlHits = 0;
+    connect(&ctrlShiftTab, &Shortcut::activated, [&]() { ++ctrlHits; });
+    QVERIFY(router.routeKey(Qt::Key_Backtab, QString(), Qt::ControlModifier | Qt::ShiftModifier));
+    QCOMPARE(ctrlHits, 1);
+
+    Shortcut altBacktab(&term);
+    altBacktab.setSequence(QStringLiteral("Alt+Backtab"));
+    int altHits = 0;
+    connect(&altBacktab, &Shortcut::activated, [&]() { ++altHits; });
+    QVERIFY(router.routeKey(Qt::Key_Backtab, QString(), Qt::AltModifier | Qt::ShiftModifier));
+    QCOMPARE(altHits, 1);
 }
 
 QTEST_MAIN(TestInputRouter)

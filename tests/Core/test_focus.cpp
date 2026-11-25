@@ -2,6 +2,8 @@
 #include <QSignalSpy>
 #include <QmlTui/Core/Items/Terminal.h>
 #include <QmlTui/Core/Items/FocusScope.h>
+#include <QmlTui/Core/Items/TextInput.h>
+#include <QmlTui/Core/Engine/FocusManager.h>
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 
 using namespace qmltui;
@@ -17,6 +19,7 @@ private slots:
     void testFocusScopeEncapsulation();
     void testFocusScopeNested();
     void testFocusScopeNoDescendantsRecursion();
+    void testFocusScopeTabCycleAndVisibility();
 };
 
 void TestFocus::testForceActiveFocus() {
@@ -186,6 +189,63 @@ void TestFocus::testFocusScopeNoDescendantsRecursion() {
 
     QCOMPARE(term.focusedItem(), &standalone);
     QCOMPARE(standalone.activeFocus(), true);
+}
+
+void TestFocus::testFocusScopeTabCycleAndVisibility() {
+    Terminal term;
+    FocusScope leftScope(&term);
+    Item left1(&leftScope);
+    left1.setFocusPolicy(Qt::StrongFocus);
+    Item left2(&leftScope);
+    left2.setFocusPolicy(Qt::StrongFocus);
+
+    FocusScope rightScope(&term);
+    TextInput rightInput(&rightScope);
+    rightInput.setFocusPolicy(Qt::StrongFocus);
+    Item right2(&rightScope);
+    right2.setFocusPolicy(Qt::StrongFocus);
+
+    // Hidden parent hides child even though child->visible() is true.
+    Item hiddenContainer(&term);
+    hiddenContainer.setVisible(false);
+    Item hiddenChild(&hiddenContainer);
+    hiddenChild.setFocusPolicy(Qt::StrongFocus);
+
+    left1.forceActiveFocus();
+    QCOMPARE(term.focusedItem(), &left1);
+    QVERIFY(leftScope.activeFocus());
+    QVERIFY(!rightScope.activeFocus());
+
+    // Forward Tab cycles through left1 -> left2 -> rightInput -> right2 -> left1.
+    FocusManager::cycleFocus(&term, true);
+    QCOMPARE(term.focusedItem(), &left2);
+    FocusManager::cycleFocus(&term, true);
+    QCOMPARE(term.focusedItem(), &rightInput);
+    QVERIFY(rightScope.activeFocus());
+    QVERIFY(!leftScope.activeFocus());
+    FocusManager::cycleFocus(&term, true);
+    QCOMPARE(term.focusedItem(), &right2);
+    FocusManager::cycleFocus(&term, true);
+    QCOMPARE(term.focusedItem(), &left1);
+
+    // Backward Shift+Tab crosses back into rightScope without trapping.
+    FocusManager::cycleFocus(&term, false);
+    QCOMPARE(term.focusedItem(), &right2);
+    QVERIFY(rightScope.activeFocus());
+
+    // Calling forceActiveFocus() on a FocusScope whose child already has focus must not
+    // bounce activeFocus and spuriously emit TextInput::editingFinished().
+    rightInput.forceActiveFocus();
+    QSignalSpy editSpy(&rightInput, &TextInput::editingFinished);
+    rightScope.forceActiveFocus();
+    QCOMPARE(term.focusedItem(), &rightInput);
+    QCOMPARE(editSpy.count(), 0);
+
+    // Effectively hidden items cannot take focus or clear existing focus.
+    hiddenChild.forceActiveFocus();
+    QCOMPARE(term.focusedItem(), &rightInput);
+    term.setFocusedItem(&hiddenChild);
+    QCOMPARE(term.focusedItem(), nullptr);
 }
 
 QTEST_MAIN(TestFocus)

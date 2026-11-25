@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -34,11 +35,11 @@ INLINE_CODE_RE = re.compile(r"`+[^`\n]*`+")
 MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 HEADING_RE = re.compile(r"^\s*#{1,6}\s+(.*?)\s*#*\s*$")
 HTML_ID_RE = re.compile(r"""\b(?:id|name)\s*=\s*["']([^"']+)["']""")
-CPP_TYPE_DECL_RE = re.compile(
-    r"^\s*(?:(?:class|struct)\s+(?:[A-Z0-9_]+_EXPORT\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*(?:final\s*)?(?::|\{)|using\s+([A-Za-z_][A-Za-z0-9_]*)\s*=)",
-    re.MULTILINE,
-)
+CPP_EXPORT_MACRO_RE = re.compile(r"^[A-Z0-9_]+_EXPORT$")
+CPP_TOKEN_RE = re.compile(r"\{|\}|;|::|[A-Za-z_][A-Za-z0-9_]*|[:=]")
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
+_VP_CONTROL_RE = re.compile(r"[\u0000-\u001f]")
+_VP_SPECIAL_RE = re.compile(r"""[\s~`!@#$%^&*()\-_+=[\]{}|\\;:"'\u201c\u201d\u2018\u2019<>,.?/]+""")
 
 
 def cache_value(build_dir: Path, name: str) -> str | None:
@@ -173,10 +174,19 @@ def strip_fenced_blocks(text: str) -> str:
 
 
 def _clean_heading_text(heading_text: str) -> str:
-    text = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", heading_text)
-    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-    text = re.sub(r"<[^>]+>", "", text)
-    return text.replace("`", "").replace("*", "").replace("~", "").strip().lower()
+    parts = re.split(r"(`+[^`]*`+)", heading_text)
+    cleaned: list[str] = []
+    for part in parts:
+        if not part:
+            continue
+        if part.startswith("`") and part.endswith("`"):
+            cleaned.append(part.strip("`"))
+        else:
+            text = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", part)
+            text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+            text = re.sub(r"<[^>]+>", "", text)
+            cleaned.append(text.replace("*", "").replace("~", ""))
+    return "".join(cleaned).strip().lower()
 
 
 def github_slug(heading_text: str) -> str:
@@ -191,7 +201,11 @@ def github_slug(heading_text: str) -> str:
 def vitepress_slug(heading_text: str) -> str:
     # Mirrors @mdit-vue/shared slugify() used by VitePress.
     text = _clean_heading_text(heading_text)
-    slug = re.sub(r"[^0-9a-zA-Z\u00c0-\uffff]+", "-", text).strip("-")
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
+    text = _VP_CONTROL_RE.sub("", text)
+    slug = _VP_SPECIAL_RE.sub("-", text)
+    slug = re.sub(r"-{2,}", "-", slug).strip("-")
     if slug and slug[0].isdigit():
         slug = f"_{slug}"
     return slug
@@ -332,9 +346,105 @@ def check_markdown_links(errors: list[str]) -> int:
     return checked
 
 
-def _strip_cpp_comments(text: str) -> str:
-    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
-    return re.sub(r"//[^\n]*", "", text)
+def _strip_cpp_comments_and_strings(text: str) -> str:
+    pattern = re.compile(
+        r'//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'',
+        re.DOTALL,
+    )
+    return pattern.sub(
+        lambda m: "\n" * m.group(0).count("\n") if m.group(0).startswith("/*") else " ",
+        text,
+    )
+
+
+def _collect_namespace_cpp_types(
+    text: str, qualified: set[str], unqualified: set[str]
+) -> None:
+    tokens = CPP_TOKEN_RE.findall(_strip_cpp_comments_and_strings(text))
+    scope_stack: list[tuple[str, list[str] | None]] = []
+    pending_ns: list[str] | None = None
+    pending_extern = False
+    i = 0
+    n = len(tokens)
+
+    while i < n:
+        tok = tokens[i]
+        if tok == "{":
+            if pending_ns is not None:
+                scope_stack.append(("namespace", pending_ns))
+            elif pending_extern:
+                scope_stack.append(("namespace", []))
+            else:
+                scope_stack.append(("other", None))
+            pending_ns = None
+            pending_extern = False
+            i += 1
+            continue
+        if tok == "}":
+            if scope_stack:
+                scope_stack.pop()
+            pending_ns = None
+            pending_extern = False
+            i += 1
+            continue
+        if tok == ";":
+            pending_ns = None
+            pending_extern = False
+            i += 1
+            continue
+
+        at_ns_scope = all(kind == "namespace" for kind, _ in scope_stack)
+        if at_ns_scope:
+            if tok == "extern" and i + 1 < n and tokens[i + 1] == "{":
+                pending_extern = True
+                i += 1
+                continue
+            if tok == "namespace":
+                j = i + 1
+                parts: list[str] = []
+                while j < n and tokens[j][0].isalpha() or (j < n and tokens[j][0] == "_"):
+                    parts.append(tokens[j])
+                    j += 1
+                    if j < n and tokens[j] == "::":
+                        j += 1
+                    else:
+                        break
+                if parts and j < n and tokens[j] == "{":
+                    pending_ns = parts
+                    i = j
+                    continue
+            if tok in ("class", "struct"):
+                prev = tokens[i - 1] if i > 0 else ""
+                if prev not in ("enum", "friend", "typename"):
+                    j = i + 1
+                    while j < n and CPP_EXPORT_MACRO_RE.match(tokens[j]):
+                        j += 1
+                    if j < n and (tokens[j][0].isalpha() or tokens[j][0] == "_"):
+                        name = tokens[j]
+                        j += 1
+                        if j < n and tokens[j] == "final":
+                            j += 1
+                        if j < n and tokens[j] in (":", "{"):
+                            ns_path: list[str] = []
+                            for _, parts in scope_stack:
+                                if parts:
+                                    ns_path.extend(parts)
+                            if ns_path:
+                                qualified.add("::".join([*ns_path, name]))
+                            else:
+                                unqualified.add(name)
+            elif tok == "using" and i + 2 < n:
+                name = tokens[i + 1]
+                if (name[0].isalpha() or name[0] == "_") and tokens[i + 2] == "=":
+                    ns_path = []
+                    for _, parts in scope_stack:
+                        if parts:
+                            ns_path.extend(parts)
+                    if ns_path:
+                        qualified.add("::".join([*ns_path, name]))
+                    else:
+                        unqualified.add(name)
+        i += 1
 
 
 def check_frontmatter_cpp_types(errors: list[str]) -> int:
@@ -344,16 +454,8 @@ def check_frontmatter_cpp_types(errors: list[str]) -> int:
     for header in src_root.rglob("*.h"):
         if header.name.endswith("_p.h"):
             continue
-        text = _strip_cpp_comments(header.read_text(encoding="utf-8", errors="replace"))
-        has_qmltui_ns = bool(re.search(r"\bnamespace\s+qmltui\b", text))
-        for match in CPP_TYPE_DECL_RE.finditer(text):
-            name = match.group(1) or match.group(2)
-            if not name:
-                continue
-            if has_qmltui_ns:
-                qualified_declared.add(f"qmltui::{name}")
-            else:
-                unqualified_declared.add(name)
+        text = header.read_text(encoding="utf-8", errors="replace")
+        _collect_namespace_cpp_types(text, qualified_declared, unqualified_declared)
 
     checked = 0
     for md_path in sorted((REPO_ROOT / "docs/qml-types").glob("*.md")):
@@ -436,8 +538,8 @@ def extract_qml_snippets(md_path: Path, errors: list[str]) -> list[tuple[int, st
             idx += 1
         idx += 1
 
-        lang = info.split()[0] if info else ""
-        if lang != "qml" or ignored_by_comment:
+        lang = re.split(r"[\s{:]", info)[0] if info else ""
+        if lang != "qml":
             continue
         code = "\n".join(body).strip() + "\n"
         imports = IMPORT_RE.findall(code)
@@ -453,7 +555,7 @@ def extract_qml_snippets(md_path: Path, errors: list[str]) -> list[tuple[int, st
                 errors.append(
                     f"complete Terminal QML snippet in {md_path.relative_to(REPO_ROOT)}:{start_line} is missing a keyboard quit path (Qt.quit())"
                 )
-        if any(imp not in ALLOWED_SNIPPET_IMPORTS for imp in imports):
+        if ignored_by_comment or any(imp not in ALLOWED_SNIPPET_IMPORTS for imp in imports):
             continue
         snippets.append((start_line, code))
     return snippets

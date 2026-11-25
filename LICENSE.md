@@ -15,7 +15,7 @@ texts are in [`LICENSES/`](LICENSES/).
 | `examples/` | `BSD-3-Clause` |
 | `cmake/`, `scripts/`, `.github/`, `.agents/`, `.githooks/`, root `CMakeLists.txt` | `BSD-3-Clause` |
 | `docs/`, every `*.md` | `CC-BY-4.0` |
-| Third-party code fetched at build time (utf8proc, libvterm) | `MIT` (plus `Unicode-3.0` data files in `utf8proc`), see [`THIRD-PARTY.md`](THIRD-PARTY.md) |
+| Third-party code fetched at build time (utf8proc, libvterm) | `MIT` (plus `Unicode-DFS-2015` data files in `utf8proc`), see [`THIRD-PARTY.md`](THIRD-PARTY.md) |
 
 ## LGPL-3.0-only Summary
 

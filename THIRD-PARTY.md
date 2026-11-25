@@ -5,7 +5,7 @@ not part of the QmlTui license; each keeps its upstream license, reproduced here
 
 | Library | Version | Fetched by | License |
 | :--- | :--- | :--- | :--- |
-| [utf8proc](https://github.com/JuliaStrings/utf8proc) | 2.11.3 | `cmake/QmlTuiUtf8proc.cmake` | MIT AND Unicode-3.0 |
+| [utf8proc](https://github.com/JuliaStrings/utf8proc) | 2.11.3 | `cmake/QmlTuiUtf8proc.cmake` | MIT AND Unicode-DFS-2015 |
 | [libvterm](https://www.leonerd.org.uk/code/libvterm/) | 0.3.3 | `cmake/QmlTuiLibvterm.cmake` (only with `QmlTui.PtyView`) | MIT |
 
 Qt itself is a build and runtime dependency and is licensed by The Qt Company
@@ -16,8 +16,8 @@ available under GPLv3 or a commercial license only.
 
 MIT License
 
-Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Peter Colberg, Tony Kelman, Scott P. Jones, and other contributors.
-Copyright (c) 2009 Public Software Group e. V., Berlin, Germany
+Copyright (c) 2014-2021 by Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and other contributors listed in the git history.
+Copyright (c) 2009, 2013 Public Software Group e. V., Berlin, Germany
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -25,7 +25,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-utf8proc also bundles Unicode data files (`utf8proc_data.c`) derived from the Unicode Character Database under the following Unicode license notice (SPDX: `Unicode-3.0`):
+utf8proc also bundles Unicode data files (`utf8proc_data.c`) derived from the Unicode Character Database under the following Unicode license notice (SPDX: `Unicode-DFS-2015`):
 
 **COPYRIGHT AND PERMISSION NOTICE**
 

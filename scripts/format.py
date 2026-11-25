@@ -342,6 +342,7 @@ def main(argv: list[str] | None = None) -> int:
             paths.append(arg)
             idx += 1
 
+    orig_cwd = Path.cwd()
     os.chdir(REPO_ROOT)
 
     clang_format_bin = find_clang_format()
@@ -352,40 +353,77 @@ def main(argv: list[str] | None = None) -> int:
     all_dirs_str = " ".join(str(d) for d in all_dirs)
 
     if scope == "staged":
-        if not check_only:
-            if filter_mode != "qml":
-                cf_bin = require_clang_format(clang_format_bin)
-                used_git_cf = False
-                if git_clang_format_bin:
-                    res = run_git_clang_format(git_clang_format_bin, cf_bin, [])
-                    if res is not None and res.returncode == 0:
-                        used_git_cf = True
-                        if res.stdout.strip():
-                            print(res.stdout.strip())
-                if not used_git_cf:
-                    for file_path in staged_files():
-                        if file_path.suffix in CPP_EXTENSIONS:
-                            format_file_in_place(cf_bin, file_path)
-                            subprocess.run(["git", "add", str(file_path)], cwd=REPO_ROOT, check=True)
-                            print(f"Formatted C++: {file_path}")
+        staged = staged_files()
+        staged_cpp = [p for p in staged if p.suffix in CPP_EXTENSIONS]
+        staged_qml = [p for p in staged if p.suffix in QML_EXTENSIONS]
+        unstaged = set(
+            subprocess.check_output(
+                ["git", "diff", "--name-only"], cwd=REPO_ROOT, text=True
+            ).splitlines()
+        )
 
-            if filter_mode != "cpp":
+        if not check_only:
+            needs_manual_restage = False
+            if filter_mode != "qml" and staged_cpp:
+                cf_bin = require_clang_format(clang_format_bin)
+                if git_clang_format_bin:
+                    res = run_git_clang_format(git_clang_format_bin, cf_bin, ["--staged"])
+                    if res is None:
+                        print("Error: failed to invoke git-clang-format.", file=sys.stderr)
+                        return 1
+                    if res.returncode not in (0, 1):
+                        detail = (res.stderr or res.stdout or "").strip()
+                        if detail:
+                            print(detail, file=sys.stderr)
+                        print(
+                            "Error: git-clang-format --staged refused to modify partially "
+                            "staged or conflicted files; stage or stash unstaged hunks first.",
+                            file=sys.stderr,
+                        )
+                        return res.returncode or 1
+                    if res.stdout.strip():
+                        print(res.stdout.strip())
+                    if res.returncode == 1:
+                        for file_path in staged_cpp:
+                            if file_path.as_posix() not in unstaged:
+                                subprocess.run(
+                                    ["git", "add", str(file_path)], cwd=REPO_ROOT, check=True
+                                )
+                            else:
+                                needs_manual_restage = True
+                else:
+                    for file_path in staged_cpp:
+                        format_file_in_place(cf_bin, file_path)
+                        if file_path.as_posix() not in unstaged:
+                            subprocess.run(
+                                ["git", "add", str(file_path)], cwd=REPO_ROOT, check=True
+                            )
+                        else:
+                            needs_manual_restage = True
+                        print(f"Formatted C++: {file_path}")
+
+            if filter_mode != "cpp" and staged_qml:
                 qf_bin = require_qmlformat(qml_format_bin)
-                for file_path in staged_files():
-                    if file_path.suffix in QML_EXTENSIONS:
-                        format_file_in_place(qf_bin, file_path)
+                for file_path in staged_qml:
+                    format_file_in_place(qf_bin, file_path)
+                    if file_path.as_posix() not in unstaged:
                         subprocess.run(["git", "add", str(file_path)], cwd=REPO_ROOT, check=True)
-                        print(f"Formatted QML: {file_path}")
+                    else:
+                        needs_manual_restage = True
+                    print(f"Formatted QML: {file_path}")
+            if needs_manual_restage:
+                print(
+                    "Note: partially staged files were formatted in the working tree without "
+                    "re-staging unstaged hunks; review with 'git diff' and re-stage as needed."
+                )
             return 0
 
         failed = False
-        if filter_mode != "qml":
+        if filter_mode != "qml" and staged_cpp:
             cf_bin = require_clang_format(clang_format_bin)
-            used_git_cf = False
             if git_clang_format_bin:
-                res = run_git_clang_format(git_clang_format_bin, cf_bin, ["--diff"])
+                res = run_git_clang_format(git_clang_format_bin, cf_bin, ["--staged", "--diff"])
                 if res is not None and res.returncode in (0, 1):
-                    used_git_cf = True
                     diff_out = res.stdout.strip()
                     if (
                         diff_out
@@ -410,27 +448,33 @@ def main(argv: list[str] | None = None) -> int:
                             file=sys.stderr,
                         )
                         failed = True
-
-            if not used_git_cf:
+                else:
+                    detail = ((res.stderr or res.stdout) if res is not None else "").strip()
+                    if detail:
+                        print(detail, file=sys.stderr)
+                    print(
+                        "Error: git-clang-format --staged --diff failed (e.g. partially staged file).",
+                        file=sys.stderr,
+                    )
+                    failed = True
+            else:
                 print(
                     "Warning: git-clang-format not found; checking C++ files one by one...",
                     file=sys.stderr,
                 )
-                for file_path in staged_files():
-                    if file_path.suffix in CPP_EXTENSIONS:
-                        ok, _ = check_file_formatted(cf_bin, "clang-format", file_path)
-                        if not ok:
-                            print(f"Unformatted C++ file: {file_path}", file=sys.stderr)
-                            failed = True
+                for file_path in staged_cpp:
+                    ok, _ = check_file_formatted(cf_bin, "clang-format", file_path)
+                    if not ok:
+                        print(f"Unformatted C++ file: {file_path}", file=sys.stderr)
+                        failed = True
 
-        if filter_mode != "cpp":
+        if filter_mode != "cpp" and staged_qml:
             qf_bin = require_qmlformat(qml_format_bin)
             qml_violations: list[tuple[Path, str]] = []
-            for file_path in staged_files():
-                if file_path.suffix in QML_EXTENSIONS:
-                    ok, diff_out = check_file_formatted(qf_bin, "qmlformat", file_path)
-                    if not ok:
-                        qml_violations.append((file_path, diff_out))
+            for file_path in staged_qml:
+                ok, diff_out = check_file_formatted(qf_bin, "qmlformat", file_path)
+                if not ok:
+                    qml_violations.append((file_path, diff_out))
 
             if qml_violations:
                 print(
@@ -514,11 +558,23 @@ def main(argv: list[str] | None = None) -> int:
     target_files: list[Path] = []
     supported_exts = CPP_EXTENSIONS | QML_EXTENSIONS
     for raw_target in paths:
-        target = Path(raw_target)
-        if target.is_file():
-            target_files.append(target)
-        elif target.is_dir():
-            target_files.extend(collect_files_in_dirs([target], supported_exts))
+        raw_path = Path(raw_target)
+        candidate = raw_path if raw_path.is_absolute() else (orig_cwd / raw_path)
+        if not candidate.exists():
+            candidate = REPO_ROOT / raw_path
+        if candidate.exists():
+            resolved = candidate.resolve()
+            try:
+                target = resolved.relative_to(REPO_ROOT)
+            except ValueError:
+                target = resolved
+            if target.is_file():
+                target_files.append(target)
+            elif target.is_dir():
+                target_files.extend(collect_files_in_dirs([target], supported_exts))
+            else:
+                print(f"Error: '{raw_target}' not found.", file=sys.stderr)
+                failed = True
         else:
             print(f"Error: '{raw_target}' not found.", file=sys.stderr)
             failed = True
@@ -552,6 +608,9 @@ def main(argv: list[str] | None = None) -> int:
                         failed = True
         else:
             print(f"Skipping unsupported file type: {file_path}", file=sys.stderr)
+
+    if check_only and not failed:
+        print(f"Format check passed: {len(target_files)} file(s) match code style.")
 
     return 1 if failed else 0
 

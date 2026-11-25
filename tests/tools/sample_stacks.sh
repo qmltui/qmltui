@@ -3,8 +3,14 @@
 # Needs gdb and a RelWithDebInfo build; the benchmark opts in to ptrace with PR_SET_PTRACER.
 # Set QML2_IMPORT_PATH=<build>/qml when running from a tree without generated qt.conf.
 # Poor man's sampling profiler: $1 = benchmark binary, $2 = view, $3 = delegate, $4 = samples
+if [ "$#" -lt 3 ]; then
+  echo "Usage: $0 <build>/tests/Core/benchmark_view_phases <View> <delegate> [samples]" >&2
+  exit 1
+fi
 BIN=$1; VIEW=$2; DEL=$3; N=${4:-40}
-OUT=$(dirname "$0")/samples_${VIEW}_${DEL}.txt; : > "$OUT"
+OUT=$(mktemp "${TMPDIR:-/tmp}/qmltui_samples_${VIEW}_${DEL}_XXXXXX.txt")
+PID=""
+trap 'if [ -n "$PID" ]; then kill "$PID" 2>/dev/null; fi; rm -f "$OUT"' EXIT
 "$BIN" --loop "$VIEW" "$DEL" 60 >/dev/null 2>&1 &
 PID=$!
 sleep 1.5

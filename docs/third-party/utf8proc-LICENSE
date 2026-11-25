@@ -1,7 +1,7 @@
 MIT License
 
-Copyright (c) 2014-2021 Steven G. Johnson, Jiahao Chen, Peter Colberg, Tony Kelman, Scott P. Jones, and other contributors.
-Copyright (c) 2009 Public Software Group e. V., Berlin, Germany
+Copyright (c) 2014-2021 by Steven G. Johnson, Jiahao Chen, Tony Kelman, Jonas Fonseca, and other contributors listed in the git history.
+Copyright (c) 2009, 2013 Public Software Group e. V., Berlin, Germany
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-utf8proc also bundles Unicode data files (`utf8proc_data.c`) derived from the Unicode Character Database under the following Unicode license notice (SPDX: `Unicode-3.0`):
+utf8proc also bundles Unicode data files (`utf8proc_data.c`) derived from the Unicode Character Database under the following Unicode license notice (SPDX: `Unicode-DFS-2015`):
 
 COPYRIGHT AND PERMISSION NOTICE
 

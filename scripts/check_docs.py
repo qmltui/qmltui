@@ -35,7 +35,7 @@ MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 HEADING_RE = re.compile(r"^\s*#{1,6}\s+(.*?)\s*#*\s*$")
 HTML_ID_RE = re.compile(r"""\b(?:id|name)\s*=\s*["']([^"']+)["']""")
 CPP_TYPE_DECL_RE = re.compile(
-    r"^\s*(?:(?:class|struct)\s+(?:[A-Z0-9_]+_EXPORT\s+)?([A-Za-z_][A-Za-z0-9_]*)\b|using\s+([A-Za-z_][A-Za-z0-9_]*)\s*=)",
+    r"^\s*(?:(?:class|struct)\s+(?:[A-Z0-9_]+_EXPORT\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*(?:final\s*)?(?::|\{)|using\s+([A-Za-z_][A-Za-z0-9_]*)\s*=)",
     re.MULTILINE,
 )
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
@@ -172,13 +172,15 @@ def strip_fenced_blocks(text: str) -> str:
     return "\n".join(out_lines)
 
 
-def github_slug(heading_text: str) -> str:
-    # Strip markdown links [label](target) -> label and inline HTML/formatting.
+def _clean_heading_text(heading_text: str) -> str:
     text = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", heading_text)
     text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
     text = re.sub(r"<[^>]+>", "", text)
-    text = text.replace("`", "").replace("*", "").replace("~", "")
-    text = text.strip().lower()
+    return text.replace("`", "").replace("*", "").replace("~", "").strip().lower()
+
+
+def github_slug(heading_text: str) -> str:
+    text = _clean_heading_text(heading_text)
     out: list[str] = []
     for ch in text:
         if ch.isalnum() or ch in (" ", "-", "_"):
@@ -186,45 +188,80 @@ def github_slug(heading_text: str) -> str:
     return "".join(out)
 
 
-def collect_markdown_anchors(md_path: Path, cache: dict[Path, set[str]]) -> set[str]:
+def vitepress_slug(heading_text: str) -> str:
+    # Mirrors @mdit-vue/shared slugify() used by VitePress.
+    text = _clean_heading_text(heading_text)
+    slug = re.sub(r"[^0-9a-zA-Z\u00c0-\uffff]+", "-", text).strip("-")
+    if slug and slug[0].isdigit():
+        slug = f"_{slug}"
+    return slug
+
+
+def collect_markdown_anchors(
+    md_path: Path, cache: dict[Path, tuple[set[str], set[str]]]
+) -> tuple[set[str], set[str]]:
     resolved = md_path.resolve()
     if resolved in cache:
         return cache[resolved]
-    anchors: set[str] = set()
+    gh_anchors: set[str] = set()
+    vp_anchors: set[str] = set()
     if not resolved.is_file():
-        cache[resolved] = anchors
-        return anchors
+        cache[resolved] = (gh_anchors, vp_anchors)
+        return gh_anchors, vp_anchors
     scrubbed = strip_fenced_blocks(resolved.read_text(encoding="utf-8", errors="replace"))
-    seen_counts: dict[str, int] = {}
+    gh_counts: dict[str, int] = {}
+    vp_counts: dict[str, int] = {}
     for line in scrubbed.splitlines():
         for html_id in HTML_ID_RE.findall(line):
-            anchors.add(html_id.strip().lower())
+            clean_id = html_id.strip().lower()
+            gh_anchors.add(clean_id)
+            vp_anchors.add(clean_id)
         match = HEADING_RE.match(line)
         if not match:
             continue
         raw_heading = match.group(1)
         custom_id = re.search(r"\s*\{#([A-Za-z0-9_.-]+)\}\s*$", raw_heading)
         if custom_id:
-            anchors.add(custom_id.group(1).lower())
+            cid = custom_id.group(1).lower()
+            gh_anchors.add(cid)
+            vp_anchors.add(cid)
             raw_heading = raw_heading[: custom_id.start()]
-        slug = github_slug(raw_heading)
-        if not slug:
-            continue
-        count = seen_counts.get(slug, 0)
-        seen_counts[slug] = count + 1
-        anchors.add(slug if count == 0 else f"{slug}-{count}")
-    cache[resolved] = anchors
-    return anchors
+        gh = github_slug(raw_heading)
+        if gh:
+            count = gh_counts.get(gh, 0)
+            gh_counts[gh] = count + 1
+            gh_anchors.add(gh if count == 0 else f"{gh}-{count}")
+        vp = vitepress_slug(raw_heading)
+        if vp:
+            count = vp_counts.get(vp, 0)
+            vp_counts[vp] = count + 1
+            vp_anchors.add(vp if count == 0 else f"{vp}-{count}")
+    cache[resolved] = (gh_anchors, vp_anchors)
+    return gh_anchors, vp_anchors
 
 
 def check_markdown_links(errors: list[str]) -> int:
     checked = 0
-    docs_root = REPO_ROOT / "docs"
-    anchor_cache: dict[Path, set[str]] = {}
+    docs_root = (REPO_ROOT / "docs").resolve()
+    anchor_cache: dict[Path, tuple[set[str], set[str]]] = {}
+    vitepress_include_re = re.compile(r"^\s*<<<\s+([^\s{#]+)")
     for md_path in iter_doc_files(include_historical=True, include_extra_md=True):
         raw_text = md_path.read_text(encoding="utf-8")
         scrubbed = strip_fenced_blocks(raw_text)
         for line_no, line in enumerate(scrubbed.splitlines(), start=1):
+            inc_match = vitepress_include_re.match(line)
+            if inc_match:
+                inc_target = unquote(inc_match.group(1).strip())
+                if inc_target.startswith("@/"):
+                    inc_path = (docs_root / inc_target[2:]).resolve()
+                else:
+                    inc_path = (md_path.parent / inc_target).resolve()
+                checked += 1
+                if not inc_path.is_file():
+                    errors.append(
+                        f"broken VitePress snippet include in {md_path.relative_to(REPO_ROOT)}:{line_no}: {inc_target}"
+                    )
+                continue
             clean_line = INLINE_CODE_RE.sub("", line)
             for raw_target in MARKDOWN_LINK_RE.findall(clean_line):
                 target = raw_target.strip().strip("<>")
@@ -248,13 +285,15 @@ def check_markdown_links(errors: list[str]) -> int:
                             docs_root / rel_doc,
                             docs_root / f"{rel_doc}.md",
                             docs_root / rel_doc / "index.md",
+                            docs_root / rel_doc / "README.md",
                         ]
                     else:
                         base = (md_path.parent / decoded).resolve()
                         candidates = [
                             base,
-                            base.with_suffix(".md") if not base.suffix else base,
+                            base.parent / f"{base.name}.md",
                             base / "index.md",
+                            base / "README.md",
                         ]
                     resolved_target = next((c for c in candidates if c.exists()), None)
                     if resolved_target is None:
@@ -262,24 +301,59 @@ def check_markdown_links(errors: list[str]) -> int:
                             f"broken link in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target}"
                         )
                         continue
+                    if resolved_target.is_dir():
+                        index_md = resolved_target / "index.md"
+                        readme_md = resolved_target / "README.md"
+                        if index_md.is_file():
+                            resolved_target = index_md
+                        elif readme_md.is_file():
+                            resolved_target = readme_md
+                        elif fragment:
+                            errors.append(
+                                f"broken anchor in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target}"
+                            )
+                            continue
                 if fragment and resolved_target.is_file() and resolved_target.suffix == ".md":
-                    anchors = collect_markdown_anchors(resolved_target, anchor_cache)
-                    if fragment not in anchors:
+                    gh_anchors, vp_anchors = collect_markdown_anchors(resolved_target, anchor_cache)
+                    in_docs = False
+                    try:
+                        resolved_target.resolve().relative_to(docs_root)
+                        in_docs = True
+                    except ValueError:
+                        in_docs = False
+                    if fragment not in gh_anchors:
                         errors.append(
                             f"broken anchor in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target}"
+                        )
+                    elif in_docs and fragment not in vp_anchors:
+                        errors.append(
+                            f"VitePress-incompatible anchor in {md_path.relative_to(REPO_ROOT)}:{line_no}: {raw_target} (matches GitHub slug only)"
                         )
     return checked
 
 
+def _strip_cpp_comments(text: str) -> str:
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    return re.sub(r"//[^\n]*", "", text)
+
+
 def check_frontmatter_cpp_types(errors: list[str]) -> int:
-    declared: set[str] = {"QObject"}
+    qualified_declared: set[str] = set()
+    unqualified_declared: set[str] = {"QObject"}
     src_root = REPO_ROOT / "src/QmlTui"
     for header in src_root.rglob("*.h"):
-        text = header.read_text(encoding="utf-8", errors="replace")
+        if header.name.endswith("_p.h"):
+            continue
+        text = _strip_cpp_comments(header.read_text(encoding="utf-8", errors="replace"))
+        has_qmltui_ns = bool(re.search(r"\bnamespace\s+qmltui\b", text))
         for match in CPP_TYPE_DECL_RE.finditer(text):
             name = match.group(1) or match.group(2)
-            if name:
-                declared.add(name)
+            if not name:
+                continue
+            if has_qmltui_ns:
+                qualified_declared.add(f"qmltui::{name}")
+            else:
+                unqualified_declared.add(name)
 
     checked = 0
     for md_path in sorted((REPO_ROOT / "docs/qml-types").glob("*.md")):
@@ -296,10 +370,14 @@ def check_frontmatter_cpp_types(errors: list[str]) -> int:
         if not cpp_val or cpp_val.lower() in ("null", "none", "~"):
             continue
         checked += 1
-        short_name = cpp_val.split("::")[-1]
-        if short_name not in declared:
+        valid = (
+            cpp_val in qualified_declared
+            if "::" in cpp_val
+            else cpp_val in unqualified_declared
+        )
+        if not valid:
             errors.append(
-                f"invalid frontmatter cpp type in {md_path.relative_to(REPO_ROOT)}: {cpp_val!r} not declared under src/QmlTui/"
+                f"invalid frontmatter cpp type in {md_path.relative_to(REPO_ROOT)}: {cpp_val!r} not declared as a public type under src/QmlTui/"
             )
     return checked
 
@@ -329,7 +407,7 @@ def check_examples_coverage(errors: list[str]) -> tuple[int, int]:
     return len(gallery_files), len(recipe_dirs)
 
 
-def extract_qml_snippets(md_path: Path) -> list[tuple[int, str]]:
+def extract_qml_snippets(md_path: Path, errors: list[str]) -> list[tuple[int, str]]:
     lines = md_path.read_text(encoding="utf-8").splitlines()
     snippets: list[tuple[int, str]] = []
     idx = 0
@@ -363,8 +441,18 @@ def extract_qml_snippets(md_path: Path) -> list[tuple[int, str]]:
             continue
         code = "\n".join(body).strip() + "\n"
         imports = IMPORT_RE.findall(code)
+        for imp in imports:
+            if imp == "QtQuick" or imp.startswith("QtQuick."):
+                errors.append(
+                    f"forbidden QtQuick import in {md_path.relative_to(REPO_ROOT)}:{start_line}: import {imp}"
+                )
         if not any(imp == "QmlTui" or imp.startswith("QmlTui.") for imp in imports):
             continue
+        if re.search(r"^\s*Terminal\s*\{", code, re.MULTILINE):
+            if not re.search(r"\bQt\.quit\s*\(", code):
+                errors.append(
+                    f"complete Terminal QML snippet in {md_path.relative_to(REPO_ROOT)}:{start_line} is missing a keyboard quit path (Qt.quit())"
+                )
         if any(imp not in ALLOWED_SNIPPET_IMPORTS for imp in imports):
             continue
         snippets.append((start_line, code))
@@ -401,15 +489,7 @@ def check_qml_snippets(build_dir: Path, explicit_qmllint: Path | None, errors: l
 
     pending: list[tuple[Path, int, str]] = []
     for md_path in iter_doc_files(include_historical=False):
-        for start_line, code in extract_qml_snippets(md_path):
-            if re.search(r"^\s*Terminal\s*\{", code, re.MULTILINE):
-                has_quit = bool(
-                    re.search(r"\b(Qt\.quit\s*\(|Keys\.|Shortcut\s*\{)", code)
-                )
-                if not has_quit:
-                    errors.append(
-                        f"complete Terminal QML snippet in {md_path.relative_to(REPO_ROOT)}:{start_line} is missing a keyboard quit path"
-                    )
+        for start_line, code in extract_qml_snippets(md_path, errors):
             imports = set(IMPORT_RE.findall(code))
             if "QmlTui.Image" in imports and not has_image:
                 continue

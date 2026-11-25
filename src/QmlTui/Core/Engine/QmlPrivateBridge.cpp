@@ -152,7 +152,16 @@ void writePropertyBypassingInterceptor(QObject* target, const QString& name,
                                                 argv);
             }
         } else {
-            prop.write(target, value);
+            const QQmlProperty qmlProp(target, name);
+            if (qmlProp.isValid()) {
+                const QVariant converted = qmlProp.propertyType() == QMetaType::QString &&
+                                                   value.metaType() == QMetaType::fromType<Color>()
+                                               ? QVariant(value.value<Color>().toString())
+                                               : value;
+                qmlProp.write(converted);
+            } else {
+                prop.write(target, value);
+            }
         }
     }
 #endif
@@ -275,43 +284,43 @@ void evaluateDecodedBinding(PropertyChanges* pc, const DecodedBinding& b, const 
 void restoreOrWriteProperty(QObject* target, const QString& name, const QVariant& value,
                             bool hadBinding, const SavedBinding& binding) {
     if (!target) return;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QQmlProperty prop(target, name);
     if (prop.isValid()) {
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
         QQmlAnyBinding::removeBindingFrom(prop);
         if (hadBinding && binding) {
             SavedBinding copy = binding;
             copy.installOn(prop);
-        } else {
-            prop.write(value);
+            return;
         }
+#else
+        Q_UNUSED(hadBinding);
+        Q_UNUSED(binding);
+#endif
+        prop.write(value);
         return;
     }
-#else
-    Q_UNUSED(hadBinding);
-    Q_UNUSED(binding);
-#endif
     target->setProperty(name.toUtf8().constData(), value);
 }
 
 void installOrWriteProperty(QObject* target, const QString& name, const QVariant& value,
                             bool isBinding, const SavedBinding& binding) {
     if (!target) return;
-#if defined(QMLTUI_ENABLE_PRIVATE_QT)
     QQmlProperty prop(target, name);
     if (prop.isValid()) {
+#if defined(QMLTUI_ENABLE_PRIVATE_QT)
         if (isBinding && binding) {
             SavedBinding copy = binding;
             copy.installOn(prop);
-        } else {
-            prop.write(value);
+            return;
         }
+#else
+        Q_UNUSED(isBinding);
+        Q_UNUSED(binding);
+#endif
+        prop.write(value);
         return;
     }
-#else
-    Q_UNUSED(isBinding);
-    Q_UNUSED(binding);
-#endif
     target->setProperty(name.toUtf8().constData(), value);
 }
 

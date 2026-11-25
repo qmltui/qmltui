@@ -2,6 +2,8 @@
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QmlTui/Core/Engine/Animation.h>
+#include <QmlTui/Core/Items/Rectangle.h>
+#include <QmlTui/Core/Primitives/Color.h>
 #include "../TestPaint.h"
 #include <memory>
 
@@ -168,6 +170,47 @@ private slots:
             testing::paintItem(root, buffer, 0, 0);
             QCOMPARE(QString::fromUtf8(buffer.cellAt(0, 0).character()), QString::number(target));
         }
+    }
+
+    void colorAnimationPreservesSpecialEndpoints() {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QtQml
+            import QmlTui
+            Rectangle {
+                id: root
+                property color requested: "#ff0000"
+                width: 2; height: 1
+                color: requested
+                Behavior on color { ColorAnimation { duration: 100 } }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> object(component.create());
+        auto* rect = qobject_cast<Rectangle*>(object.get());
+        QVERIFY(rect);
+        auto* animation = rect->findChild<ColorAnimation*>();
+        QVERIFY(animation);
+        animation->tick(0);
+        animation->tick(100);
+
+        // Transparent endpoint survives completion (not flattened to Color::Default).
+        QVERIFY(rect->setProperty("requested", QVariant::fromValue(Color::transparent())));
+        QVERIFY(animation->running());
+        animation->tick(0);
+        animation->tick(100);
+        QVERIFY(rect->color().isTransparent());
+
+        // ANSI palette tag survives completion (not flattened to RGB #800000).
+        QVERIFY(rect->setProperty(
+            "requested", QVariant::fromValue(Color::fromString(QStringLiteral("ansi:red")))));
+        QVERIFY(animation->running());
+        animation->tick(0);
+        animation->tick(100);
+        QCOMPARE(rect->color(), Color::fromString(QStringLiteral("ansi:red")));
     }
 };
 

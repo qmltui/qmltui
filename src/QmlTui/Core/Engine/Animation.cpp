@@ -246,35 +246,51 @@ static uint32_t extractColor(const QVariant& var, uint32_t defaultColor = 0xFFFF
     return Color::resolve(var.toString(), defaultColor);
 }
 
+static Color extractExactColor(const QVariant& var, uint32_t defaultColor = 0xFFFFFFFF) {
+    if (var.userType() == QMetaType::fromType<Color>().id()) {
+        return var.value<Color>();
+    }
+    if (var.userType() == QMetaType::QString) {
+        return Color::fromString(var.toString());
+    }
+    return Color::fromArgb32(Color::resolve(var.toString(), defaultColor));
+}
+
 void ColorAnimation::writeValue(const QVariant& value) {
     if (!m_target || m_propertyName.isEmpty()) return;
 
-    // ANSI-indexed colors carry no RGB; interpolate their palette values.
-    uint32_t fromColor = Color::toArgb(extractColor(m_from, 0xFFFFFFFF));
-    uint32_t toColor = Color::toArgb(extractColor(m_to, 0xFFFFFFFF));
+    const double t = value.toDouble();
+    Color animatedColor;
+    if (t >= 1.0) {
+        // Commit the exact destination Color so Transparent, Invalid, Default,
+        // and ANSI palette tags survive completion without RGB loss.
+        animatedColor = extractExactColor(m_to, 0xFFFFFFFF);
+    } else {
+        // ANSI-indexed colors carry no RGB; interpolate their palette values.
+        const uint32_t fromColor = Color::toArgb(extractColor(m_from, 0xFFFFFFFF));
+        const uint32_t toColor = Color::toArgb(extractColor(m_to, 0xFFFFFFFF));
 
-    int fromA = (fromColor >> 24) & 0xFF;
-    int fromR = (fromColor >> 16) & 0xFF;
-    int fromG = (fromColor >> 8) & 0xFF;
-    int fromB = fromColor & 0xFF;
+        const int fromA = (fromColor >> 24) & 0xFF;
+        const int fromR = (fromColor >> 16) & 0xFF;
+        const int fromG = (fromColor >> 8) & 0xFF;
+        const int fromB = fromColor & 0xFF;
 
-    int toA = (toColor >> 24) & 0xFF;
-    int toR = (toColor >> 16) & 0xFF;
-    int toG = (toColor >> 8) & 0xFF;
-    int toB = toColor & 0xFF;
+        const int toA = (toColor >> 24) & 0xFF;
+        const int toR = (toColor >> 16) & 0xFF;
+        const int toG = (toColor >> 8) & 0xFF;
+        const int toB = toColor & 0xFF;
 
-    double t = value.toDouble();
+        const int currA = std::clamp(static_cast<int>(fromA + t * (toA - fromA)), 0, 255);
+        const int currR = std::clamp(static_cast<int>(fromR + t * (toR - fromR)), 0, 255);
+        const int currG = std::clamp(static_cast<int>(fromG + t * (toG - fromG)), 0, 255);
+        const int currB = std::clamp(static_cast<int>(fromB + t * (toB - fromB)), 0, 255);
 
-    int currA = std::clamp(static_cast<int>(fromA + t * (toA - fromA)), 0, 255);
-    int currR = std::clamp(static_cast<int>(fromR + t * (toR - fromR)), 0, 255);
-    int currG = std::clamp(static_cast<int>(fromG + t * (toG - fromG)), 0, 255);
-    int currB = std::clamp(static_cast<int>(fromB + t * (toB - fromB)), 0, 255);
+        const uint32_t currArgb =
+            (static_cast<uint32_t>(currA) << 24) | (static_cast<uint32_t>(currR) << 16) |
+            (static_cast<uint32_t>(currG) << 8) | static_cast<uint32_t>(currB);
+        animatedColor = Color::fromArgb32(currArgb);
+    }
 
-    uint32_t currArgb = (static_cast<uint32_t>(currA) << 24) |
-                        (static_cast<uint32_t>(currR) << 16) | (static_cast<uint32_t>(currG) << 8) |
-                        static_cast<uint32_t>(currB);
-
-    Color animatedColor = Color::fromArgb32(currArgb);
     QVariant currentProp = m_target->property(m_propertyName.toUtf8().constData());
     if (currentProp.userType() == QMetaType::fromType<Color>().id() &&
         currentProp.value<Color>() == animatedColor)

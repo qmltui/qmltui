@@ -524,10 +524,12 @@ void StateController::handlePropertiesChanged(PropertyChanges* pc) {
             }
             propertyOwners().insert(resolved.key, this);
             m_ownedProperties.insert(resolved.key);
-            resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
+            installOrWriteProperty(resolved.target, resolved.key.name, it.value(), false,
+                                   SavedBinding());
         } else if (oldMap.value(it.key()) != it.value()) {
             // Retained key with updated value
-            resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
+            installOrWriteProperty(resolved.target, resolved.key.name, it.value(), false,
+                                   SavedBinding());
         }
     }
 }
@@ -642,7 +644,8 @@ void StateController::handleTargetChanged(PropertyChanges* pc) {
             }
             propertyOwners().insert(resolved.key, this);
             m_ownedProperties.insert(resolved.key);
-            resolved.target->setProperty(resolved.key.name.toUtf8().constData(), it.value());
+            installOrWriteProperty(resolved.target, resolved.key.name, it.value(), false,
+                                   SavedBinding());
         }
     }
 }
@@ -760,15 +763,26 @@ void StateController::applyOverride(const CanonicalProperty& key, const Property
             m_revertingBaseRecords.insert(key, *revertRecord);
         }
         connect(newAnim, &Animation::finished, this,
-                [this, newAnim, prop, key, destBinding, isRevert]() mutable {
+                [this, newAnim, prop, key, destBinding, toVal, isRevert]() mutable {
                     m_runningTransitionAnimations.removeOne(newAnim);
                     newAnim->deleteLater();
                     if (isRevert) {
                         m_revertingBaseRecords.remove(key);
+                        if (propertyOwnerStorage().hasLocalData() &&
+                            propertyOwners().value(key) == this) {
+                            propertyOwners().remove(key);
+                        }
+                        m_ownedProperties.remove(key);
                     }
-                    if (prop.isValid() && prop.object() != nullptr && destBinding) {
-                        // Attach and reevaluate destination binding at transition completion
-                        destBinding.installOn(prop);
+                    if (prop.isValid() && prop.object() != nullptr) {
+                        if (destBinding) {
+                            // Attach and reevaluate destination binding at transition completion
+                            destBinding.installOn(prop);
+                        } else {
+                            // Commit the exact destination value (preserving Color::Transparent,
+                            // Color::Invalid, and ANSI palette tags) bypassing Behavior.
+                            writePropertyBypassingInterceptor(prop, toVal);
+                        }
                     }
                 });
 
@@ -828,14 +842,22 @@ void StateController::applyState(const QString& newState) {
         for (auto it = interrupted.cbegin(); it != interrupted.cend(); ++it) {
             const CanonicalProperty& canon = it.key();
             const BasePropertyRecord& rec = it.value();
-            if (!rec.target) continue;
+            if (!rec.target) {
+                if (propertyOwners().value(canon) == this) propertyOwners().remove(canon);
+                m_ownedProperties.remove(canon);
+                continue;
+            }
             if (requestedOverrides.contains(canon)) {
                 if (!m_baseRecords.contains(canon)) {
                     m_baseRecords.insert(canon, rec);
                 }
-            } else if (rec.restore) {
-                restoreOrWriteProperty(rec.target.data(), rec.name, rec.baseValue, rec.hadBinding,
-                                       rec.baseBinding);
+            } else {
+                if (rec.restore) {
+                    restoreOrWriteProperty(rec.target.data(), rec.name, rec.baseValue,
+                                           rec.hadBinding, rec.baseBinding);
+                }
+                if (propertyOwners().value(canon) == this) propertyOwners().remove(canon);
+                m_ownedProperties.remove(canon);
             }
         }
     }
@@ -861,8 +883,10 @@ void StateController::applyState(const QString& newState) {
     for (const CanonicalProperty& canon : toRevert) {
         revertProperty(canon, transitionObj, &animatedProperties);
         m_baseRecords.remove(canon);
-        if (propertyOwners().value(canon) == this) propertyOwners().remove(canon);
-        m_ownedProperties.remove(canon);
+        if (!animatedProperties.contains(canon)) {
+            if (propertyOwners().value(canon) == this) propertyOwners().remove(canon);
+            m_ownedProperties.remove(canon);
+        }
     }
 
     // 6. Properties to apply

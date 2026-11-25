@@ -52,6 +52,7 @@ private slots:
     void testDecodedBindingTeardownWithoutEngine();
     void testColorTransitionStringLiteralsAndZeroDelta();
     void testReverseTransitionToBaseAndInterruption();
+    void testReverseColorEndpointsAndMidRevertOwnership();
     void testCustomBindingsDynamicRetargetAndAttachedOmittedTarget();
     void testDisabledFeaturesAvailability();
 };
@@ -1713,6 +1714,8 @@ void TestStates::testColorTransitionStringLiteralsAndZeroDelta() {
     QVERIFY(qobject_cast<ColorAnimation*>(ansiAnim) != nullptr);
     ansiAnim->tick(0);
     ansiAnim->tick(100);
+    QCOMPARE(root->property("accent").value<Color>(),
+             Color::fromString(QStringLiteral("ansi:red")));
 }
 
 void TestStates::testReverseTransitionToBaseAndInterruption() {
@@ -1801,6 +1804,101 @@ void TestStates::testReverseTransitionToBaseAndInterruption() {
     root->setProperty("baseFactor", 3);
     QCOMPARE(root->property("sizeVal").toInt(), 30);
 #endif
+}
+
+void TestStates::testReverseColorEndpointsAndMidRevertOwnership() {
+    auto findRunningAnim = [](QObject* obj) -> PropertyAnimation* {
+        for (PropertyAnimation* anim : obj->findChildren<PropertyAnimation*>()) {
+            if (anim->running()) return anim;
+        }
+        return nullptr;
+    };
+
+    QQmlEngine engine;
+    addQmlTuiImportPath(engine);
+
+    QQmlComponent component(&engine);
+    component.setData(R"(
+        import QtQml
+        import QmlTui
+        Item {
+            id: root
+            Rectangle {
+                id: box
+                objectName: "box"
+                width: 10
+                height: 3
+                states: [
+                    State {
+                        name: "tinted"
+                        PropertyChanges {
+                            target: box
+                            properties: ({ "color": "ansi:red" })
+                        }
+                    }
+                ]
+                transitions: [
+                    Transition {
+                        from: "*"
+                        to: "*"
+                        ColorAnimation { duration: 100 }
+                    }
+                ]
+            }
+            StateGroup {
+                id: rival
+                objectName: "rival"
+                states: [
+                    State {
+                        name: "blue"
+                        PropertyChanges {
+                            target: box
+                            properties: ({ "color": "#0000ff" })
+                        }
+                    }
+                ]
+            }
+        }
+    )",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+
+    std::unique_ptr<QObject> object(component.create());
+    auto* box = object->findChild<Rectangle*>(QStringLiteral("box"));
+    auto* rival = object->findChild<StateGroup*>(QStringLiteral("rival"));
+    QVERIFY(box);
+    QVERIFY(rival);
+    QVERIFY(box->color().isTransparent());
+
+    // Enter tinted state: ColorAnimation commits exact ANSI palette tag on finish.
+    box->setState(QStringLiteral("tinted"));
+    PropertyAnimation* enterAnim = findRunningAnim(box);
+    QVERIFY(enterAnim);
+    enterAnim->tick(0);
+    enterAnim->tick(100);
+    QCOMPARE(box->color(), Color::fromString(QStringLiteral("ansi:red")));
+
+    // Exit to base state "": ownership stays held while reverse transition is active.
+    box->setState(QString());
+    PropertyAnimation* exitAnim = findRunningAnim(box);
+    QVERIFY(exitAnim);
+    exitAnim->tick(0);
+    exitAnim->tick(50);
+
+    // Rival StateGroup must be rejected atomically while reverse transition is ticking.
+    QTest::ignoreMessage(QtWarningMsg,
+                         QRegularExpression(QStringLiteral("is owned by another StateGroup/Item")));
+    rival->setState(QStringLiteral("blue"));
+    QCOMPARE(rival->state(), QString());
+
+    // Finish reverse transition: Color::Transparent is restored exactly (not Color::Default).
+    exitAnim->tick(50);
+    QVERIFY(box->color().isTransparent());
+
+    // Once reverse transition finishes, ownership is released and rival succeeds.
+    rival->setState(QStringLiteral("blue"));
+    QCOMPARE(rival->state(), QStringLiteral("blue"));
+    QCOMPARE(box->color(), Color::fromString(QStringLiteral("#0000ff")));
 }
 
 void TestStates::testDisabledFeaturesAvailability() {

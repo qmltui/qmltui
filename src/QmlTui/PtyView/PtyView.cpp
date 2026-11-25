@@ -232,11 +232,12 @@ void PtyView::start() {
         setError(QStringLiteral("program must not be empty"));
         return;
     }
-    if (!QFileInfo::exists(prog) && QStandardPaths::findExecutable(prog).isEmpty()) {
+    if (args.isEmpty() && !QFileInfo::exists(prog) &&
+        QStandardPaths::findExecutable(prog).isEmpty()) {
         const QStringList split = QProcess::splitCommand(prog);
         if (split.size() > 1) {
             prog = split.first();
-            args = split.mid(1) + args;
+            args = split.mid(1);
         }
     }
 

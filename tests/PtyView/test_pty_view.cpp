@@ -25,6 +25,7 @@ private slots:
     void ptyLifecycleAndRendering();
     void processGroupTerminate();
     void scrollbarDefaultColorsAndShortcutSuppression();
+    void explicitArgumentsDoNotSplitProgram();
 };
 
 void TestPtyView::adapterRenderingAndOsc() {
@@ -255,6 +256,21 @@ void TestPtyView::scrollbarDefaultColorsAndShortcutSuppression() {
             row += frame.cellAt(x, 0).character().toByteArray();
         QVERIFY2(row.contains("READYZ"), row.constData());
     }
+}
+
+void TestPtyView::explicitArgumentsDoNotSplitProgram() {
+    // When explicit arguments are set, a program string with spaces must NOT be split via
+    // QProcess::splitCommand() (which would otherwise inject arguments before m_arguments).
+    PtyView view;
+    view.setWidth(20);
+    view.setHeight(4);
+    view.setProgram(QStringLiteral("/bin/sh -c"));
+    view.setArguments({QStringLiteral("echo SHOULD_NOT_RUN")});
+
+    QSignalSpy errorSpy(&view, &PtyView::errorOccurred);
+    view.start();
+    QTRY_VERIFY_WITH_TIMEOUT(!errorSpy.isEmpty(), 3000);
+    QCOMPARE(view.processState(), PtyView::NotRunning);
 }
 
 QTEST_GUILESS_MAIN(TestPtyView)

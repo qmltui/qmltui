@@ -308,10 +308,11 @@ void VTermAdapter::render(TextGridBuffer& buffer, int absX, int absY, const Clip
             if (!hasSource || source.attrs.conceal) {
                 target.setCharacter(QByteArrayView(" ", 1));
             } else {
-                char utf8[24];
+                char utf8[VTERM_MAX_CHARS_PER_CELL * 4];
                 int utf8Len = 0;
                 for (uint32_t codepoint : source.chars) {
                     if (codepoint == 0) break;
+                    if (utf8Len + 4 > static_cast<int>(sizeof(utf8))) break;
                     utf8Len += UnicodeText::encodeCodePointUtf8(codepoint, utf8 + utf8Len);
                 }
                 if (utf8Len == 0)

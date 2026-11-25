@@ -1016,16 +1016,13 @@ bool Runner::locateItem(const QString& objectName, QRect* outRect, QString* erro
         *error = QStringLiteral("No visible item with objectName \"%1\"").arg(objectName);
         return false;
     }
-    if (m_terminalEngine->frameSequence() == 0) {
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    if (!frame || frame->width() <= 0 || frame->height() <= 0) {
         *error = QStringLiteral("No committed frame buffer is available");
         return false;
     }
-    const int frameWidth = m_terminalEngine->terminalWidth();
-    const int frameHeight = m_terminalEngine->terminalHeight();
-    if (frameWidth <= 0 || frameHeight <= 0) {
-        *error = QStringLiteral("No committed frame buffer is available");
-        return false;
-    }
+    const int frameWidth = frame->width();
+    const int frameHeight = frame->height();
     const QPoint origin = item->absolutePosition();
     const QRect clipped =
         QRect(origin, QSize(item->width(), item->height())) & QRect(0, 0, frameWidth, frameHeight);

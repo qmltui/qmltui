@@ -204,13 +204,20 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal) 
     int captureAfterMs = 0;
     if (!evalCode.isEmpty()) {
         mode = QStringLiteral("eval");
-        if (!evalCode.contains(QLatin1String("main(")) &&
-            !evalCode.contains(QLatin1String("main ("))) {
-            generatedScript =
-                QStringLiteral("function main(app) {\n    %1;\n}\n").arg(evalCode).toUtf8();
-        } else {
-            generatedScript = evalCode.toUtf8();
-        }
+        generatedScript = QStringLiteral("function main(app) {\n"
+                                         "    const __qmltuiOuterMain = main;\n"
+                                         "    return (function(app) {\n"
+                                         "        {\n"
+                                         "%1\n"
+                                         "            if (typeof main === \"function\" && main !== "
+                                         "__qmltuiOuterMain) {\n"
+                                         "                return main(app);\n"
+                                         "            }\n"
+                                         "        }\n"
+                                         "    })(app);\n"
+                                         "}\n")
+                              .arg(evalCode)
+                              .toUtf8();
     } else if (capture) {
         mode = QStringLiteral("capture");
         captureAfterMs = environmentInteger("QMLTUI_RUNNER_CAPTURE_AFTER_MS", 0, 0,

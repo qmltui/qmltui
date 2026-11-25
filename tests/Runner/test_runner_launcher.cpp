@@ -376,6 +376,35 @@ private slots:
         QVERIFY(!castBytes.contains("\x1b[6n"));
         QVERIFY(!castBytes.contains("\\u001b[6n"));
 
+        // Plain --eval invokes const/let/var main and awaits Promises (never silent exit 0).
+        const QString plainConstDir = temporary.filePath("plain-const-main");
+        auto plainConst =
+            run({"--clock", "virtual", "--artifacts", plainConstDir, "--eval",
+                 "const main = (app) => { app.fail('const_main_ran'); };", "--", fixtureBinary()});
+        QCOMPARE(plainConst.code, 1);
+        QVERIFY(readFile(QDir(plainConstDir).filePath("result.json")).contains("const_main_ran"));
+
+        const QString plainVarDir = temporary.filePath("plain-var-main");
+        auto plainVar =
+            run({"--clock", "virtual", "--artifacts", plainVarDir, "--eval",
+                 "var main = (app) => { app.fail('var_main_ran'); };", "--", fixtureBinary()});
+        QCOMPARE(plainVar.code, 1);
+        QVERIFY(readFile(QDir(plainVarDir).filePath("result.json")).contains("var_main_ran"));
+
+        const QString plainAsyncDir = temporary.filePath("plain-async-main");
+        auto plainAsync = run({"--clock", "virtual", "--artifacts", plainAsyncDir, "--eval",
+                               "let main = (app) => Promise.resolve().then(() => {"
+                               "  app.expectText('TESTRUNNER FIXTURE');"
+                               "});",
+                               "--", fixtureBinary()});
+        QVERIFY2(plainAsync.code == 0, plainAsync.err.constData());
+
+        const QString plainLiteralDir = temporary.filePath("plain-main-string");
+        auto plainLiteral = run({"--clock", "virtual", "--artifacts", plainLiteralDir, "--eval",
+                                 "const marker = 'main()'; app.expectText('TESTRUNNER FIXTURE');",
+                                 "--", fixtureBinary()});
+        QVERIFY2(plainLiteral.code == 0, plainLiteral.err.constData());
+
         // Missing mode error mentions --scrollback.
         auto missingMode = run({"--", fixtureBinary()});
         QCOMPARE(missingMode.code, 2);

@@ -298,8 +298,9 @@ void ListView::keyPressEvent(KeyEvent* event) {
     } else if (event->key() == Qt::Key_End) {
         if (total > 0) setCurrentIndex(total - 1);
         event->setAccepted(true);
-    } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Space) {
-        emit itemActivated(m_currentIndex);
+    } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter ||
+               event->key() == Qt::Key_Space) {
+        if (m_currentIndex >= 0 && m_currentIndex < total) emit itemActivated(m_currentIndex);
         event->setAccepted(true);
     }
 }
@@ -569,13 +570,11 @@ Item* ListView::createDelegateItem(int index) {
     initialProps.insert(QStringLiteral("index"), index);
     DelegateUtils::setContextProperty(component, context, QStringLiteral("index"), index);
 
-    if (!countModel) {
-        initialProps.insert(QStringLiteral("model"), rowValue);
-        initialProps.insert(QStringLiteral("modelData"), rowValue);
-        DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), rowValue);
-        DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"),
-                                          rowValue);
-    }
+    const QVariant modelVal = countModel ? QVariant(index) : rowValue;
+    initialProps.insert(QStringLiteral("model"), modelVal);
+    initialProps.insert(QStringLiteral("modelData"), modelVal);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), modelVal);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"), modelVal);
 
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
         initialProps.insert(it.key(), it.value());

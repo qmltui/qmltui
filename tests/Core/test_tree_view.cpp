@@ -352,6 +352,72 @@ private slots:
         QCOMPARE(f.engine.globalObject().property("nodeFormatCalls").toInt(), 3);
         QCOMPARE(f.line(1), QStringLiteral("updated!"));
     }
+
+    void delegateChooserAndPaintClipping() {
+        auto model = makeTree(2, 1);
+        // 1. DelegateChooser resolves distinct delegates per node role (hasChildren).
+        {
+            TreeFixture f;
+            QVERIFY2(f.create(model.get(), QStringLiteral(R"(
+                pragma ComponentBehavior: Bound
+                import QtQml
+                import Qt.labs.qmlmodels
+                import QmlTui
+                TreeView {
+                    width: 40; height: 8; model: testModel
+                    delegate: DelegateChooser {
+                        role: "hasChildren"
+                        DelegateChoice {
+                            roleValue: true
+                            delegate: Text {
+                                required property string display
+                                text: "DIR:" + display
+                            }
+                        }
+                        DelegateChoice {
+                            roleValue: false
+                            delegate: Text {
+                                required property string display
+                                text: "FILE:" + display
+                            }
+                        }
+                    }
+                }
+            )")),
+                     qPrintable(f.component.errorString()));
+            f.tree->expand(0);
+            f.paint();
+            QCOMPARE(f.line(0), QStringLiteral("DIR:group 0"));
+            QCOMPARE(f.line(1), QStringLiteral("FILE:leaf 0.0"));
+            QCOMPARE(f.line(2), QStringLiteral("DIR:group 1"));
+        }
+
+        // 2. Built-in TreeView::paint() strictly respects clipRect.
+        {
+            TreeFixture f;
+            QVERIFY2(f.create(model.get(), builtinQml), qPrintable(f.component.errorString()));
+            f.tree->expand(0);
+            f.tree->setCurrentIndex(1);
+            f.buffer.clear();
+            // Fill buffer with sentinel '.' so any write outside clipRect is detected.
+            f.buffer.fillRect(0, 0, f.buffer.width(), f.buffer.height(), ".", Color::Default,
+                              Color::Default);
+            testing::paintItem(f.tree, f.buffer, 0, 0, ClipRect{2, 1, 6, 1});
+            // Row 0 (outside clipY) must stay untouched '.'.
+            for (int x = 0; x < 20; ++x)
+                QCOMPARE(QString::fromUtf8(f.buffer.cellAt(x, 0).character()), QStringLiteral("."));
+            // Row 1 outside [2, 8) must stay untouched '.'.
+            QCOMPARE(QString::fromUtf8(f.buffer.cellAt(0, 1).character()), QStringLiteral("."));
+            QCOMPARE(QString::fromUtf8(f.buffer.cellAt(1, 1).character()), QStringLiteral("."));
+            QCOMPARE(QString::fromUtf8(f.buffer.cellAt(8, 1).character()), QStringLiteral("."));
+            // Row 1 inside [2, 8) has selection attributes and painted text ('l','e' at x=6,7).
+            QCOMPARE(QString::fromUtf8(f.buffer.cellAt(6, 1).character()), QStringLiteral("l"));
+            QCOMPARE(QString::fromUtf8(f.buffer.cellAt(7, 1).character()), QStringLiteral("e"));
+            QVERIFY((f.buffer.cellAt(2, 1).attributes & TextAttribute::Bold) !=
+                    TextAttribute::None);
+            QCOMPARE(f.buffer.cellAt(1, 1).attributes, TextAttribute::None);
+        }
+    }
 };
 
 QTEST_MAIN(TestTreeView)

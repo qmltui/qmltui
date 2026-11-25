@@ -112,40 +112,52 @@ void Repeater::generateItems() {
 
     if (isStatic && !list.isEmpty()) {
         for (int i = 0; i < list.size(); ++i) {
-            QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
+            QVariant itemVal = list.at(i);
+
+            QVariantMap rowValues;
+            QVariant elem = itemVal;
+            if (elem.userType() == QMetaType::fromType<QJSValue>().id()) {
+                elem = elem.value<QJSValue>().toVariant();
+            }
+            if (elem.canConvert<QVariantMap>()) {
+                rowValues = elem.toMap();
+            }
+
+            QVariantMap resolverMap = rowValues;
+            resolverMap.insert(QStringLiteral("index"), i);
+            resolverMap.insert(QStringLiteral("modelData"), itemVal);
+            QQmlComponent* comp = DelegateUtils::resolveDelegate(m_delegate, i, 0, resolverMap);
+            if (!DelegateUtils::isReady(comp, this)) {
+                m_createdItems.append(nullptr);
+                m_contexts.append(nullptr);
+                continue;
+            }
+
+            QQmlContext* context = DelegateUtils::createContext(comp, this);
             if (!context) {
                 m_createdItems.append(nullptr);
                 m_contexts.append(nullptr);
                 continue;
             }
-            QVariant itemVal = list.at(i);
 
             QVariantMap initialProps;
             initialProps["index"] = i;
             initialProps["modelData"] = itemVal;
             initialProps["model"] = itemVal;
 
-            DelegateUtils::setContextProperty(m_delegate, context, "index", i);
-            DelegateUtils::setContextProperty(m_delegate, context, "modelData", itemVal);
-            DelegateUtils::setContextProperty(m_delegate, context, "model", itemVal);
+            DelegateUtils::setContextProperty(comp, context, "index", i);
+            DelegateUtils::setContextProperty(comp, context, "modelData", itemVal);
+            DelegateUtils::setContextProperty(comp, context, "model", itemVal);
 
-            QVariant elem = itemVal;
-            if (elem.userType() == QMetaType::fromType<QJSValue>().id()) {
-                elem = elem.value<QJSValue>().toVariant();
-            }
-            if (elem.canConvert<QVariantMap>()) {
-                QVariantMap map = elem.toMap();
-                for (auto it = map.cbegin(); it != map.cend(); ++it) {
-                    initialProps[it.key()] = it.value();
-                    DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
-                }
+            for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
+                initialProps[it.key()] = it.value();
+                DelegateUtils::setContextProperty(comp, context, it.key(), it.value());
             }
 
-            Item* item =
-                DelegateUtils::createItem(m_delegate, initialProps, context, parentVis, this);
+            Item* item = DelegateUtils::createItem(comp, initialProps, context, parentVis, this);
             if (item) {
                 m_createdItems.append(item);
-                m_contexts.append(m_delegate->isBound() ? nullptr : context);
+                m_contexts.append(comp->isBound() ? nullptr : context);
             } else {
                 m_createdItems.append(nullptr);
                 m_contexts.append(nullptr);
@@ -153,7 +165,17 @@ void Repeater::generateItems() {
         }
     } else if (isStatic) {
         for (int i = 0; i < count; ++i) {
-            QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
+            QVariantMap resolverMap;
+            resolverMap.insert(QStringLiteral("index"), i);
+            resolverMap.insert(QStringLiteral("modelData"), i);
+            QQmlComponent* comp = DelegateUtils::resolveDelegate(m_delegate, i, 0, resolverMap);
+            if (!DelegateUtils::isReady(comp, this)) {
+                m_createdItems.append(nullptr);
+                m_contexts.append(nullptr);
+                continue;
+            }
+
+            QQmlContext* context = DelegateUtils::createContext(comp, this);
             if (!context) {
                 m_createdItems.append(nullptr);
                 m_contexts.append(nullptr);
@@ -161,14 +183,17 @@ void Repeater::generateItems() {
             }
             QVariantMap initialProps;
             initialProps["index"] = i;
+            initialProps["model"] = i;
+            initialProps["modelData"] = i;
 
-            DelegateUtils::setContextProperty(m_delegate, context, "index", i);
+            DelegateUtils::setContextProperty(comp, context, "index", i);
+            DelegateUtils::setContextProperty(comp, context, "model", i);
+            DelegateUtils::setContextProperty(comp, context, "modelData", i);
 
-            Item* item =
-                DelegateUtils::createItem(m_delegate, initialProps, context, parentVis, this);
+            Item* item = DelegateUtils::createItem(comp, initialProps, context, parentVis, this);
             if (item) {
                 m_createdItems.append(item);
-                m_contexts.append(m_delegate->isBound() ? nullptr : context);
+                m_contexts.append(comp->isBound() ? nullptr : context);
             } else {
                 m_createdItems.append(nullptr);
                 m_contexts.append(nullptr);
@@ -287,24 +312,30 @@ void Repeater::instantiateModelRow(QAbstractItemModel* model, int row, Item* par
         rowValues.insert(it.value(), model->data(modelIndex, it.key()));
     NumericItemRoles::apply(model, modelIndex, rowValues, true, m_claimedNames);
 
+    QQmlComponent* comp = DelegateUtils::resolveDelegate(m_delegate, row, 0, rowValues);
+    if (!DelegateUtils::isReady(comp, this)) {
+        recordRow(nullptr, nullptr);
+        return;
+    }
+
     QVariantMap initialProps = rowValues;
     initialProps.insert(QStringLiteral("index"), row);
     initialProps.insert(QStringLiteral("model"), rowValues);
     initialProps.insert(QStringLiteral("modelData"), rowValues);
 
-    QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
+    QQmlContext* context = DelegateUtils::createContext(comp, this);
     if (!context) {
         recordRow(nullptr, nullptr);
         return;
     }
-    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("index"), row);
-    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("model"), rowValues);
-    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("modelData"), rowValues);
+    DelegateUtils::setContextProperty(comp, context, QStringLiteral("index"), row);
+    DelegateUtils::setContextProperty(comp, context, QStringLiteral("model"), rowValues);
+    DelegateUtils::setContextProperty(comp, context, QStringLiteral("modelData"), rowValues);
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it)
-        DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+        DelegateUtils::setContextProperty(comp, context, it.key(), it.value());
 
-    Item* item = DelegateUtils::createItem(m_delegate, initialProps, context, parentVis, this);
-    recordRow(item, item && !m_delegate->isBound() ? context : nullptr);
+    Item* item = DelegateUtils::createItem(comp, initialProps, context, parentVis, this);
+    recordRow(item, item && !comp->isBound() ? context : nullptr);
 }
 
 void Repeater::maybeFetchMore() {
@@ -333,7 +364,7 @@ void Repeater::onRowsInserted(QAbstractItemModel* model, int first, int last) {
 
     // Update indices for all contexts after the inserted range
     for (int i = last + 1; i < m_contexts.size(); ++i) {
-        DelegateUtils::setContextProperty(m_delegate, m_contexts[i], "index", i);
+        if (m_contexts[i]) m_contexts[i]->setContextProperty(QStringLiteral("index"), i);
         if (i < m_createdItems.size() && m_createdItems[i])
             setPropertyIfExists(m_createdItems[i], "index", i);
     }
@@ -358,7 +389,7 @@ void Repeater::onRowsRemoved(int first, int last) {
 
     // Update indices for all contexts after the removed range
     for (int i = first; i < m_contexts.size(); ++i) {
-        DelegateUtils::setContextProperty(m_delegate, m_contexts[i], "index", i);
+        if (m_contexts[i]) m_contexts[i]->setContextProperty(QStringLiteral("index"), i);
         if (i < m_createdItems.size() && m_createdItems[i])
             setPropertyIfExists(m_createdItems[i], "index", i);
     }
@@ -381,7 +412,7 @@ void Repeater::onRowsMoved(int first, int last, int destination) {
         m_contexts.insert(insertion + index, movedContexts[index]);
     }
     for (int row = 0; row < m_contexts.size(); ++row) {
-        DelegateUtils::setContextProperty(m_delegate, m_contexts[row], "index", row);
+        if (m_contexts[row]) m_contexts[row]->setContextProperty(QStringLiteral("index"), row);
         if (row < m_createdItems.size() && m_createdItems[row])
             setPropertyIfExists(m_createdItems[row], "index", row);
     }

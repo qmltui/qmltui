@@ -167,7 +167,8 @@ void GridView::disconnectModelSignals() {
 }
 
 int GridView::columnsPerRow() const {
-    return m_cellWidth > 0 ? (std::max)(1, width() / m_cellWidth) : 1;
+    const int availW = (std::max)(0, width() - leftPadding() - rightPadding());
+    return m_cellWidth > 0 ? (std::max)(1, availW / m_cellWidth) : 1;
 }
 
 void GridView::updateContentExtent() {
@@ -346,6 +347,9 @@ Item* GridView::createDelegateItem(int index) {
                                                     m_claimedNames, m_delegateStandardMask);
                         }
                     }
+                } else if (countModel && m_delegateNeedsModelMap) {
+                    initialProps.insert(QStringLiteral("model"), index);
+                    initialProps.insert(QStringLiteral("modelData"), index);
                 }
             });
     }
@@ -374,13 +378,11 @@ Item* GridView::createDelegateItem(int index) {
     QVariantMap initialProps;
     initialProps.insert(QStringLiteral("index"), index);
     DelegateUtils::setContextProperty(component, context, QStringLiteral("index"), index);
-    if (!countModel) {
-        initialProps.insert(QStringLiteral("model"), rowValue);
-        initialProps.insert(QStringLiteral("modelData"), rowValue);
-        DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), rowValue);
-        DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"),
-                                          rowValue);
-    }
+    const QVariant modelVal = countModel ? QVariant(index) : rowValue;
+    initialProps.insert(QStringLiteral("model"), modelVal);
+    initialProps.insert(QStringLiteral("modelData"), modelVal);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), modelVal);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"), modelVal);
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
         initialProps.insert(it.key(), it.value());
         DelegateUtils::setContextProperty(component, context, it.key(), it.value());

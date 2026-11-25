@@ -86,6 +86,89 @@ private slots:
             QCOMPARE(rendered(), QString("AZ"));
         }
     }
+
+    void delegateChooserAndIntegerModelData() {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QtQml
+            import QtQml.Models
+            import Qt.labs.qmlmodels
+            import QmlTui
+            Column {
+                id: root
+                width: 20; height: 10
+                ListModel {
+                    id: typedRows
+                    ListElement { kind: "header"; label: "HDR" }
+                    ListElement { kind: "item"; label: "ITM" }
+                }
+                Repeater {
+                    model: typedRows
+                    delegate: DelegateChooser {
+                        role: "kind"
+                        DelegateChoice {
+                            roleValue: "header"
+                            delegate: Text {
+                                required property string label
+                                text: "[" + label + "]"
+                            }
+                        }
+                        DelegateChoice {
+                            roleValue: "item"
+                            delegate: Text {
+                                required property string label
+                                text: "- " + label
+                            }
+                        }
+                    }
+                }
+                Repeater {
+                    model: [{ kind: "a", label: "S1" }, { kind: "b", label: "S2" }]
+                    delegate: DelegateChooser {
+                        role: "kind"
+                        DelegateChoice {
+                            roleValue: "a"
+                            delegate: Text { required property string label; text: "A:" + label }
+                        }
+                        DelegateChoice {
+                            roleValue: "b"
+                            delegate: Text { required property string label; text: "B:" + label }
+                        }
+                    }
+                }
+                Repeater {
+                    model: 2
+                    delegate: Text {
+                        required property int modelData
+                        text: "#" + modelData
+                    }
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> object(component.create());
+        auto* root = qobject_cast<Item*>(object.get());
+        QVERIFY(root);
+
+        TextGridBuffer buffer;
+        QVERIFY(buffer.resize(20, 10));
+        testing::paintItem(root, buffer, 0, 0);
+        auto line = [&](int y) {
+            QString s;
+            for (int x = 0; x < 20; ++x)
+                s += QString::fromUtf8(buffer.cellAt(x, y).character());
+            return s.trimmed();
+        };
+        QCOMPARE(line(0), QStringLiteral("[HDR]"));
+        QCOMPARE(line(1), QStringLiteral("- ITM"));
+        QCOMPARE(line(2), QStringLiteral("A:S1"));
+        QCOMPARE(line(3), QStringLiteral("B:S2"));
+        QCOMPARE(line(4), QStringLiteral("#0"));
+        QCOMPARE(line(5), QStringLiteral("#1"));
+    }
 };
 
 QTEST_GUILESS_MAIN(TestRepeater)

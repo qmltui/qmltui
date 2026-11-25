@@ -1749,24 +1749,29 @@ ClipRect TableView::clipRectForChildren(int absX, int absY, const ClipRect& clip
 
 void TableView::keyPressEvent(KeyEvent* event) {
     const int page = (std::max)(1, viewGeometry().capacity);
-    if (event->key() == Qt::Key_Up)
-        setSelectedRow(m_selectedRow - 1);
-    else if (event->key() == Qt::Key_Down)
-        setSelectedRow(m_selectedRow + 1);
-    else if (event->key() == Qt::Key_PageUp)
-        setSelectedRow(m_selectedRow - page);
-    else if (event->key() == Qt::Key_PageDown)
-        setSelectedRow(int((std::min)(qint64(m_selectedRow) + page, qint64(rowCount()) - 1)));
-    else if (event->key() == Qt::Key_Home) {
+    if (event->key() == Qt::Key_Up) {
+        if (m_selectedRow > 0) setSelectedRow(m_selectedRow - 1);
+    } else if (event->key() == Qt::Key_Down) {
+        if (rowCount() > 0)
+            setSelectedRow(m_selectedRow < 0 ? 0 : (std::min)(rowCount() - 1, m_selectedRow + 1));
+    } else if (event->key() == Qt::Key_PageUp) {
+        if (rowCount() > 0) setSelectedRow((std::max)(0, m_selectedRow - page));
+    } else if (event->key() == Qt::Key_PageDown) {
+        if (rowCount() > 0)
+            setSelectedRow(int(
+                (std::min)(qint64((std::max)(0, m_selectedRow)) + page, qint64(rowCount()) - 1)));
+    } else if (event->key() == Qt::Key_Home) {
         if (rowCount() > 0) setSelectedRow(0);
     } else if (event->key() == Qt::Key_End) {
         if (rowCount() > 0) setSelectedRow(rowCount() - 1);
-    } else if (event->key() == Qt::Key_Right)
-        setCurrentColumn(m_currentColumn + 1);
-    else if (event->key() == Qt::Key_Left)
-        setCurrentColumn(m_currentColumn - 1);
-    else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter ||
-             event->key() == Qt::Key_Space) {
+    } else if (event->key() == Qt::Key_Right) {
+        if (columnCount() > 0)
+            setCurrentColumn(
+                m_currentColumn < 0 ? 0 : (std::min)(columnCount() - 1, m_currentColumn + 1));
+    } else if (event->key() == Qt::Key_Left) {
+        if (m_currentColumn > 0) setCurrentColumn(m_currentColumn - 1);
+    } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter ||
+               event->key() == Qt::Key_Space) {
         if (m_selectedRow >= 0 && m_selectedRow < rowCount()) emit rowActivated(m_selectedRow);
     } else
         return;

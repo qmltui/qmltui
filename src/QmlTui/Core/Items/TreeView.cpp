@@ -1140,27 +1140,25 @@ void TreeView::updateDelegateItem(Item* item, int index) {
         }
     }
 
-    if (!isBound) {
-        if (QQmlContext* context = delegateContext(item)) {
-            DelegateUtils::setContextProperty(m_delegate, context, "index", index);
-            DelegateUtils::setContextProperty(m_delegate, context, "row", index);
-            DelegateUtils::setContextProperty(m_delegate, context, "column", 0);
-            DelegateUtils::setContextProperty(m_delegate, context, "current", isCurrent);
-            DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurrent);
-            DelegateUtils::setContextProperty(m_delegate, context, "treeView", this);
-            DelegateUtils::setContextProperty(m_delegate, context, "isTreeNode", true);
-            DelegateUtils::setContextProperty(m_delegate, context, "depth", node.depth);
-            DelegateUtils::setContextProperty(m_delegate, context, "expanded", node.expanded);
-            DelegateUtils::setContextProperty(m_delegate, context, "hasChildren", node.hasChildren);
-            DelegateUtils::setContextProperty(m_delegate, context, "path", np.path);
-            DelegateUtils::setContextProperty(m_delegate, context, "display", np.text);
-            DelegateUtils::setContextProperty(m_delegate, context, "text", np.text);
-            DelegateUtils::setContextProperty(m_delegate, context, "modelData", np.rawData);
-            DelegateUtils::setContextProperty(m_delegate, context, "model", modelMap);
+    if (QQmlContext* context = delegateContext(item)) {
+        context->setContextProperty(QStringLiteral("index"), index);
+        context->setContextProperty(QStringLiteral("row"), index);
+        context->setContextProperty(QStringLiteral("column"), 0);
+        context->setContextProperty(QStringLiteral("current"), isCurrent);
+        context->setContextProperty(QStringLiteral("selected"), isCurrent);
+        context->setContextProperty(QStringLiteral("treeView"), this);
+        context->setContextProperty(QStringLiteral("isTreeNode"), true);
+        context->setContextProperty(QStringLiteral("depth"), node.depth);
+        context->setContextProperty(QStringLiteral("expanded"), node.expanded);
+        context->setContextProperty(QStringLiteral("hasChildren"), node.hasChildren);
+        context->setContextProperty(QStringLiteral("path"), np.path);
+        context->setContextProperty(QStringLiteral("display"), np.text);
+        context->setContextProperty(QStringLiteral("text"), np.text);
+        context->setContextProperty(QStringLiteral("modelData"), np.rawData);
+        context->setContextProperty(QStringLiteral("model"), modelMap);
 
-            for (auto it = roleData.cbegin(); it != roleData.cend(); ++it) {
-                DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
-            }
+        for (auto it = roleData.cbegin(); it != roleData.cend(); ++it) {
+            context->setContextProperty(it.key(), it.value());
         }
     }
 }
@@ -1232,9 +1230,9 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
         }
     }
 
-    const bool canRecycleUnmatched =
-        m_delegate && !QQmlListReference(m_delegate, "choices").isValid();
-    const bool isBound = m_delegate && m_delegate->isBound();
+    const bool isChooser = m_delegate && QQmlListReference(m_delegate, "choices").isValid();
+    const bool canRecycleUnmatched = m_delegate && !isChooser;
+    const bool isBound = m_delegate && m_delegate->isBound() && !isChooser;
     int nextUnclaimedOld = 0;
 
     m_delegateItems.reserve(rowCount);
@@ -1243,7 +1241,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
     m_delegateNodes.reserve(rowCount);
 
     for (int i = firstRow; i < lastRow; ++i) {
-        const int oldIndex = matchedOldIndex[i - firstRow];
+        const int oldIndex = (isChooser && treeRebuilt) ? -1 : matchedOldIndex[i - firstRow];
         if (oldIndex >= 0 && !treeRebuilt) {
             Item* reused = oldItems[oldIndex];
             oldItems[oldIndex] = nullptr;
@@ -1294,9 +1292,9 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
             }
         }
 
-        QQmlContext* context = DelegateUtils::createContext(m_delegate, this);
         bool isCurr = (i == m_selectedIndex);
-        const bool needsModelMap = !isBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap;
+        const bool needsModelMap =
+            isChooser || !isBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap;
 
         QVariantMap modelMap;
         if (needsModelMap) {
@@ -1314,25 +1312,37 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
             modelMap["modelData"] = np.rawData;
         }
 
-        if (!isBound) {
-            DelegateUtils::setContextProperty(m_delegate, context, "index", i);
-            DelegateUtils::setContextProperty(m_delegate, context, "row", i);
-            DelegateUtils::setContextProperty(m_delegate, context, "column", 0);
-            DelegateUtils::setContextProperty(m_delegate, context, "current", isCurr);
-            DelegateUtils::setContextProperty(m_delegate, context, "selected", isCurr);
-            DelegateUtils::setContextProperty(m_delegate, context, "treeView", this);
-            DelegateUtils::setContextProperty(m_delegate, context, "isTreeNode", true);
-            DelegateUtils::setContextProperty(m_delegate, context, "depth", node.depth);
-            DelegateUtils::setContextProperty(m_delegate, context, "expanded", node.expanded);
-            DelegateUtils::setContextProperty(m_delegate, context, "hasChildren", node.hasChildren);
-            DelegateUtils::setContextProperty(m_delegate, context, "path", np.path);
-            DelegateUtils::setContextProperty(m_delegate, context, "display", np.text);
-            DelegateUtils::setContextProperty(m_delegate, context, "text", np.text);
-            DelegateUtils::setContextProperty(m_delegate, context, "modelData", np.rawData);
-            DelegateUtils::setContextProperty(m_delegate, context, "model", modelMap);
+        QQmlComponent* comp = DelegateUtils::resolveDelegate(m_delegate, i, 0, modelMap);
+        if (!DelegateUtils::isReady(comp, this)) {
+            m_delegateItems.append(nullptr);
+            m_delegateModelIndexes.append(node.modelIndex);
+            m_delegatePaths.append(np.key);
+            m_delegateNodes.append(node);
+            continue;
+        }
+
+        const bool compBound = comp->isBound();
+        QQmlContext* context = DelegateUtils::createContext(comp, this);
+
+        if (!compBound) {
+            DelegateUtils::setContextProperty(comp, context, "index", i);
+            DelegateUtils::setContextProperty(comp, context, "row", i);
+            DelegateUtils::setContextProperty(comp, context, "column", 0);
+            DelegateUtils::setContextProperty(comp, context, "current", isCurr);
+            DelegateUtils::setContextProperty(comp, context, "selected", isCurr);
+            DelegateUtils::setContextProperty(comp, context, "treeView", this);
+            DelegateUtils::setContextProperty(comp, context, "isTreeNode", true);
+            DelegateUtils::setContextProperty(comp, context, "depth", node.depth);
+            DelegateUtils::setContextProperty(comp, context, "expanded", node.expanded);
+            DelegateUtils::setContextProperty(comp, context, "hasChildren", node.hasChildren);
+            DelegateUtils::setContextProperty(comp, context, "path", np.path);
+            DelegateUtils::setContextProperty(comp, context, "display", np.text);
+            DelegateUtils::setContextProperty(comp, context, "text", np.text);
+            DelegateUtils::setContextProperty(comp, context, "modelData", np.rawData);
+            DelegateUtils::setContextProperty(comp, context, "model", modelMap);
 
             for (auto it = np.rawData.cbegin(); it != np.rawData.cend(); ++it) {
-                DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
+                DelegateUtils::setContextProperty(comp, context, it.key(), it.value());
             }
         }
 
@@ -1360,9 +1370,9 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
         }
 
         if (Item* item =
-                DelegateUtils::createItem(m_delegate, initialProps, context, contentItem, this)) {
+                DelegateUtils::createItem(comp, initialProps, context, contentItem, this)) {
             if (isBound && canRecycleUnmatched && !m_delegateSchemaResolved) {
-                DelegateUtils::resolveDelegateSchema(item, m_delegate, m_delegateProperties,
+                DelegateUtils::resolveDelegateSchema(item, comp, m_delegateProperties,
                                                      m_delegateStandardMask,
                                                      m_delegateNeedsModelMap);
                 m_delegateSchemaResolved = true;
@@ -1381,7 +1391,7 @@ void TreeView::generateDelegateItems(QList<Item*> oldItems, QList<QPersistentMod
             setDelegateProperty(item, "display", np.text);
             setDelegateProperty(item, "text", np.text);
             setDelegateProperty(item, "path", np.path);
-            if (!isBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap)
+            if (!compBound || !m_delegateSchemaResolved || m_delegateNeedsModelMap)
                 setDelegateProperty(item, "modelData", np.rawData);
 
             m_delegateItems.append(item);
@@ -1469,15 +1479,24 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
 
     if (availW <= 0 || availH <= 0) return;
 
+    const ClipRect effective = clipRect.intersected(ClipRect{startX, startY, availW, availH})
+                                   .intersected(ClipRect{0, 0, buffer.width(), buffer.height()});
+    if (effective.width <= 0 || effective.height <= 0) return;
+    const int clipLeft = effective.x;
+    const int clipRight = effective.x + effective.width;
+    const int clipTop = effective.y;
+    const int clipBottom = effective.y + effective.height;
+
     // Default Rendering (No Delegate)
     auto* self = const_cast<TreeView*>(this);
     const bool hasNodeFormat = m_nodeFormat.isCallable();
     for (int idx = m_scrollTop; idx < m_visibleNodes.size() && (idx - m_scrollTop) < availH;
          ++idx) {
+        const int rowY = startY + (idx - m_scrollTop);
+        if (rowY < clipTop || rowY >= clipBottom) continue;
         self->ensureLoaded(self->m_visibleNodes[idx]);
         if (hasNodeFormat) self->ensureFormatted(self->m_visibleNodes[idx], idx);
         const VisibleNode& node = m_visibleNodes[idx];
-        int rowY = startY + (idx - m_scrollTop);
         bool isSelected = (idx == m_selectedIndex);
 
         uint32_t bg = isSelected ? m_resolvedSelectionColor : 0x00000000;
@@ -1490,9 +1509,9 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
                  : TextAttribute::None);
 
         if (isSelected) {
-            buffer.fillRect(startX, rowY, availW, 1, " ", fg, bg);
-            for (int x = 0; x < availW; ++x)
-                if (Cell* cell = buffer.tryCellAt(startX + x, rowY)) cell->attributes = attr;
+            buffer.fillRect(clipLeft, rowY, clipRight - clipLeft, 1, " ", fg, bg);
+            for (int x = clipLeft; x < clipRight; ++x)
+                if (Cell* cell = buffer.tryCellAt(x, rowY)) cell->attributes = attr;
         }
 
         const NodePayload& np = node.payload();
@@ -1526,7 +1545,9 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
 
         int curX = 0;
         for (int i = 0; i < node.depth * 2 && curX < availW; ++i) {
-            buffer.setGrapheme(startX + curX++, rowY, QByteArrayView(" ", 1), 1, fg, bg, attr);
+            const int cellX = startX + curX++;
+            if (cellX >= clipLeft && cellX < clipRight)
+                buffer.setGrapheme(cellX, rowY, QByteArrayView(" ", 1), 1, fg, bg, attr);
         }
         const auto writeSegment = [&](QStringView segText, uint32_t segFg, uint32_t segBg,
                                       TextAttribute segAttr) {
@@ -1535,9 +1556,25 @@ void TreeView::paint(TextGridBuffer& buffer, int absX, int absY, const ClipRect&
             GraphemeRef cluster;
             while (it.next(cluster)) {
                 if (cluster.width > availW - curX) break;
-                const int advance =
-                    buffer.setGrapheme(startX + curX, rowY, cluster.utf16, cluster.width, segFg,
-                                       segBg, segAttr, startX);
+                const int cellX = startX + curX;
+                const int span = (std::max)(1, cluster.width);
+                if (cellX + span <= clipLeft) {
+                    curX += span;
+                    continue;
+                }
+                if (cellX >= clipRight) break;
+                if (cellX < clipLeft || cellX + span > clipRight) {
+                    for (int dx = 0; dx < span; ++dx) {
+                        const int px = cellX + dx;
+                        if (px >= clipLeft && px < clipRight)
+                            buffer.setGrapheme(px, rowY, QByteArrayView(" ", 1), 1, segFg, segBg,
+                                               segAttr);
+                    }
+                    curX += span;
+                    continue;
+                }
+                const int advance = buffer.setGrapheme(cellX, rowY, cluster.utf16, cluster.width,
+                                                       segFg, segBg, segAttr, clipLeft);
                 if (advance < 0) break;
                 curX += advance;
             }

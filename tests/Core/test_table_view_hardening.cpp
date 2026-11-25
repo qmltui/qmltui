@@ -1616,6 +1616,46 @@ private slots:
         lateModel.appendRow({new QStandardItem(QStringLiteral("first"))});
         QCOMPARE(lateTable.selectedRow(), 0);
     }
+
+    void keyNavigationClampsTopAndLeftBoundaries() {
+        QStandardItemModel model(5, 3);
+        for (int r = 0; r < 5; ++r)
+            for (int c = 0; c < 3; ++c)
+                model.setData(model.index(r, c), QStringLiteral("r%1c%2").arg(r).arg(c));
+
+        TableFixture f;
+        QVERIFY(f.create(&model, QString()));
+        f.table->setWidth(30);
+        f.table->setHeight(10);
+        f.table->setSelectedRow(0);
+        f.table->setCurrentColumn(0);
+        f.paint();
+
+        auto sendKey = [&](int key) {
+            KeyEvent ev(key, QString(), Qt::NoModifier);
+            f.table->keyPressEvent(&ev);
+            QVERIFY(ev.isAccepted());
+        };
+
+        // Up at row 0 and Left at column 0 must clamp at 0, not clear to -1.
+        sendKey(Qt::Key_Up);
+        QCOMPARE(f.table->selectedRow(), 0);
+        sendKey(Qt::Key_Left);
+        QCOMPARE(f.table->currentColumn(), 0);
+
+        // PageUp when selectedRow < page size must clamp to 0, not clear to -1.
+        f.table->setSelectedRow(2);
+        sendKey(Qt::Key_PageUp);
+        QCOMPARE(f.table->selectedRow(), 0);
+
+        // Down/Right clamp at bottom/right bounds.
+        f.table->setSelectedRow(4);
+        sendKey(Qt::Key_Down);
+        QCOMPARE(f.table->selectedRow(), 4);
+        f.table->setCurrentColumn(2);
+        sendKey(Qt::Key_Right);
+        QCOMPARE(f.table->currentColumn(), 2);
+    }
 };
 
 QTEST_MAIN(TestTableViewHardening)

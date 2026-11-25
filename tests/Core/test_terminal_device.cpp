@@ -860,6 +860,16 @@ void TestTerminalDevice::testScrollbackWrapAndResizePooledDelegate() {
     sb.append(&reusable);
     QVERIFY(!reusable.hasExplicitWidth());
     QCOMPARE(terminal.engine()->pendingScrollbackRowCount() - before40, 1);
+
+    // Explicitly zero-width item keeps width == 0 instead of being stretched to terminal width.
+    Text emptyBadge;
+    emptyBadge.setWidth(0);
+    emptyBadge.setBackgroundColor(Color::fromString(QStringLiteral("blue")));
+    emptyBadge.setText(QString());
+    QVERIFY(emptyBadge.hasExplicitWidth());
+    QCOMPARE(emptyBadge.width(), 0);
+    sb.append(&emptyBadge);
+    QCOMPARE(emptyBadge.width(), 0);
 }
 
 void TestTerminalDevice::testInlineRecordingSuppressesCursorQuery() {

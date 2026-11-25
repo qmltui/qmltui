@@ -9,6 +9,7 @@
 #include <QStandardItemModel>
 #include <QSortFilterProxyModel>
 #include <QmlTui/Core/Items/TreeView.h>
+#include <QmlTui/Core/Engine/KeyEvent.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 #include "../TestPaint.h"
 #include <memory>
@@ -416,6 +417,16 @@ private slots:
             QVERIFY((f.buffer.cellAt(2, 1).attributes & TextAttribute::Bold) !=
                     TextAttribute::None);
             QCOMPARE(f.buffer.cellAt(1, 1).attributes, TextAttribute::None);
+
+            // Numpad Key_Enter activates and toggles expansion just like Key_Return.
+            f.tree->collapse(0);
+            f.tree->setCurrentIndex(0);
+            QSignalSpy actSpy(f.tree, &TreeView::itemActivated);
+            KeyEvent enterEv(Qt::Key_Enter, QString(), Qt::NoModifier);
+            f.tree->keyPressEvent(&enterEv);
+            QVERIFY(enterEv.isAccepted());
+            QVERIFY(f.tree->isExpanded(0));
+            QCOMPARE(actSpy.count(), 1);
         }
     }
 };

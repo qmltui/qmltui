@@ -1659,7 +1659,8 @@ void TreeView::keyPressEvent(KeyEvent* event) {
             }
         }
         event->setAccepted(true);
-    } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Space) {
+    } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter ||
+               event->key() == Qt::Key_Space) {
         toggleExpanded(m_selectedIndex);
         if (m_selectedIndex >= 0 && m_selectedIndex < total) {
             ensureLoaded(m_visibleNodes[m_selectedIndex]);

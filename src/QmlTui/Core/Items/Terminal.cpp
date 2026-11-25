@@ -359,6 +359,10 @@ void Terminal::setFocusedItem(Item* item) {
         if (scope && scope.data() != targetFocus.data() && !newScopes.contains(scope)) {
             scope->setActiveFocus(false);
             if (!self) return;
+            if (scope && !scope->enclosingFocusScope()) {
+                scope->clearFocusFlagAndNotify();
+                if (!self) return;
+            }
         }
     }
 
@@ -376,6 +380,8 @@ void Terminal::setFocusedItem(Item* item) {
 
     for (const QPointer<FocusScope>& scope : newScopes) {
         if (scope && !oldScopes.contains(scope)) {
+            scope->setFocusFlagAndNotify();
+            if (!self || m_d->focusedItem != targetFocus) return;
             scope->setActiveFocus(true);
             if (!self || m_d->focusedItem != targetFocus) return;
         }
@@ -437,6 +443,17 @@ bool Terminal::hasMouseMotionRequests() const {
 
 void Terminal::findFocusableItems(Item* root, QList<Item*>& list) {
     if (!root || !root->isEffectivelyVisible() || !root->isEffectivelyEnabled()) return;
+
+    if (root->isFocusScope()) {
+        const qsizetype before = list.size();
+        for (Item* child : root->childItems()) {
+            findFocusableItems(child, list);
+        }
+        if (list.size() == before && (root->focusPolicy() & Qt::TabFocus)) {
+            list.append(root);
+        }
+        return;
+    }
 
     if (root->focusPolicy() & Qt::TabFocus) {
         list.append(root);

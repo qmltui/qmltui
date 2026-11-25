@@ -49,7 +49,7 @@ Win32EmergencyState g_win32Emergency;
 
 constexpr char kWin32KittyKeyboardPop[] = "\033[<u";
 constexpr char kWin32ResetSequence[] =
-    "\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?1004l\033[?2004l\033[?2031l"
+    "\033[?2026l\033[?1000l\033[?1002l\033[?1003l\033[?1006l\033[?1004l\033[?2004l\033[?2031l"
     "\033[?25h\033[0m\033]9;4;0\033\\\033]111\a\033]111;\a\033]111;\033\\\033[?1049l";
 
 BOOL WINAPI consoleCtrlHandler(DWORD ctrlType) {

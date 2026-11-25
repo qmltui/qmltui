@@ -45,6 +45,7 @@ void FocusScope::setFocus(bool focus) {
         const bool canActivate = !enclosingFocusScope() || enclosingFocusScope()->activeFocus();
         Item* target = m_d->subFocusItem.data();
         if (!target || !target->isEffectivelyVisible() || !target->isEffectivelyEnabled()) {
+            target = nullptr;
             QList<Item*> candidates;
             if (Terminal* term = terminal()) {
                 for (Item* child : childItems()) {

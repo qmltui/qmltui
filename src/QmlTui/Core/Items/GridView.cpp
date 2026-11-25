@@ -255,6 +255,11 @@ void GridView::bindDelegateItem(Item* item, int index, bool created) {
                                                              it.value());
                 }
             }
+        } else if (m_delegateNeedsModelMap) {
+            DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                 QStringLiteral("model"), index);
+            DelegateUtils::writeDeclaredProperty(item, m_delegateProperties,
+                                                 QStringLiteral("modelData"), index);
         }
         return;
     }
@@ -277,13 +282,11 @@ void GridView::bindDelegateItem(Item* item, int index, bool created) {
     QQmlContext* context = delegateContext(item);
     DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("index"), index);
     setPropertyIfExists(item, "index", index);
-    if (!countModel) {
-        DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("model"), rowValue);
-        DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("modelData"),
-                                          rowValue);
-        setPropertyIfExists(item, "model", rowValue);
-        setPropertyIfExists(item, "modelData", rowValue);
-    }
+    const QVariant modelVal = countModel ? QVariant(index) : rowValue;
+    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("model"), modelVal);
+    DelegateUtils::setContextProperty(m_delegate, context, QStringLiteral("modelData"), modelVal);
+    setPropertyIfExists(item, "model", modelVal);
+    setPropertyIfExists(item, "modelData", modelVal);
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
         DelegateUtils::setContextProperty(m_delegate, context, it.key(), it.value());
         setPropertyIfExists(item, it.key().toUtf8().constData(), it.value());
@@ -565,13 +568,15 @@ void GridView::removeModelRows(int first, int last) {
 void GridView::layoutChildren() {
     if (m_cellWidth <= 0 || m_cellHeight <= 0) return;
     const int columns = columnsPerRow();
+    const int lp = leftPadding();
+    const int tp = topPadding();
     for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
         Item* childItem = it.value();
         if (!childItem) continue;
         // Cells are addressed by model index so a hidden delegate keeps its slot,
         // as in Qt Quick's GridView.
-        childItem->setX((it.key() % columns) * m_cellWidth);
-        childItem->setY((it.key() / columns) * m_cellHeight);
+        childItem->setX(lp + (it.key() % columns) * m_cellWidth);
+        childItem->setY(tp + (it.key() / columns) * m_cellHeight);
     }
     updateContentExtent();
 }

@@ -139,7 +139,7 @@ void ScrollView::wheelEvent(MouseEvent* event) {
 void ScrollView::ensureChildVisible(Item* childItem) {
     if (!childItem) return;
     const int viewportW = (std::max)(0, width() - leftPadding() - rightPadding());
-    const int childX = childItem->x();
+    const int childX = childItem->x() - leftPadding();
     const int childW = childItem->width();
     if (viewportW > 0) {
         if (childX < m_contentX) {
@@ -149,7 +149,7 @@ void ScrollView::ensureChildVisible(Item* childItem) {
         }
     }
     int viewportH = height() - topPadding() - bottomPadding();
-    int childY = childItem->y();
+    int childY = childItem->y() - topPadding();
     int childH = childItem->height();
     if (childY < m_contentY) {
         setContentY(childY);

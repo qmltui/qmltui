@@ -222,16 +222,30 @@ void TestFocus::testFocusScopeTabCycleAndVisibility() {
     FocusManager::cycleFocus(&term, true);
     QCOMPARE(term.focusedItem(), &rightInput);
     QVERIFY(rightScope.activeFocus());
+    QVERIFY(rightScope.focus());
     QVERIFY(!leftScope.activeFocus());
+    QVERIFY(!leftScope.focus());
     FocusManager::cycleFocus(&term, true);
     QCOMPARE(term.focusedItem(), &right2);
     FocusManager::cycleFocus(&term, true);
     QCOMPARE(term.focusedItem(), &left1);
+    QVERIFY(leftScope.activeFocus());
+    QVERIFY(leftScope.focus());
+    QVERIFY(!rightScope.activeFocus());
+    QVERIFY(!rightScope.focus());
 
     // Backward Shift+Tab crosses back into rightScope without trapping.
     FocusManager::cycleFocus(&term, false);
     QCOMPARE(term.focusedItem(), &right2);
     QVERIFY(rightScope.activeFocus());
+
+    // A FocusScope with StrongFocus AND focusable descendants must not trap Tab cycling.
+    leftScope.setFocusPolicy(Qt::StrongFocus);
+    rightScope.setFocusPolicy(Qt::StrongFocus);
+    FocusManager::cycleFocus(&term, true);
+    QCOMPARE(term.focusedItem(), &left1);
+    FocusManager::cycleFocus(&term, false);
+    QCOMPARE(term.focusedItem(), &right2);
 
     // Calling forceActiveFocus() on a FocusScope whose child already has focus must not
     // bounce activeFocus and spuriously emit TextInput::editingFinished().
@@ -241,7 +255,22 @@ void TestFocus::testFocusScopeTabCycleAndVisibility() {
     QCOMPARE(term.focusedItem(), &rightInput);
     QCOMPARE(editSpy.count(), 0);
 
+    // If a StrongFocus scope's remembered subFocusItem becomes hidden and no other child is
+    // focusable, setFocus(true) falls back to focusing the scope itself.
+    FocusScope fallbackScope(&term);
+    fallbackScope.setFocusPolicy(Qt::StrongFocus);
+    Item onlyChild(&fallbackScope);
+    onlyChild.setFocusPolicy(Qt::StrongFocus);
+    onlyChild.forceActiveFocus();
+    QCOMPARE(fallbackScope.subFocusItem(), &onlyChild);
+    left1.forceActiveFocus();
+    onlyChild.setVisible(false);
+    fallbackScope.setFocus(true);
+    QCOMPARE(term.focusedItem(), &fallbackScope);
+    QVERIFY(fallbackScope.activeFocus());
+
     // Effectively hidden items cannot take focus or clear existing focus.
+    rightInput.forceActiveFocus();
     hiddenChild.forceActiveFocus();
     QCOMPARE(term.focusedItem(), &rightInput);
     term.setFocusedItem(&hiddenChild);

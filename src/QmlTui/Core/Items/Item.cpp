@@ -222,6 +222,12 @@ void Item::invalidateSubtreeBounds() {
     }
 }
 
+void Item::setFocusFlagAndNotify() {
+    if (m_d->focus) return;
+    m_d->focus = true;
+    emit focusChanged();
+}
+
 void Item::clearFocusFlagAndNotify() {
     if (!m_d->focus) return;
     m_d->focus = false;

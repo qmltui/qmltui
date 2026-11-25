@@ -51,6 +51,8 @@ private slots:
     void testListViewHorizontalVirtualizationAndInput();
     void testListViewMouseClickEdgeItemReentrancy();
     void testGridViewEmptyListModelAppendBindsRoles();
+    void testIntegerModelDataOnRecycle();
+    void testListViewAndGridViewPadding();
 };
 
 void TestViewsVirtualization::testListViewPooling() {
@@ -517,6 +519,259 @@ void TestViewsVirtualization::testGridViewEmptyListModelAppendBindsRoles() {
     for (int x = 0; x < 15; ++x)
         row0 += QString::fromUtf8(buffer.cellAt(x, 0).character());
     QCOMPARE(row0.trimmed(), QStringLiteral("FirstCell"));
+}
+
+void TestViewsVirtualization::testIntegerModelDataOnRecycle() {
+    auto readRow = [](const TextGridBuffer& buf, int y, int x0, int len) {
+        QString out;
+        for (int x = x0; x < x0 + len; ++x)
+            out += QString::fromUtf8(buf.cellAt(x, y).character());
+        return out.trimmed();
+    };
+
+    // 1. Bound GridView with integer count model updates required modelData on recycle.
+    {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QmlTui
+
+            GridView {
+                width: 20
+                height: 3
+                cellWidth: 10
+                cellHeight: 1
+                model: 40
+                reuseItems: true
+                delegate: Text {
+                    required property int modelData
+                    width: 10
+                    height: 1
+                    text: "BG" + modelData
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> obj(component.create());
+        auto* grid = qobject_cast<GridView*>(obj.get());
+        QVERIFY(grid != nullptr);
+
+        TextGridBuffer buf;
+        buf.resize(20, 3);
+        paintItem(grid, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 10), QStringLiteral("BG0"));
+        QCOMPARE(readRow(buf, 0, 10, 10), QStringLiteral("BG1"));
+
+        grid->setContentY(10);
+        buf.clear();
+        paintItem(grid, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 10), QStringLiteral("BG20"));
+        QCOMPARE(readRow(buf, 0, 10, 10), QStringLiteral("BG21"));
+    }
+
+    // 2. Unbound GridView with integer count model updates modelData on recycle.
+    {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            import QmlTui
+
+            GridView {
+                width: 20
+                height: 3
+                cellWidth: 10
+                cellHeight: 1
+                model: 40
+                reuseItems: true
+                delegate: Text {
+                    width: 10
+                    height: 1
+                    text: "UG" + modelData
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> obj(component.create());
+        auto* grid = qobject_cast<GridView*>(obj.get());
+        QVERIFY(grid != nullptr);
+
+        TextGridBuffer buf;
+        buf.resize(20, 3);
+        paintItem(grid, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 10), QStringLiteral("UG0"));
+
+        grid->setContentY(10);
+        buf.clear();
+        paintItem(grid, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 10), QStringLiteral("UG20"));
+        QCOMPARE(readRow(buf, 0, 10, 10), QStringLiteral("UG21"));
+    }
+
+    // 3. Unbound ListView with integer count model updates modelData on recycle.
+    {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            import QmlTui
+
+            ListView {
+                width: 20
+                height: 3
+                model: 40
+                reuseItems: true
+                delegate: Text {
+                    width: 20
+                    height: 1
+                    text: "UL" + modelData
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> obj(component.create());
+        auto* list = qobject_cast<ListView*>(obj.get());
+        QVERIFY(list != nullptr);
+
+        TextGridBuffer buf;
+        buf.resize(20, 3);
+        paintItem(list, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 20), QStringLiteral("UL0"));
+
+        list->setContentY(15);
+        buf.clear();
+        paintItem(list, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 20), QStringLiteral("UL15"));
+        QCOMPARE(readRow(buf, 1, 0, 20), QStringLiteral("UL16"));
+    }
+}
+
+void TestViewsVirtualization::testListViewAndGridViewPadding() {
+    auto readRow = [](const TextGridBuffer& buf, int y, int x0, int len) {
+        QString out;
+        for (int x = x0; x < x0 + len; ++x)
+            out += QString::fromUtf8(buf.cellAt(x, y).character());
+        return out;
+    };
+
+    // 1. Padded ListView paints row 0 inside (leftPadding, topPadding) and aligns click
+    // hit-testing.
+    {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QmlTui
+
+            Terminal {
+                ListView {
+                    id: list
+                    objectName: "paddedList"
+                    property int activatedRow: -1
+                    width: 20
+                    height: 6
+                    padding: 1
+                    scrollBarVisible: false
+                    model: 10
+                    onItemActivated: index => { activatedRow = index; }
+                    delegate: Text {
+                        required property int modelData
+                        width: 18
+                        height: 1
+                        text: "Row" + modelData
+                    }
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> obj(component.create());
+        auto* terminal = qobject_cast<Terminal*>(obj.get());
+        QVERIFY(terminal != nullptr);
+        auto* list = terminal->findChild<ListView*>(QStringLiteral("paddedList"));
+        QVERIFY(list != nullptr);
+
+        terminal->engine()->setTestViewportSize(QSize(20, 6));
+        TextGridBuffer buf;
+        buf.resize(20, 6);
+        paintItem(terminal, buf, 0, 0);
+
+        // Top and bottom padding rows and left padding column remain blank.
+        QCOMPARE(readRow(buf, 0, 0, 20).trimmed(), QString());
+        QCOMPARE(readRow(buf, 5, 0, 20).trimmed(), QString());
+        QCOMPARE(QString::fromUtf8(buf.cellAt(0, 1).character()), QStringLiteral(" "));
+        // Content starts at (1, 1) with Row0 through Row3.
+        QCOMPARE(readRow(buf, 1, 1, 4), QStringLiteral("Row0"));
+        QCOMPARE(readRow(buf, 4, 1, 4), QStringLiteral("Row3"));
+
+        // Clicking top padding margin (1, 0) must not activate row 0.
+        terminal->engine()->handleMouseInput(0, 1, 0, false);
+        terminal->engine()->handleMouseInput(0, 1, 0, true);
+        QCOMPARE(list->property("activatedRow").toInt(), -1);
+
+        // Clicking (1, 1) hits Row0.
+        terminal->engine()->handleMouseInput(0, 1, 1, false);
+        terminal->engine()->handleMouseInput(0, 1, 1, true);
+        QCOMPARE(list->currentIndex(), 0);
+        QCOMPARE(list->property("activatedRow").toInt(), 0);
+
+        // Scroll down 1 row: (1, 1) now displays and activates Row1.
+        list->setContentY(1);
+        buf.clear();
+        paintItem(terminal, buf, 0, 0);
+        QCOMPARE(readRow(buf, 0, 0, 20).trimmed(), QString());
+        QCOMPARE(readRow(buf, 1, 1, 4), QStringLiteral("Row1"));
+
+        terminal->engine()->handleMouseInput(0, 1, 1, false);
+        terminal->engine()->handleMouseInput(0, 1, 1, true);
+        QCOMPARE(list->currentIndex(), 1);
+        QCOMPARE(list->property("activatedRow").toInt(), 1);
+    }
+
+    // 2. Padded GridView paints cell 0 at (leftPadding, topPadding) without clipping row 0/col 0.
+    {
+        QQmlEngine engine;
+        QQmlComponent component(&engine);
+        component.setData(R"(
+            pragma ComponentBehavior: Bound
+            import QmlTui
+
+            GridView {
+                width: 22
+                height: 5
+                padding: 1
+                scrollBarVisible: false
+                cellWidth: 10
+                cellHeight: 1
+                model: 12
+                delegate: Text {
+                    required property int modelData
+                    width: 10
+                    height: 1
+                    text: "C" + modelData
+                }
+            }
+        )",
+                          QUrl());
+        QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+        std::unique_ptr<QObject> obj(component.create());
+        auto* grid = qobject_cast<GridView*>(obj.get());
+        QVERIFY(grid != nullptr);
+
+        TextGridBuffer buf;
+        buf.resize(22, 5);
+        paintItem(grid, buf, 0, 0);
+
+        QCOMPARE(readRow(buf, 0, 0, 22).trimmed(), QString());
+        QCOMPARE(readRow(buf, 4, 0, 22).trimmed(), QString());
+        QCOMPARE(QString::fromUtf8(buf.cellAt(0, 1).character()), QStringLiteral(" "));
+        QCOMPARE(readRow(buf, 1, 1, 10).trimmed(), QStringLiteral("C0"));
+        QCOMPARE(readRow(buf, 1, 11, 10).trimmed(), QStringLiteral("C1"));
+        QCOMPARE(readRow(buf, 2, 1, 10).trimmed(), QStringLiteral("C2"));
+        QCOMPARE(readRow(buf, 3, 11, 10).trimmed(), QStringLiteral("C5"));
+    }
 }
 
 QTEST_MAIN(TestViewsVirtualization)

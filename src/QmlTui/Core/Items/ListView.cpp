@@ -434,13 +434,11 @@ void ListView::rebindDelegateItem(Item* item, int index) {
 
     QQmlComponent* component = DelegateUtils::resolveDelegate(m_delegate, index, 0, rowValues);
 
-    if (!countModel) {
-        DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), rowValue);
-        DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"),
-                                          rowValue);
-        setPropertyIfExists(item, "model", rowValue);
-        setPropertyIfExists(item, "modelData", rowValue);
-    }
+    const QVariant modelVal = countModel ? QVariant(index) : rowValue;
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("model"), modelVal);
+    DelegateUtils::setContextProperty(component, context, QStringLiteral("modelData"), modelVal);
+    setPropertyIfExists(item, "model", modelVal);
+    setPropertyIfExists(item, "modelData", modelVal);
 
     for (auto it = rowValues.cbegin(); it != rowValues.cend(); ++it) {
         DelegateUtils::setContextProperty(component, context, it.key(), it.value());
@@ -833,15 +831,17 @@ void ListView::moveModelRows(int first, int last, int destination) {
 
 void ListView::layoutChildren() {
     const int stride = delegateStride();
+    const int lp = leftPadding();
+    const int tp = topPadding();
     for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
         Item* childItem = it.value();
         if (childItem && childItem->visible()) {
             if (m_orientation == Qt::Vertical) {
-                childItem->setX(0);
-                childItem->setY(it.key() * stride);
+                childItem->setX(lp);
+                childItem->setY(tp + it.key() * stride);
             } else {
-                childItem->setX(it.key() * stride);
-                childItem->setY(0);
+                childItem->setX(lp + it.key() * stride);
+                childItem->setY(tp);
             }
         }
     }
@@ -857,8 +857,17 @@ void ListView::mousePressEvent(MouseEvent* event) {
     setFocus(true);
     if (!self) return;
 
-    const int clickX = event->x() + contentX() - leftPadding();
-    const int clickY = event->y() + contentY() - topPadding();
+    const int lp = leftPadding();
+    const int rp = rightPadding();
+    const int tp = topPadding();
+    const int bp = bottomPadding();
+    if (event->x() < lp || event->x() >= width() - rp || event->y() < tp ||
+        event->y() >= height() - bp) {
+        return;
+    }
+
+    const int clickX = event->x() + contentX();
+    const int clickY = event->y() + contentY();
     for (auto it = m_createdItems.cbegin(); it != m_createdItems.cend(); ++it) {
         Item* item = it.value();
         if (item && item->visible()) {

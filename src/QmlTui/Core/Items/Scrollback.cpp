@@ -263,12 +263,8 @@ int Scrollback::resolvedWidth(Item* item, Terminal* output, bool usesTerminalWid
         item->setWidth(w);
         return w;
     }
-    int w = item->width() > 0 ? item->width() : (output ? output->width() : 80);
-    if (w <= 0) w = 80;
-    if (item->width() <= 0) {
-        item->setWidth(w);
-    }
-    return w;
+    const int w = item->width();
+    return w > 0 ? w : 1;
 }
 
 int Scrollback::resolvedHeight(Item* item) {

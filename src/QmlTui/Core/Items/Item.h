@@ -269,8 +269,10 @@ private:
     friend class ItemPaintTraversal;
     friend class Repeater;
     friend class FocusScope;
+    friend class Terminal;
 
     StateController* ensureStateController() const;
+    void setFocusFlagAndNotify();
     void clearFocusFlagAndNotify();
     void layoutSubtree();
     void paintSubtree(TextGridBuffer& buffer, int absX, int absY,

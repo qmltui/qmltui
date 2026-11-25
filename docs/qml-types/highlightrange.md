@@ -33,6 +33,8 @@ A character range with formatting styles for TextArea highlighting. [More...](#d
 | `italic` | `bool` |  | Whether this range applies italic text formatting. |
 | `underline` | `bool` |  | Whether this range applies underline text formatting. |
 | `reversed` | `bool` |  | Whether this range swaps foreground and background colors. |
+| `strikethrough` | `bool` |  | Whether this range applies strikethrough formatting (SGR 9). |
+| `link` | `string` | `""` | Optional hyperlink target emitted as a terminal OSC 8 link when painted in `TextArea`. |
 
 ## Detailed Description
 

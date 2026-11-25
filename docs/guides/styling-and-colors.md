@@ -112,7 +112,7 @@ Button {
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving
 its configured color. `Text.dim` also exposes this attribute directly. TextInput
 hints use the configured text color with dimming unless `placeholderColor` is
-set. Rich Text links use underline and inline code uses bold.
+set. Rich Text links use underline.
 
 TabBar, ComboBox, and the built-in TableView/TreeView selection render with reverse video
 until selection colors are explicitly supplied. Their optional selection color properties

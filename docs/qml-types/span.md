@@ -32,6 +32,8 @@ A literal text run with optional style overrides. [More...](#detailed-descriptio
 | `italic` | `bool` |  | Whether this span applies italic text formatting. |
 | `underline` | `bool` |  | Whether this span applies underline text formatting. |
 | `reversed` | `bool` |  | Whether this span swaps foreground and background colors. |
+| `strikethrough` | `bool` |  | Whether this span applies strikethrough formatting (SGR 9). |
+| `link` | `string` | `""` | Optional hyperlink target emitted as a terminal OSC 8 link and reported via `Text.linkActivated`. |
 
 ## Detailed Description
 
@@ -41,8 +43,9 @@ QmlTui `color` values. Attribute omission is distinct from explicit `false`.
 
 In C++, `hasBold()` (and the corresponding methods for other attributes)
 reports whether an override exists. A boolean getter alone does not report
-presence. `resetBold()`, `resetDim()`, `resetItalic()`, `resetUnderline()`, and
-`resetReversed()` restore inheritance; color reset methods restore unset colors.
+presence. `resetBold()`, `resetDim()`, `resetItalic()`, `resetUnderline()`,
+`resetReversed()`, `resetStrikethrough()`, and `resetLink()` restore defaults;
+color reset methods restore unset colors.
 The QML properties support reset by assigning `undefined`.
 
 Equality includes override presence, so an unset attribute differs from an

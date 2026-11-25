@@ -32,6 +32,7 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 | `italic` | `bool` | `false` | Whether text is rendered in italic face if supported by the terminal. |
 | `underline` | `bool` | `false` | Whether text is rendered with an underline. |
 | `reversed` | `bool` | `false` | Whether foreground and background colors are inverted. |
+| `strikethrough` | `bool` | `false` | Whether text is rendered with a strikethrough line (SGR 9). |
 | `horizontalAlignment` | `int` | `Qt.AlignLeft` | Holds horizontal alignment: `Qt.AlignLeft`, `Qt.AlignHCenter`, or `Qt.AlignRight`. |
 | `verticalAlignment` | `int` | `Qt.AlignTop` | Holds vertical alignment: `Qt.AlignTop`, `Qt.AlignVCenter`, or `Qt.AlignBottom`. |
 | `textFormat` | `TextFormat` | `Text.AutoText` | Holds how text is parsed: `Text.PlainText`, `Text.RichText`, `Text.AnsiText`, or `Text.AutoText`. |
@@ -42,19 +43,19 @@ Displays terminal text with inline styling and explicit line breaks. [More...](#
 
 | Signal | Description |
 | :--- | :--- |
-| `linkActivated(string link)` | Emitted when an embedded hyperlink tag or markdown link is clicked. |
+| `linkActivated(string link)` | Emitted when an embedded HTML `<a href="...">` hyperlink or linked `span` is clicked. |
 
 ## Enumeration Text.TextFormat
 
 | Value | Description |
 | :--- | :--- |
 | `Text.PlainText` | Text is treated as plain literal text without formatting interpretation. |
-| `Text.RichText` | Parses basic HTML tags (`<b>`, `<strong>`, `<i>`, `<em>`, `<u>`, `<reversed>`, `<font color="...">`, `<a href="...">`) and inline Markdown (`**bold**`, `` `code` ``, `[label](url)`). |
+| `Text.RichText` | Parses subset HTML tags (`<b>`, `<strong>`, `<i>`, `<em>`, `<u>`, `<s>`, `<del>`, `<reversed>`, `<font color="...">`, `<a href="...">`). |
 | `Text.AnsiText` | Embedded ANSI/VT SGR escape sequences are parsed and styled. |
-| `Text.AutoText` | Parses both `RichText` (HTML tags and inline Markdown `**bold**`, `` `code` ``, `[label](url)`) and `AnsiText` (ANSI SGR escape codes). |
+| `Text.AutoText` | Parses both `RichText` (subset HTML tags) and `AnsiText` (ANSI SGR escape codes). |
 
 > [!WARNING]
-> **Differences from Qt Quick**: Unlike Qt Quick's `Text.AutoText`, QmlTui's default `Text.AutoText` interprets inline Markdown (`**...**`, `` `...` ``, `[label](url)`) and ANSI SGR escape sequences. Always set `textFormat: Text.PlainText` (or use literal `spans`) when displaying user data, logs, file paths, shell commands, or source code.
+> **Differences from Qt Quick**: QmlTui's default `Text.AutoText` parses subset HTML tags and ANSI SGR escape sequences, and does **not** parse Markdown (for full CommonMark/GFM documents, code highlighting, tables, and inline blocks, use the [`QmlTui.Markdown`](https://github.com/qmltui/markdown) addon). Set `textFormat: Text.PlainText` (or use literal `spans`) when displaying untrusted text, logs, or raw ANSI payloads.
 
 ## Enumeration Text.WrapMode
 

@@ -68,7 +68,7 @@ Unknown option keys fail the scenario so typos never pass silently. Mixing posit
 | **Clock & Frame Sync** | `sleep`, `advanceTime`, `now`, `waitForFrame`, `expectRepaint`, `waitForCondition`, `frameCount`, `frameStats` |
 | **Text, Regex & Style Assertions** | `waitForText`, `expectText`, `expectNoText`, `waitForRegex`, `expectRegex`, `expectTextInRegion`, `expectStyle` |
 | **Snapshots & Captures** | `expectSnapshot`, `expectStyled`, `expectRegionSnapshot`, `captureText`, `captureStyled` |
-| **Inspection & Locators** | `frameText`, `styledText`, `cell`, `findText`, `regionText`, `size`, `resize`, `itemRect`, `waitForItem`, `region`, `item`, `rootObject` |
+| **Inspection & Locators** | `frameText`, `styledText`, `cell`, `findText`, `regionText`, `size`, `resize`, `itemRect`, `itemTree`, `waitForItem`, `region`, `item`, `rootObject` |
 | **Inline Scrollback** | `scrollbackRowCount`, `scrollbackText`, `waitForScrollbackText`, `expectScrollbackText`, `expectNoScrollbackText`, `captureScrollback`, `captureScrollbackStyled`, `expectScrollbackSnapshot` |
 | **Asciicast Recording** | `startRecording`, `stopRecording`, `marker` |
 | **Lifecycle** | `finish`, `fail` |
@@ -328,9 +328,10 @@ Returns normalized text for the sub-grid `[x, y, width, height]` of the current 
 - `app.size()` returns `{ columns, rows }` of the current test viewport.
 - `app.resize(columns, rows)` resizes the test viewport (`1..1000` each) and waits for a frame committed at the new dimensions (`columns × rows` in `AltScreen`, or `columns` wide with bounded content height `<= rows - 1` in `Terminal.Inline`).
 
-#### `object itemRect(const QString &objectName)` and `void waitForItem(const QString &objectName, int timeoutMs = 2000)`
+#### `object itemRect(const QString &objectName)`, `object itemTree(bool includeHidden = false)`, and `void waitForItem(const QString &objectName, int timeoutMs = 2000)`
 
 - `app.itemRect(objectName)` returns `{ x, y, width, height }` in terminal cells for the first visible item with `objectName`, clipped to the viewport. Fails if the item is missing, hidden, or off-screen.
+- `app.itemTree(includeHidden)` (or `app.itemTree({ includeHidden: true })`) returns a recursive snapshot of the live QML `Item` tree rooted at `Terminal`, including `type`, `objectName`, absolute cell bounds (`x`, `y`, `width`, `height`), `visible`, `enabled`, `focus`, `activeFocus`, `inViewport`, optional `focusPolicy` / `state` / `clip`, short summary properties (`text` including `Span`-based `Text` runs, `placeholderText`, `title`, `checked`, `currentIndex`, `value`), and `children`. Hidden subtrees are skipped unless `includeHidden` is `true`.
 - `app.waitForItem(objectName, timeoutMs)` waits until an item with `objectName` is visible inside the committed viewport.
 
 #### `object region(int x, int y, int width, int height)`
@@ -371,13 +372,13 @@ In `Terminal.Inline` mode, completed rows are committed through `Scrollback` and
 
 When armed with `--record <path>`, `qmltui_add_scenario(... RECORD <name>.cast)`, or `QMLTUI_RUNNER_RECORD=<path>`, Runner substitutes an in-memory 24-bit color backend and writes emitted ANSI bytes into an [asciicast v2](https://docs.asciinema.org/manual/asciicast/v2/) file. Under `CLOCK VIRTUAL`, frame timestamps advance only through `sleep()` and `advanceTime()`, producing byte-identical `.cast` recordings across runs. `RECORD` cannot be combined with `LIVE`.
 
-- `void startRecording(const QString &relativePath)`: Closes any active recording and starts a new `.cast` file at `relativePath` under the artifact directory, beginning with a full repaint. Requires the session to have been armed at process launch with `--record` / `QMLTUI_RUNNER_RECORD` (which installs the in-memory recording backend before `main(app)` starts).
+- `void startRecording(const QString &relativePath)`: Closes any active recording and starts a new `.cast` file at `relativePath` under the artifact directory, beginning with a full repaint. In batch scenarios, requires `--record` / `QMLTUI_RUNNER_RECORD` at process launch so the in-memory recording backend is installed before `main(app)` starts; interactive sessions (`qmltui-runner session` / `--interactive`) install that backend automatically and can start recording mid-session.
 - `void stopRecording()`: Flushes pending bytes and closes the active recording. Emits a warning and does nothing if no recording is in progress.
 - `void marker(const QString &label)`: Writes an asciicast `"m"` chapter marker event at the current timestamp. Emits a warning and does nothing if no recording is in progress.
 
 ### Scenario Lifecycle (`finish`, `fail`, and Promises)
 
-- `void finish()`: Explicitly marks the scenario as finishing. Optional for synchronous scripts, which finish automatically when `main(app)` returns.
+- `void finish()`: Explicitly marks the scenario as finishing. Optional for synchronous scripts, which finish automatically when `main(app)` returns. Rejected in interactive sessions (`eval`); use the `close` command or `qmltui-runner session stop` instead.
 - `void fail(const QString &message)`: Immediately fails the scenario with `message`, writes `failure.txt` if a frame is available, emits `finished(1)`, and schedules exit code `1`.
 - **Promises**: If `main(app)` returns a Promise, Runner keeps the scenario active until the Promise resolves or rejects (bounded by the scenario watchdog). Because all `app.*` operations are synchronous, prefer synchronous `main(app)` functions.
 
@@ -393,13 +394,14 @@ qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler --styled -- ./myApp
 qmltui-runner --script tour.js --clock virtual --record tour.cast -- ./myApp
 ```
 
-Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`). Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
+Specify `--script`, `--eval`, `--capture-after-ms`, `--interactive`, probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`), or `qmltui-runner session <verb>`. Launcher options precede the target executable; everything after `--` (or after the executable path) is forwarded as arguments to the application.
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | JavaScript scenario path (`.js`, `.mjs`, or Qt resource `:/...`). |
 | `--eval <code>` | None | Inline JavaScript scenario code. Accepts either bare statements (executed with `app` in scope) or a `function main(app)` / `const main = (app) => ...` definition (including Promise-returning `main`). |
 | `--capture-after-ms <ms>` | None | Delay (`0..30000` ms) before writing `capture.txt` and `capture_styled.txt`. |
+| `--interactive` | Off | Run a persistent NDJSON command loop over `stdin`/`stdout` against the live application without a background session daemon (works even when built without `Qt6::Network`; incompatible with `--live`, `--print`, `--ruler`, and probe modifiers). |
 | `--sizes <list>` | None | Comma-separated `<cols>x<rows>` viewport sweep writing `frame_<WxH>.txt` (incompatible with `--script`). |
 | `--sweep` | Off | Shorthand for `--sizes 60x18,80x24,120x36`. |
 | `--idle-ms <ms>` | None | Verify zero unscripted repaints across `1..30000` ms after capture (incompatible with `--script`). |
@@ -441,6 +443,26 @@ When probe modifiers are active (for example `--sweep --idle-ms 300 --styled`), 
 - **Exit code `2`**: Invalid CLI arguments, startup/handshake timeout, child process crash, or missing/inconsistent `result.json`.
 
 When `qmltui-runner` starts a child process, it clears inherited `QMLTUI_RUNNER_*` variables, sets `QMLTUI_RUNNER_HANDSHAKE_PATH` and `QMLTUI_RUNNER_HANDSHAKE_TOKEN`, and verifies that `Runner::start()` writes `{"protocolVersion":1,"token":"...","pid":123}` before `--startup-timeout-ms` expires. After activation, the child has `--timeout-ms` plus 5 seconds to exit before termination (`SIGTERM` followed by `SIGKILL` after 1 second).
+
+### Interactive Sessions (`qmltui-runner session`)
+
+Instead of restarting the binary for every step, `qmltui-runner session` supervises a live application in the background (via `MemoryTerminalBackend` and framed NDJSON pipes, exposed to CLI invocations over a user-scoped `QLocalServer` when `qmltui-runner` is built with `Qt6::Network`; `QmlTui::Runner` itself remains `Qt6::Core` + `Qt6::Qml` only):
+
+```bash
+qmltui-runner session start --clock virtual --columns 80 --rows 24 -- ./myApp
+qmltui-runner session tree
+qmltui-runner session click-text "Workers"
+qmltui-runner session advance 300 --styled
+qmltui-runner session export -o tests/workers_flow.js
+qmltui-runner session stop
+```
+
+- **Lifecycle**: `start` (`--name <id>`, `--live`, `--clock`, `--columns`, `--rows`, `--artifacts`, `--clean-artifacts`, `--record <rel.cast>`, `--idle-timeout-ms <ms>` accepting `0` to disable or `100..3600000`, defaulting to `300000` ms / 5 min for headless sessions and `0` under `--live`), `connect [id]` (alias `shell`, opens an interactive command prompt with `mode on|off|diff|ruler|plain`, `detach`, and `stop`), `batch [id]` (runs newline-delimited session commands from `stdin` in one invocation, stopping on first error unless `--continue-on-error`), `watch [--session <id>]`, `list`, `export [-o <path>]`, and `stop [--all] [--export <path>]`. You can also use `qmltui-runner s` as shorthand for `qmltui-runner session`. When `--session <id>` is omitted, commands target the latest active session. Set `QMLTUI_RUNNER_SESSION_DIR` to isolate session metadata in tests or sandboxes (otherwise uses `$XDG_RUNTIME_DIR/qmltui-runner-sessions` when available, falling back to a user-scoped temp directory).
+- **Live viewing (`--live` and `session watch`)**: Passing `--live` to `session start` runs the session daemon in the foreground of Terminal 1 and streams synchronized 24-bit ANSI frames (entering AltScreen and restoring the terminal cleanly on `Ctrl+C`, `session stop`, or app `Qt.quit()`) while Terminal 2 or an AI agent drives the exact same session with `session connect --no-frame`, `session press`, `click-text`, `click-item`, `tree`, `advance`, etc. When `--columns` / `--rows` are omitted under `--live`, the session automatically adopts Terminal 1's actual size and follows subsequent Terminal 1 resizes (until pinned by an explicit `session resize`). You can also run `qmltui-runner session watch [--session <id>]` in another terminal to attach a live read-only viewer to any already-running headless session (`Ctrl+C` detaches without stopping the app). Live streaming uses `TextGridBuffer::toAnsiString()` over the framed pipe (`QMLTUI_RUNNER_LIVE_STREAM=1`), so it composes with `--record` and `Terminal.Inline` scrollback without touching raw input modes.
+- **Actions & inspection**: `press`, `type`, `paste`, `inject-key`, `inject-text`, `inject-paste`, `click`, `double-click`, `mouse-down`, `mouse-up`, `hover`, `drag`, `scroll`, `click-text`, `hover-text`, `click-item <objectName>`, `resize`, `advance`, `sleep`, `wait-frame`, `expect-repaint`, `wait-text`, `wait-regex`, `wait-item`, `wait-scrollback`, `expect-text`, `expect-no-text`, `expect-regex`, `expect-scrollback`, `expect-no-scrollback`, `frame [--diff]`, `scrollback`, `tree [--include-hidden]`, `cell`, `find-text`, `item-rect`, `stats`, `logs [--all]`, `eval <code> [--no-record]`, `marker <label>`, and `record start <rel.cast> | stop`.
+- **Auto-returned frame, compact `--diff`, & recoverable errors**: Mutating verbs print `FrameStats` (plus an explicit `WARNING: dirtyDuringPaint detected` line if `dirtyDuringPaint > 0`), new child `stderr`/`stdout` logs, and the updated 0-based ruler frame by default (`--diff` prints only rows changed since the last displayed frame, falling back to the full current frame on failure; `--no-ruler`/`--plain`, `--no-frame`, `--styled`, `--scrollback`, `--tree`, `--no-record`, `--json` customize output). Failed lookups, assertion failures, timeouts, or JS errors return exit code `1` with the error and current frame **without exiting the app**, and a runaway `eval` loop is interrupted by `RunnerHardWatchdog` while keeping the session alive. If the application exits on its own (for example pressing `Q` to trigger `Qt.quit()`), the session writes `result.json`/`final.txt`, reports `exited: true` with `exitCode` / `exitStatus`, and cleans up automatically.
+- **Scenario export & `.cast` recording**: Successful mutating, wait, assertion, and recording steps are tracked in order (pass `--no-record` on exploratory commands to exclude them); `session export` emits a runnable `function main(app)` CTest script with initial viewport/clock metadata (skipping failed attempts and read-only inspections). Pass `--record <rel.cast>` at `session start` or use `session record start` / `marker` / `record stop` to capture deterministic asciicasts interactively (replaying an exported script that calls `app.startRecording()` requires `--record` or `RECORD`).
+- **Direct stdio mode (`--interactive`)**: `qmltui-runner --interactive -- ./myApp` runs the same NDJSON command protocol directly on `stdin`/`stdout` with `Qt6::Core` only (no daemon or `Qt6::Network` required).
 
 ## CMake Integration (`qmltui_add_scenario`)
 
@@ -494,13 +516,17 @@ endif()
 
 When `QmlTui::Runner` is linked into an application, QML-created `Terminal` roots invoke `Runner::startFromEnvironment()` automatically on startup. If you construct `qmltui::Terminal` in C++ without QML, call `Runner::startFromEnvironment(&engine, terminal)` after creating the root. It returns `nullptr` when no `QMLTUI_RUNNER_*` request is present in the environment.
 
-`QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, and `QMLTUI_RUNNER_CAPTURE_AFTER_MS` are mutually exclusive:
+`QMLTUI_RUNNER_SCRIPT`, `QMLTUI_RUNNER_EVAL`, `QMLTUI_RUNNER_CAPTURE_AFTER_MS`, and `QMLTUI_RUNNER_INTERACTIVE` are mutually exclusive:
 
 | Environment Variable | Default | Description |
 | :--- | :--- | :--- |
 | `QMLTUI_RUNNER_SCRIPT` | None | Filesystem or Qt resource (`:/...`) scenario path. |
 | `QMLTUI_RUNNER_EVAL` | None | Inline JavaScript scenario code. |
 | `QMLTUI_RUNNER_CAPTURE_AFTER_MS` | None | Delay (`0..30000` ms; `0` = first committed frame) before writing `capture.txt` and `capture_styled.txt`. |
+| `QMLTUI_RUNNER_INTERACTIVE` | Off | Enable interactive NDJSON command mode over `stdin`/`stdout` with `MemoryTerminalBackend` and recoverable per-command errors. |
+| `QMLTUI_RUNNER_LIVE_STREAM` | Off | Emit base64-encoded ANSI frame events over the interactive pipe on each committed frame (used by `session start --live` and `session watch`). |
+| `QMLTUI_RUNNER_SESSION_TOKEN` | None | Optional framing prefix token (`QMLTUI_IPC_<token>:`) used by `qmltui-runner` to separate protocol JSON lines from stray app `stdout`. |
+| `QMLTUI_RUNNER_SESSION_DIR` | `$XDG_RUNTIME_DIR/qmltui-runner-sessions` (or per-user temp dir) | Override directory storing active `qmltui-runner session` metadata files (read by the `qmltui-runner` CLI; useful for isolated tests). |
 | `QMLTUI_RUNNER_ARTIFACT_DIR` | Per-process temp dir | Root directory for output artifacts. |
 | `QMLTUI_RUNNER_COLUMNS` | `80` | Initial viewport columns (`1..1000`). |
 | `QMLTUI_RUNNER_ROWS` | `24` | Initial viewport rows (`1..1000`). |
@@ -568,7 +594,7 @@ QTimer::singleShot(0, driver, &qmltui::Runner::start);
 
 Every run atomically writes `result.json` (schema version `1`) into the artifact directory containing:
 
-- `schemaVersion` (`1`), `status` (`"passed"` or `"failed"`), `exitCode` (`0` or `1`), and `mode` (`"script"`, `"eval"`, `"capture"`, or `"embedded"`).
+- `schemaVersion` (`1`), `status` (`"passed"` or `"failed"`), `exitCode` (`0` or `1`), and `mode` (`"script"`, `"eval"`, `"capture"`, `"interactive"`, or `"embedded"`).
 - `scenario`, `message`, `elapsedMs`, `clock` (`"real"` or `"virtual"`), and `virtualTimeMs` (when `clock` is `"virtual"`).
 - `viewport` (initial `{ columns, rows }`), `finalViewport` (dimensions after any `resize()` calls), and `frameStats`.
 - `operation` (active or failing operation object, or `null`) and argument-free `operations` trace.

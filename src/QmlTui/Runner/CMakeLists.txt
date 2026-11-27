@@ -5,6 +5,8 @@ add_library(QmlTuiRunner STATIC
     Runner.cpp
     RunnerInput_p.h
     RunnerInput.cpp
+    RunnerInteractive_p.h
+    RunnerInteractive.cpp
     RunnerSnapshot_p.h
     RunnerSnapshot.cpp
     CastRecorder_p.h

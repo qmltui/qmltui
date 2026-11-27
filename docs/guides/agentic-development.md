@@ -25,11 +25,11 @@ flowchart TD
 | **Runtime environment** | Display server + headless browser | Interactive PTY (`tmux` / `script`) | `QCoreApplication` only (headless CI, containers, SSH, cloud sandboxes) |
 | **Visual perception** | PNG screenshots (vision tokens, pixel guessing) | Raw escape-sequence text | Exact 2D UTF-8 cell grid, 0-based `(x, y)` rulers, `#RRGGBBAA` / SGR style runs |
 | **Animations & timers** | Wall-clock waits | Wall-clock `sleep` | Deterministic virtual clock ([`app.advanceTime(ms)`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization)) in milliseconds |
-| **Targeting & assertions** | DOM or pixel coordinates | Substring regexes | [`clickText()`](../cpp-classes/runner.md#mouse-input), [`app.item("objectName")`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item), [`app.region()`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item), [`expectStyle()`](../cpp-classes/runner.md#frame-text-regex-and-style-assertions), [`Inline`](inline-mode.md) scrollback |
+| **Targeting & assertions** | DOM or pixel coordinates | Substring regexes | [`clickText()`](../cpp-classes/runner.md#mouse-input), [`app.item("objectName")`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item), [`app.itemTree()`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item) (`session tree`), [`app.region()`](../cpp-classes/runner.md#frame-inspection-and-scoped-locators-region-and-item), [`expectStyle()`](../cpp-classes/runner.md#frame-text-regex-and-style-assertions), [`Inline`](inline-mode.md) scrollback |
 | **Performance & paint audit** | External profiler | None | Built-in [`FrameStats`](../cpp-classes/runner.md#clock-timing-and-frame-synchronization) (`paintAvg`, `diffBytes`, `dirtyDuringPaint=0`) and [`--idle-ms`](testing.md#qmltui-runner-options-reference) |
 | **Visual proof for PR review** | Static screenshots | None | Deterministic asciicast v2 `.cast` recordings ([`--record`](../cpp-classes/runner.md#asciicast-recording-cast)) |
 
-For the full 60-method [`app.*` facade](../cpp-classes/runner.md#javascript-app-runner-facade-reference), CLI flags, CMake macros, and C++ API, see [Testing and Recording with Runner](testing.md) and the [Runner Reference](../cpp-classes/runner.md).
+For the full 61-method [`app.*` facade](../cpp-classes/runner.md#javascript-app-runner-facade-reference), interactive sessions, CLI flags, CMake macros, and C++ API, see [Testing and Recording with Runner](testing.md) and the [Runner Reference](../cpp-classes/runner.md).
 
 ## Set Up Your Agent in 60 Seconds
 
@@ -218,6 +218,34 @@ qmltui-runner --clock virtual --columns 80 --rows 12 --ruler --scrollback \
   --eval 'app.typeText("help"); app.press("Enter"); app.expectScrollbackText("help");' \
   -- ./build/examples/recipes/inline_repl/qmltui_inline_repl_demo
 ```
+
+### 3b. Drive a Live App Interactively (`qmltui-runner session`)
+
+When exploring an unfamiliar UI, debugging focus issues, or driving stateful / real-clock flows without restarting the binary on every turn, keep the application alive with [`qmltui-runner session`](../cpp-classes/runner.md#interactive-sessions-qmltui-runner-session):
+
+```bash
+# 1. Start a live background session (prints initial ruled frame + FrameStats)
+qmltui-runner session start --clock virtual --columns 80 --rows 24 -- ./build/ops_console
+
+# 2. Inspect the live QML Item tree, objectNames, bounds, and activeFocus
+qmltui-runner session tree
+
+# 3. Send events turn-by-turn (or pipe a multi-step burst with `session batch` / `s` shorthand)
+qmltui-runner session click-item sidebar
+qmltui-runner session press Down --diff
+qmltui-runner session advance 300 --styled
+qmltui-runner session expect-text "RUNNING"
+qmltui-runner session eval 'app.expectStyle(2, 1, { foreground: "cyan", bold: true })'
+
+# 4. Export the verified steps straight into a CTest .js scenario and stop
+qmltui-runner session export -o tests/test_workers.js
+qmltui-runner session stop
+```
+
+- **Interactive console & batching**: Humans driving a `--live` terminal can attach an interactive prompt with `qmltui-runner s connect [id] --no-frame` (`press`, `click-item`, `tree`, `mode on|off|diff|ruler|plain`, `export`, `detach`, `stop`); agents can send multi-step bursts in one command with `qmltui-runner s batch [id] --diff <<'EOF' ... EOF`.
+- **Recoverable errors**: A bad `click-text`, failed `expect-text`, or runaway `eval` exits with code `1`, prints the error alongside the current frame (even under `--diff`), and **keeps the session alive** so the agent can inspect and retry.
+- **Self-quit & orphan cleanup**: Triggering the app's keyboard quit path (`qmltui-runner session press q`) writes `result.json`/`final.txt`, reports a clean normal exit, and tears down the daemon automatically; idle headless sessions auto-reap after 5 minutes (`--idle-timeout-ms`, or `0` to disable).
+- **Multiple sessions, live viewing & recording**: Run parallel sessions with `--name <id>` / `--session <id>` (`session list`, `session stop --all`), pass `--live` to `session start` in one terminal to watch an agent drive the app live from another (or attach to any headless session with `qmltui-runner session watch`), and record deterministic asciicasts with `--record demo.cast` at `session start` or mid-session via `session record start <file.cast>` / `session marker` / `session record stop`.
 
 ### 4. Lock Behavior into CTest Snapshots (`qmltui_add_scenario`)
 

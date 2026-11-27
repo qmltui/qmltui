@@ -55,6 +55,7 @@ Visible-behavior tests should assert the committed terminal frame rather than in
 - **Scoped region and item locators**:
   - `app.region(0, 0, 80, 3).expectText("Header")` restricts text checks, snapshots, and clicks to a cell rectangle `[x, y, width, height]`.
   - `app.item("sidebar").clickText("Logs")` and `app.item("sidebar").expectText("Logs")` scope operations to the viewport bounds of the visible QML item whose `objectName` is `"sidebar"`.
+  - `app.itemTree()` (or `app.itemTree({ includeHidden: true })`) returns the live QML `Item` hierarchy with types, `objectName`s, absolute cell bounds, `focus`/`activeFocus`, and text summaries.
 - **Cell style assertions**:
   - `app.expectStyle(2, 1, { character: "●", foreground: "green", bold: true })` checks the glyph, resolved `#RRGGBBAA` or named color (`"default"`, `"cyan"`, etc.), and SGR attributes (`bold`, `dim`, `italic`, `underline`, `reversed` / `reverse`, `blink`, `conceal`, `strikethrough`) at cell `(x, y)`. Unrecognized style property keys fail immediately.
 - **Golden snapshots**:
@@ -144,15 +145,27 @@ The `qmltui-runner` command-line tool (built by default in top-level builds or w
    ```
    Inside `test_record.js`, pace frames with `app.sleep(ms)` / `app.advanceTime(ms)` and add chapter markers with `app.marker("Chapter title")`. Because `--clock virtual` uses synthetic timestamps, the generated `.cast` file is deterministic across runs.
 
+7. **Drive an app interactively across turns and export a scenario (`session`)**:
+   ```bash
+   qmltui-runner session start --clock virtual --columns 80 --rows 24 -- ./build/my_app
+   qmltui-runner session tree
+   qmltui-runner session press Down
+   qmltui-runner session click-text "Apply" --styled
+   qmltui-runner session export -o tests/test_apply.js
+   qmltui-runner session stop
+   ```
+   Each step returns the updated ruled frame (or compact row diffs with `--diff`), `FrameStats`, and any new logs while keeping the app alive across recoverable errors. Add `--live` to `session start` in one terminal to render frames live while driving from another terminal via `qmltui-runner s connect --no-frame` (or run `qmltui-runner s watch` to attach a live viewer to any headless session, and `qmltui-runner s batch` to pipe multiple commands in one call). See [Interactive Sessions](../cpp-classes/runner.md#interactive-sessions-qmltui-runner-session) for all session verbs and `--interactive` stdio NDJSON mode.
+
 ### `qmltui-runner` Options Reference
 
-Specify `--script`, `--eval`, `--capture-after-ms`, or probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`):
+Specify `--script`, `--eval`, `--capture-after-ms`, `--interactive`, probe options (`--sizes` / `--sweep` / `--idle-ms` / `--scrollback`), or `qmltui-runner session <verb>`:
 
 | Option | Default | Description |
 | :--- | :--- | :--- |
 | `--script <path>` | None | Run a `.js`, `.mjs`, or Qt resource (`:/...`) scenario file. |
 | `--eval <code>` | None | Evaluate an inline JavaScript snippet inside `function main(app)`. |
 | `--capture-after-ms <ms>` | None | Wait `0..30000` ms (`0` = first committed frame), then write `capture.txt` and `capture_styled.txt`. |
+| `--interactive` | Off | Run a persistent NDJSON command loop over `stdin`/`stdout` without a background session daemon (incompatible with `--live`, `--print`, `--ruler`, and probe modifiers). |
 | `--sizes <list>` / `--sweep` | None | Sweep comma-separated `<cols>x<rows>` viewports (`--sweep` = `60x18,80x24,120x36`), writing `frame_<WxH>.txt` (incompatible with `--script`). |
 | `--idle-ms <ms>` | None | Verify zero unscripted repaints across `1..30000` ms after capture (incompatible with `--script`). |
 | `--columns <n>`, `--rows <n>` | `80`, `24` | Initial terminal viewport dimensions (`1..1000` cells). |

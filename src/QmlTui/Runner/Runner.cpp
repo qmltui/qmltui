@@ -1,4 +1,5 @@
 #include <QmlTui/Runner/Runner.h>
+#include <QmlTui/Runner/RunnerInteractive_p.h>
 #include <QmlTui/Runner/RunnerSnapshot_p.h>
 #include <QmlTui/Runner/CastRecorder_p.h>
 #include <QmlTui/Runner/MemoryTerminalBackend.h>
@@ -149,6 +150,7 @@ bool environmentRequestsScenario() {
     return !qgetenv("QMLTUI_RUNNER_SCRIPT").trimmed().isEmpty() ||
            !qgetenv("QMLTUI_RUNNER_EVAL").trimmed().isEmpty() ||
            !qgetenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty() ||
+           environmentFlagEnabled("QMLTUI_RUNNER_INTERACTIVE") ||
            environmentFlagEnabled("QMLTUI_RUNNER_EMBEDDED_SCENARIO");
 }
 
@@ -161,13 +163,16 @@ int environmentDimension(const char* name, int fallback) {
 } // namespace
 
 // QMLTUI_RUNNER_RECORD routes the terminal bytes into memory so the Runner can
-// write them to an asciicast. The engine creates its device when the Terminal
-// completes, before any Runner exists, so the factory is installed as soon as
-// QCoreApplication is constructed. Recording without a scenario would leave the
-// application talking to nobody, so a scenario variable is required too.
+// write them to an asciicast. QMLTUI_RUNNER_INTERACTIVE also installs the
+// in-memory backend so TerminalEngine never reads stdin or writes ANSI to
+// stdout while interactive commands flow over stdio pipes. The engine creates
+// its device when the Terminal completes, before any Runner exists, so the
+// factory is installed as soon as QCoreApplication is constructed.
 static void qmltuiInstallRecordingBackend() {
-    if (qgetenv("QMLTUI_RUNNER_RECORD").trimmed().isEmpty() || !environmentRequestsScenario())
-        return;
+    const bool interactive = environmentFlagEnabled("QMLTUI_RUNNER_INTERACTIVE");
+    const bool recording =
+        !qgetenv("QMLTUI_RUNNER_RECORD").trimmed().isEmpty() && environmentRequestsScenario();
+    if (!interactive && !recording) return;
     const int columns = environmentDimension("QMLTUI_RUNNER_COLUMNS", 80);
     const int rows = environmentDimension("QMLTUI_RUNNER_ROWS", 24);
     TerminalBackend::setFactory([columns, rows](int) -> std::unique_ptr<TerminalBackend> {
@@ -187,22 +192,27 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal) 
     // Presence counts, not truthiness: QMLTUI_RUNNER_CAPTURE_AFTER_MS=0 is a request to
     // capture the first committed frame.
     const bool capture = !qgetenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty();
-    const int requestCount =
-        (scriptPath.isEmpty() ? 0 : 1) + (evalCode.isEmpty() ? 0 : 1) + (capture ? 1 : 0);
+    const bool interactive = environmentFlagEnabled("QMLTUI_RUNNER_INTERACTIVE");
+    const int requestCount = (scriptPath.isEmpty() ? 0 : 1) + (evalCode.isEmpty() ? 0 : 1) +
+                             (capture ? 1 : 0) + (interactive ? 1 : 0);
     if (requestCount == 0) return nullptr;
 
     QString configurationError;
     if (requestCount > 1) {
         configurationError =
-            QStringLiteral("QMLTUI_RUNNER_SCRIPT, QMLTUI_RUNNER_EVAL, and "
-                           "QMLTUI_RUNNER_CAPTURE_AFTER_MS are mutually exclusive");
+            QStringLiteral("QMLTUI_RUNNER_SCRIPT, QMLTUI_RUNNER_EVAL, "
+                           "QMLTUI_RUNNER_CAPTURE_AFTER_MS, and QMLTUI_RUNNER_INTERACTIVE are "
+                           "mutually exclusive");
     }
 
     QString mode = QStringLiteral("script");
     QString temporaryScriptPath;
     QByteArray generatedScript;
     int captureAfterMs = 0;
-    if (!evalCode.isEmpty()) {
+    if (interactive) {
+        mode = QStringLiteral("interactive");
+        scriptPath.clear();
+    } else if (!evalCode.isEmpty()) {
         mode = QStringLiteral("eval");
         generatedScript = QStringLiteral("function main(app) {\n"
                                          "    const __qmltuiOuterMain = main;\n"
@@ -283,11 +293,18 @@ Runner* Runner::startFromEnvironment(QQmlEngine* qmlEngine, Terminal* terminal) 
             QStringLiteral("qmltui-runner-%1").arg(QCoreApplication::applicationPid()));
     }
 
-    auto* runner = new Runner(qmlEngine, terminal, absoluteOrResourcePath(scriptPath),
+    auto* runner = new Runner(qmlEngine, terminal,
+                              scriptPath.isEmpty() ? QString() : absoluteOrResourcePath(scriptPath),
                               QFileInfo(artifactDirectory).absoluteFilePath(), viewport,
                               operationTimeout, scenarioTimeout, configurationError);
     runner->m_mode = mode;
     runner->m_temporaryScriptPath = temporaryScriptPath;
+    runner->m_interactive = interactive;
+    if (interactive) {
+        runner->m_liveStream = environmentFlagEnabled("QMLTUI_RUNNER_LIVE_STREAM");
+        const QByteArray token = qgetenv("QMLTUI_RUNNER_SESSION_TOKEN").trimmed();
+        if (!token.isEmpty()) runner->m_ipcPrefix = QByteArrayLiteral("QMLTUI_IPC_") + token + ':';
+    }
     s_activeRunner = runner;
     QTimer::singleShot(0, runner, &Runner::start);
     return runner;
@@ -310,16 +327,25 @@ Runner::Runner(QQmlEngine* qmlEngine, Terminal* terminal, QString scriptPath,
     // the environment announced one: no-op for environment-requested runs and
     // after useEmbeddedScenario(), quiet from here on otherwise.
     if (m_terminalEngine) m_terminalEngine->beginTestSession();
-    if (m_terminalEngine && s_recordingBackend) armRecording();
+    if (m_terminalEngine && s_recordingBackend &&
+        !qgetenv("QMLTUI_RUNNER_RECORD").trimmed().isEmpty()) {
+        armRecording();
+    }
 
     m_watchdog.setSingleShot(true);
     connect(&m_watchdog, &QTimer::timeout, this, [this] {
         failScenario(
-            QStringLiteral("Scenario exceeded the %1 ms watchdog").arg(m_scenarioTimeoutMs));
+            m_interactive
+                ? QStringLiteral("Interactive command exceeded watchdog timeout")
+                : QStringLiteral("Scenario exceeded the %1 ms watchdog").arg(m_scenarioTimeoutMs));
     });
 }
 
 Runner::~Runner() {
+    if (m_interactiveReader) {
+        m_interactiveReader->stop(/*detachIfBlocked=*/true);
+        m_interactiveReader.reset();
+    }
     // A joinable std::thread would terminate the process on destruction.
     (void)stopHardWatchdog();
 }
@@ -374,6 +400,40 @@ void Runner::start() {
     if (!m_qmlEngine || !m_terminal || !m_terminalEngine) {
         failScenario(QStringLiteral("Runner requires a live QQmlEngine and explicit Terminal"),
                      false);
+        return;
+    }
+
+    if (m_interactive) {
+        connect(m_qmlEngine, &QObject::destroyed, this, [this] {
+            if (!m_interactiveClosing)
+                failScenario(QStringLiteral("QQmlEngine was destroyed during the session"), false);
+        });
+        connect(m_terminal, &QObject::destroyed, this, [this] {
+            if (!m_interactiveClosing)
+                failScenario(QStringLiteral("Target Terminal was destroyed during the session"),
+                             false);
+        });
+        connect(m_terminalEngine, &TerminalEngine::renderFailed, this,
+                [this](const QString& message) { failScenario(message); });
+        connect(m_terminalEngine, &TerminalEngine::frameRendered, this, [this](quint64) {
+            if (m_liveStream && m_state == State::Running && !m_interactiveClosing)
+                emitLiveFrameEvent();
+        });
+        connect(m_qmlEngine, &QQmlEngine::quit, this, [this] {
+            m_appQuitRequested = true;
+            if (m_activeLoop) m_activeLoop->quit();
+        });
+        if (QCoreApplication* app = QCoreApplication::instance()) {
+            connect(app, &QCoreApplication::aboutToQuit, this, [this] {
+                m_interactiveClosing = true;
+                finalizeInteractiveArtifacts();
+                if (m_interactiveReader) m_interactiveReader->stop(/*detachIfBlocked=*/true);
+            });
+        }
+        if (!waitForNextFrame(m_operationTimeoutMs)) return;
+        m_state = State::Running;
+        if (!installJavaScriptFacade()) return;
+        startInteractiveSession();
         return;
     }
 
@@ -517,7 +577,7 @@ bool Runner::installJavaScriptFacade() {
         "clickText", "hoverText",
         "waitForRegex",
         "expectRegex", "expectTextInRegion", "expectStyle", "expectSnapshot",
-        "expectStyled", "expectRegionSnapshot", "regionText", "itemRect", "waitForItem",
+        "expectStyled", "expectRegionSnapshot", "regionText", "itemRect", "itemTree", "waitForItem",
         "expectRepaint", "frameCount", "frameStats",
         "injectText", "injectKey", "injectPaste",
         "resize", "size", "advanceTime", "now",
@@ -549,6 +609,7 @@ bool Runner::installJavaScriptFacade() {
         waitForRegex: { required: 1, optional: [["timeout", 2000]] },
         waitForCondition: { required: 1, optional: [["timeout", 2000]] },
         waitForItem:  { required: 1, optional: [["timeout", 2000]] },
+        itemTree:     { required: 0, optional: [["includeHidden", false]] },
         expectText:   { required: 1, optional: [["timeout", -1]] },
         expectNoText: { required: 1, optional: [["timeout", -1]] },
         expectRegex:  { required: 1, optional: [["timeout", -1]] },
@@ -764,13 +825,14 @@ void Runner::beginOperation(const QString& name, const QString& stack) {
     m_currentOperation = m_operations.size() - 1;
 }
 
-void Runner::startHardWatchdog() {
+void Runner::startHardWatchdog(int timeoutMs) {
     if (m_hardWatchdog || !m_qmlEngine) return;
     // Give the event-loop watchdog a chance to report first: it produces a much
     // better message ("Timed out after N ms waiting for ...") and only fails to
     // fire when JavaScript never yields.
-    m_hardWatchdog = std::make_unique<RunnerHardWatchdog>(
-        m_qmlEngine, std::chrono::milliseconds(m_scenarioTimeoutMs + 1000));
+    const int bound = timeoutMs > 0 ? timeoutMs : m_scenarioTimeoutMs;
+    m_hardWatchdog =
+        std::make_unique<RunnerHardWatchdog>(m_qmlEngine, std::chrono::milliseconds(bound + 1000));
 }
 
 bool Runner::stopHardWatchdog() {
@@ -804,9 +866,13 @@ void Runner::completeCurrentOperation(const QString& status) {
     }
 }
 
+bool Runner::hasActiveFailure() const {
+    return m_state == State::Failed || (m_interactive && !m_commandError.isEmpty());
+}
+
 bool Runner::ensureRunning(const char* operation) {
-    if (m_state == State::Running) return true;
-    if (m_state != State::Failed) {
+    if (m_state == State::Running && !(m_interactive && !m_commandError.isEmpty())) return true;
+    if (!hasActiveFailure()) {
         failScenario(QStringLiteral("app.%1() is not valid in the current scenario state")
                          .arg(QString::fromLatin1(operation)));
     }
@@ -830,6 +896,7 @@ int Runner::resolveExpectTimeout(int timeoutMs) {
 
 bool Runner::waitForNextFrame(int timeoutMs, bool requestRender) {
     if (!m_terminalEngine) return false;
+    if (m_interactive && m_appQuitRequested) return true;
     if (m_activeLoop) {
         failScenario(QStringLiteral("Nested wait operations are not supported"));
         return false;
@@ -862,7 +929,8 @@ bool Runner::waitForNextFrame(int timeoutMs, bool requestRender) {
     m_activeLoop = nullptr;
     disconnect(frameConnection);
 
-    if (m_state == State::Failed) return false;
+    if (hasActiveFailure()) return false;
+    if (m_interactive && m_appQuitRequested) return true;
     if (!received) {
         failScenario((requestRender
                           ? QStringLiteral("Timed out after %1 ms waiting for a committed frame")
@@ -920,7 +988,7 @@ bool Runner::waitForTextCondition(const QString& text, bool shouldContain, int t
     m_activeLoop = nullptr;
     disconnect(frameConnection);
 
-    if (m_state == State::Failed) return false;
+    if (hasActiveFailure()) return false;
     if (!error.isEmpty()) {
         failScenario(error);
         return false;
@@ -994,7 +1062,10 @@ void Runner::advanceVirtualTime(const char* operation, int durationMs) {
         // now. A step that invalidated nothing commits no frame.
         QCoreApplication::processEvents(QEventLoop::AllEvents);
         QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
-        if (m_state != State::Running) return;
+        if (m_state != State::Running || hasActiveFailure() ||
+            (m_interactive && m_appQuitRequested)) {
+            return;
+        }
     }
 }
 
@@ -1166,7 +1237,7 @@ void Runner::waitForCondition(const QJSValue& condition, int timeoutMs) {
 
     m_activeLoop = &loop;
     evaluateCondition();
-    if (!matched && m_state == State::Running) {
+    if (!matched && !hasActiveFailure() && m_state == State::Running) {
         pollTimer.start();
         timeoutTimer.start(validated);
         m_terminalEngine->requestRender();
@@ -1174,7 +1245,7 @@ void Runner::waitForCondition(const QJSValue& condition, int timeoutMs) {
     }
     m_activeLoop = nullptr;
 
-    if (m_state == State::Failed || matched) return;
+    if (hasActiveFailure() || matched) return;
     failScenario(QStringLiteral("Timed out after %1 ms waiting for condition").arg(validated) +
                  pausedClockHint());
 }
@@ -1209,7 +1280,7 @@ void Runner::expectNoText(const QString& text, int timeoutMs) {
 bool Runner::waitForEngineCondition(const std::function<bool()>& check, int timeoutMs,
                                     const QString& description) {
     if (check()) return true;
-    if (m_state == State::Failed) return false;
+    if (hasActiveFailure()) return false;
 
     QDeadlineTimer deadline(timeoutMs);
     if (m_activeLoop) {
@@ -1225,7 +1296,7 @@ bool Runner::waitForEngineCondition(const std::function<bool()>& check, int time
         if (check()) {
             matched = true;
             loop.quit();
-        } else if (m_state == State::Failed) {
+        } else if (hasActiveFailure()) {
             loop.quit();
         }
     };
@@ -1244,7 +1315,7 @@ bool Runner::waitForEngineCondition(const std::function<bool()>& check, int time
     disconnect(frameConnection);
     disconnect(scrollbackConnection);
 
-    if (m_state == State::Failed) return false;
+    if (hasActiveFailure()) return false;
     if (!matched) {
         failScenario(
             QStringLiteral("Timed out after %1 ms waiting for %2").arg(timeoutMs).arg(description) +
@@ -1274,7 +1345,8 @@ bool Runner::ensureScrollbackSession(const char* operation) {
     return true;
 }
 
-void Runner::armRecording() {
+void Runner::armRecordingCapabilities() {
+    if (m_recordingArmed || !m_terminalEngine || !s_recordingBackend) return;
     // The recorded terminal is an in-memory one with fixed capabilities: 24-bit
     // colour, no synchronized-output bracketing, no kitty protocols. Fixing them
     // also stops the engine from probing, so no query bytes land in the cast.
@@ -1290,6 +1362,11 @@ void Runner::armRecording() {
     m_terminalEngine->setLiveOutput(true);
     connect(m_terminalEngine, &TerminalEngine::frameRendered, this,
             [this](quint64) { drainCast(); });
+    m_recordingArmed = true;
+}
+
+void Runner::armRecording() {
+    armRecordingCapabilities();
 
     const QString requested = QString::fromUtf8(qgetenv("QMLTUI_RUNNER_RECORD")).trimmed();
     QString error;
@@ -1341,11 +1418,13 @@ double Runner::castSeconds() const {
 
 void Runner::startRecording(const QString& relativePath) {
     if (!ensureRunning("startRecording")) return;
-    if (!s_recordingBackend || !m_terminalEngine) {
+    if (!s_recordingBackend || !m_terminalEngine ||
+        (!m_interactive && qgetenv("QMLTUI_RUNNER_RECORD").trimmed().isEmpty())) {
         failScenario(QStringLiteral("app.startRecording() requires QMLTUI_RUNNER_RECORD "
                                     "(a RECORD scenario) so the terminal bytes are captured"));
         return;
     }
+    armRecordingCapabilities();
     QString pathError;
     if (resolveArtifactPath(relativePath, &pathError).isEmpty()) {
         failScenario(pathError);
@@ -1399,6 +1478,12 @@ QJSValue Runner::rootObject() {
 
 void Runner::finish() {
     if (!ensureRunning("finish")) return;
+    if (m_interactive) {
+        failScenario(QStringLiteral(
+            "app.finish() is not supported in interactive sessions; use the close command or "
+            "`qmltui-runner session stop` instead"));
+        return;
+    }
     m_state = State::Finishing;
     if (!m_evaluating) {
         m_state = State::Passed;
@@ -1406,6 +1491,21 @@ void Runner::finish() {
         stopHardWatchdog();
         scheduleExit(0);
     }
+}
+
+void Runner::finalizeInteractiveArtifacts() {
+    if (m_exitScheduled) return;
+    m_exitScheduled = true;
+    if (m_state != State::Failed) m_state = State::Passed;
+    m_watchdog.stop();
+    stopHardWatchdog();
+    if (m_cast && m_cast->isOpen()) {
+        if (m_terminalEngine) m_terminalEngine->setTerminalOutputEnabled(false);
+        closeCast();
+    }
+    QString artifactError;
+    (void)writeFinalFrameArtifact(&artifactError);
+    (void)writeResultArtifact(m_state == State::Failed ? 1 : 0, &artifactError);
 }
 
 void Runner::onPromiseResolved() {
@@ -1425,6 +1525,13 @@ void Runner::onPromiseRejected(const QString& error) {
 
 void Runner::failScenario(const QString& message, bool raiseJsError) {
     if (m_state == State::Failed || m_state == State::Passed) return;
+    if (m_interactive && m_inCommand) {
+        if (m_commandError.isEmpty()) m_commandError = message;
+        completeCurrentOperation(QStringLiteral("failed"));
+        if (m_activeLoop) m_activeLoop->quit();
+        if (raiseJsError && m_evaluating && m_qmlEngine) m_qmlEngine->throwError(message);
+        return;
+    }
     m_state = State::Failed;
     m_watchdog.stop();
     // A script can catch the failure and keep running. Evaluation owns the

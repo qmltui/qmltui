@@ -534,6 +534,8 @@ add_qmltui_runner_scenario(test_runner_scrollback_altscreen qmltui_runner_fixtur
 add_qmltui_runner_scenario(test_runner_inline_locators qmltui_runner_fixture
     "${qmltui_runner_scenarios}/inline_locators.js" 0
     ARGUMENTS --fixture=inline)
+add_qmltui_runner_scenario(test_runner_item_tree qmltui_runner_fixture
+    "${qmltui_runner_scenarios}/item_tree.js" 0)
 
 # Asciicast recording: the session bytes land in a cast under the artifacts,
 # and QMLTUI_RECORD_POST_COMMAND expands <CAST>, <CAST_STEM>, and <NAME>.
@@ -595,5 +597,25 @@ if(TARGET qmltui-runner)
     set_tests_properties(test_runner_launcher PROPERTIES
         LABELS "Runner;Unit"
         TIMEOUT 90
+        ENVIRONMENT "QMLTUI_TEST_LAUNCHER=$<TARGET_FILE:qmltui-runner>;QMLTUI_TEST_FIXTURE=$<TARGET_FILE:qmltui_runner_fixture>;QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}")
+
+    qt_add_executable(test_runner_session test_runner_session.cpp)
+    target_link_libraries(test_runner_session PRIVATE Qt6::Core Qt6::Test)
+    set(_qmltui_has_session_daemon 0)
+    if(TARGET Qt6::Network)
+        set(_qmltui_has_session_daemon 1)
+    endif()
+    target_compile_definitions(test_runner_session PRIVATE
+        QMLTUI_RUNNER_HAS_SESSION_DAEMON=${_qmltui_has_session_daemon}
+        QMLTUI_CMAKE_COMMAND="${CMAKE_COMMAND}"
+        QMLTUI_DEFAULT_TEST_LAUNCHER="$<TARGET_FILE:qmltui-runner>"
+        QMLTUI_DEFAULT_TEST_FIXTURE="$<TARGET_FILE:qmltui_runner_fixture>"
+        QMLTUI_DEFAULT_QML_IMPORT_PATH="${QT_QML_OUTPUT_DIRECTORY}")
+    unset(_qmltui_has_session_daemon)
+    add_dependencies(test_runner_session qmltui-runner qmltui_runner_fixture)
+    add_test(NAME test_runner_session COMMAND test_runner_session)
+    set_tests_properties(test_runner_session PROPERTIES
+        LABELS "Runner;Unit"
+        TIMEOUT 120
         ENVIRONMENT "QMLTUI_TEST_LAUNCHER=$<TARGET_FILE:qmltui-runner>;QMLTUI_TEST_FIXTURE=$<TARGET_FILE:qmltui_runner_fixture>;QML_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY};QML2_IMPORT_PATH=${QT_QML_OUTPUT_DIRECTORY}")
 endif()

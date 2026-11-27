@@ -5,6 +5,7 @@
 #include <QmlTui/Core/Engine/TerminalEngine.h>
 #include <QmlTui/Core/Items/Item.h>
 #include <QmlTui/Core/Items/Terminal.h>
+#include <QmlTui/Core/Items/Text.h>
 #include <QmlTui/Core/Primitives/Color.h>
 #include <QmlTui/Core/Primitives/TextGridBuffer.h>
 
@@ -17,6 +18,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMetaProperty>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <algorithm>
@@ -142,7 +144,7 @@ void Runner::waitForRegex(const QString& pattern, int timeoutMs) {
     m_activeLoop = nullptr;
     disconnect(frameConnection);
 
-    if (m_state == State::Failed) return;
+    if (hasActiveFailure()) return;
     if (!matched) {
         failScenario(QStringLiteral("Timed out after %1 ms waiting for regex pattern \"%2\"")
                          .arg(validated)
@@ -1051,6 +1053,119 @@ QVariantMap Runner::itemRect(const QString& objectName) {
             {QStringLiteral("height"), rect.height()}};
 }
 
+QVariantMap Runner::serializeItemNode(const Item* item, const QRect& viewportRect,
+                                      bool includeHidden) const {
+    QVariantMap node;
+    if (!item) return node;
+
+    QString typeName = QString::fromLatin1(item->metaObject()->className());
+    if (typeName.startsWith(QLatin1String("qmltui::")))
+        typeName = typeName.mid(QStringLiteral("qmltui::").size());
+    static const QRegularExpression qmlSuffix(QStringLiteral("_QML(?:TYPE)?_\\d+$"));
+    typeName.remove(qmlSuffix);
+
+    const QPoint origin = item->absolutePosition();
+    const QRect bounds(origin, QSize(item->width(), item->height()));
+    node.insert(QStringLiteral("type"), typeName);
+    if (!item->objectName().isEmpty())
+        node.insert(QStringLiteral("objectName"), item->objectName());
+    node.insert(QStringLiteral("x"), bounds.x());
+    node.insert(QStringLiteral("y"), bounds.y());
+    node.insert(QStringLiteral("width"), bounds.width());
+    node.insert(QStringLiteral("height"), bounds.height());
+    node.insert(QStringLiteral("visible"), item->visible());
+    node.insert(QStringLiteral("enabled"), item->enabled());
+    node.insert(QStringLiteral("focus"), item->focus());
+    node.insert(QStringLiteral("activeFocus"), item->activeFocus());
+    node.insert(QStringLiteral("inViewport"), !bounds.isEmpty() && bounds.intersects(viewportRect));
+
+    const Qt::FocusPolicy policy = item->focusPolicy();
+    if (policy != Qt::NoFocus) {
+        QString policyName;
+        if (policy == Qt::TabFocus)
+            policyName = QStringLiteral("TabFocus");
+        else if (policy == Qt::ClickFocus)
+            policyName = QStringLiteral("ClickFocus");
+        else if (policy == Qt::StrongFocus)
+            policyName = QStringLiteral("StrongFocus");
+        else if (policy == Qt::WheelFocus)
+            policyName = QStringLiteral("WheelFocus");
+        if (!policyName.isEmpty()) node.insert(QStringLiteral("focusPolicy"), policyName);
+    }
+    if (!item->state().isEmpty()) node.insert(QStringLiteral("state"), item->state());
+    if (item->clip()) node.insert(QStringLiteral("clip"), true);
+
+    const QMetaObject* meta = item->metaObject();
+    const auto summarizeText = [](QString value) {
+        value.replace(QLatin1Char('\r'), QStringLiteral("\\r"));
+        value.replace(QLatin1Char('\n'), QStringLiteral("\\n"));
+        value.replace(QLatin1Char('\t'), QStringLiteral("\\t"));
+        if (value.size() > 120) value = value.left(117) + QStringLiteral("...");
+        return value;
+    };
+    const auto readStringProp = [&](const char* name) {
+        const int idx = meta->indexOfProperty(name);
+        if (idx < 0) return;
+        const QMetaProperty prop = meta->property(idx);
+        if (prop.metaType().id() != QMetaType::QString) return;
+        const QString value = prop.read(item).toString();
+        if (value.isEmpty()) return;
+        node.insert(QString::fromLatin1(name), summarizeText(value));
+    };
+    readStringProp("text");
+    if (!node.contains(QStringLiteral("text"))) {
+        if (const auto* textItem = qobject_cast<const Text*>(item);
+            textItem && !textItem->spans().isEmpty()) {
+            const QString spanText = Span::plainText(textItem->spans());
+            if (!spanText.isEmpty()) node.insert(QStringLiteral("text"), summarizeText(spanText));
+        }
+    }
+    readStringProp("placeholderText");
+    readStringProp("title");
+
+    if (const int idx = meta->indexOfProperty("checked"); idx >= 0) {
+        const QMetaProperty prop = meta->property(idx);
+        if (prop.metaType().id() == QMetaType::Bool)
+            node.insert(QStringLiteral("checked"), prop.read(item).toBool());
+    }
+    if (const int idx = meta->indexOfProperty("currentIndex"); idx >= 0) {
+        const QMetaProperty prop = meta->property(idx);
+        if (prop.metaType().id() == QMetaType::Int)
+            node.insert(QStringLiteral("currentIndex"), prop.read(item).toInt());
+    }
+    if (const int idx = meta->indexOfProperty("value"); idx >= 0) {
+        const QMetaProperty prop = meta->property(idx);
+        const int typeId = prop.metaType().id();
+        if (typeId == QMetaType::Int || typeId == QMetaType::Double || typeId == QMetaType::Bool ||
+            typeId == QMetaType::QString) {
+            node.insert(QStringLiteral("value"), prop.read(item));
+        }
+    }
+
+    QVariantList children;
+    const QList<Item*>& childItems = item->childItems();
+    for (const Item* child : childItems) {
+        if (!child) continue;
+        if (!includeHidden && !child->visible()) continue;
+        children.append(serializeItemNode(child, viewportRect, includeHidden));
+    }
+    if (!children.isEmpty()) node.insert(QStringLiteral("children"), children);
+    return node;
+}
+
+QVariantMap Runner::itemTree(bool includeHidden) {
+    if (!ensureRunning("itemTree")) return {};
+    if (!m_terminal || !m_terminalEngine) {
+        failScenario(QStringLiteral("Target Terminal is no longer available"));
+        return {};
+    }
+    const std::optional<TextGridBuffer> frame = m_terminalEngine->currentFrame();
+    const QRect viewportRect =
+        frame ? QRect(0, 0, frame->width(), frame->height())
+              : QRect(0, 0, m_terminalEngine->terminalWidth(), m_terminalEngine->terminalHeight());
+    return serializeItemNode(m_terminal, viewportRect, includeHidden);
+}
+
 void Runner::waitForItem(const QString& objectName, int timeoutMs) {
     if (!ensureRunning("waitForItem")) return;
     const int validated = validateTimeout(timeoutMs);
@@ -1094,7 +1209,7 @@ void Runner::waitForItem(const QString& objectName, int timeoutMs) {
     m_activeLoop = nullptr;
     disconnect(frameConnection);
 
-    if (m_state == State::Failed) return;
+    if (hasActiveFailure()) return;
     if (!matched) {
         failScenario(QStringLiteral("Timed out after %1 ms waiting for item \"%2\" (%3)")
                          .arg(validated)
@@ -1109,7 +1224,7 @@ void Runner::expectRegionSnapshot(int x, int y, int width, int height,
         !waitForNextFrame(resolveExpectTimeout(timeoutMs)))
         return;
     const QString actualText = regionText(x, y, width, height);
-    if (m_state == State::Failed) return;
+    if (hasActiveFailure()) return;
     compareSnapshot(snapshotRelativePath, actualText);
 }
 

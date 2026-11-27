@@ -144,6 +144,8 @@ private slots:
         QTest::newRow("missing-script") << QStringList{"--script", "/does-not-exist/test.js"};
         QTest::newRow("bad-sizes") << QStringList{"--sizes", "80x0"};
         QTest::newRow("live-ruler") << QStringList{"--eval", "x", "--live", "--ruler"};
+        QTest::newRow("interactive-live") << QStringList{"--interactive", "--live"};
+        QTest::newRow("interactive-sweep") << QStringList{"--interactive", "--sweep"};
         QTest::newRow("script-sweep")
             << QStringList{"--script", QStringLiteral(QMLTUI_SCENARIOS) + "/success.js", "--sweep"};
     }

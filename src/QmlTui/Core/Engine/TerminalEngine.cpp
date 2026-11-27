@@ -36,6 +36,7 @@ static bool environmentRequestsTestSession() {
     return !qgetenv("QMLTUI_RUNNER_SCRIPT").trimmed().isEmpty() ||
            !qgetenv("QMLTUI_RUNNER_EVAL").trimmed().isEmpty() ||
            !qgetenv("QMLTUI_RUNNER_CAPTURE_AFTER_MS").trimmed().isEmpty() ||
+           environmentFlagEnabled("QMLTUI_RUNNER_INTERACTIVE") ||
            environmentFlagEnabled("QMLTUI_RUNNER_EMBEDDED_SCENARIO");
 }
 

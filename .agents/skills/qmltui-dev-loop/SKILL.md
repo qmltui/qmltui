@@ -21,7 +21,7 @@ QmlTui uses two complementary test layers (do not describe all repository tests 
 - **`qmltui::Runner` (`-L Runner`, `-L Demo`)**: Headless whole-application keyboard/mouse/paste routing, `AltScreen` and `Terminal.Inline` `Scrollback`, virtual-clock animations, text/styled snapshots, `frameStats()` telemetry, and `.cast` demo recordings on `QCoreApplication` (no TTY or display server required).
 
 For detailed references inside this skill, read on demand:
-- [runner-facade.md](./references/runner-facade.md) — Complete `app.*` / `Region` signatures, CLI flags, env vars, exit codes, and `result.json` schema.
+- [runner-facade.md](./references/runner-facade.md) — Complete `app.*` / `Region` signatures, CLI flags, `qmltui-runner session` verbs, env vars, exit codes, and `result.json` schema.
 - [visual-and-perf-audit.md](./references/visual-and-perf-audit.md) — Cell-padding traps, multi-viewport reflow, focus/monochrome checks, `Inline` scrollback, `frameStats()`, and idle budgets.
 - [cmake-and-subsystems.md](./references/cmake-and-subsystems.md) — Consumer vs. in-tree CMake, `qmltui_add_scenario`, `.cast`/`agg` demo recording, `EMBEDDED` and C++ `Terminal` hooks, `Image`, `PtyView`, Private Qt, and WebAssembly.
 
@@ -63,11 +63,25 @@ Use `./build/tools/qmltui-runner/qmltui-runner` for multi-viewport sweeps, 0-bas
   --clock virtual --columns 80 --rows 24 --ruler \
   --eval 'app.clickText("Start"); app.advanceTime(300); app.expectText("RUNNING");' \
   -- ./build/path/to/testing-linked-app
+
+# Live stateful interactive session (inspect -> send event -> inspect -> export to CTest):
+./build/tools/qmltui-runner/qmltui-runner session start --clock virtual --columns 80 --rows 24 \
+  -- ./build/path/to/testing-linked-app
+./build/tools/qmltui-runner/qmltui-runner session tree
+./build/tools/qmltui-runner/qmltui-runner session click-text "Start"
+./build/tools/qmltui-runner/qmltui-runner session advance 300 --styled
+./build/tools/qmltui-runner/qmltui-runner session export -o tests/test_flow.js
+./build/tools/qmltui-runner/qmltui-runner session stop
 ```
+
+Prefer `qmltui-runner session` (shorthand `qmltui-runner s`) when exploring an unfamiliar screen, debugging focus (`session tree`), or driving stateful / real-clock flows without restarting from frame 0 on every step:
+- **Per-step feedback**: Mutating verbs auto-return the updated 0-based ruler frame (`--diff` for changed rows only, falling back to the full frame on failure; `--plain` / `--no-ruler` for plain frames), `FrameStats` (with `dirtyDuringPaint` warnings), and new `stderr` logs, while keeping the app alive across recoverable errors.
+- **Targeting, batching, & export**: Pair `session tree` with `session click-item <objectName>`, pipe multi-step bursts in one shell call via `session batch [id]`, exclude exploratory steps with `--no-record`, and export successful steps to a runnable `.js` scenario with `session export` (or record `.cast` files with `--record` / `session record start` / `session marker`).
+- **Lifecycle & live viewing**: Idle headless sessions auto-reap after 5 minutes (`--idle-timeout-ms`, or `0` to disable). Use `session connect [id] --no-frame` alongside `session start --live` or `session watch [--session <id>]`, and `--interactive` for direct stdio NDJSON without a daemon.
 
 Useful probe flags: `--sizes 60x18,80x24,120x36` (or `--sweep`), `--idle-ms <ms>`, `--print` (plain frames without rulers), `--ruler` (0-based `(x, y)` rulers), `--styled` (`--- styles`), `--scrollback` (`Terminal.Inline` history), and `--clock real` (for C++ `QTimer`, worker threads, or `PtyView`). Set `NO_COLOR=1` or `QMLTUI_COLOR_DEPTH=16` in the environment on non-recording probes or `--live` runs when checking monochrome/16-color fallback (`--record` pins 24-bit color for deterministic casts).
 
-Runs are quiet/headless by default. Pass `--live` (`QMLTUI_RUNNER_LIVE=1`) only for a human watching a real terminal; when debugging live or interactive `AltScreen` sessions, set `QMLTUI_LOG_FILE=/tmp/qmltui.log` so `console.log()` and QML warnings stream immediately instead of buffering until exit.
+Runs are quiet/headless by default. Pass `--live` (`QMLTUI_RUNNER_LIVE=1`) only for a human watching a real terminal; when debugging live or raw-terminal `AltScreen` runs, set `QMLTUI_LOG_FILE=/tmp/qmltui.log` so `console.log()` and QML warnings stream immediately instead of buffering until exit.
 
 ## 3. Audit Visual Layout, Styles, and Paint Hygiene
 
@@ -80,7 +94,7 @@ Static tools cannot see character-cell overflow. On every visible UI change, ver
 
 ## 4. Write Reliable Scenarios & Snapshots
 
-Define `function main(app) { ... }` in `.js` or `export function main(app) { ... }` in `.mjs` (ES modules may `import` relative helpers). Precede `main` with `/** @param {Runner} app */`—`qmltui_scenario_editor_support()` (and the QmlTui repo's `jsconfig.json` + `src/QmlTui/Runner/qmltui-runner.d.ts`) provides full `app.*` completion (plain JS only; TypeScript syntax is invalid). See [runner-facade.md](./references/runner-facade.md) for all 60 `app.*` methods.
+Define `function main(app) { ... }` in `.js` or `export function main(app) { ... }` in `.mjs` (ES modules may `import` relative helpers). Precede `main` with `/** @param {Runner} app */`—`qmltui_scenario_editor_support()` (and the QmlTui repo's `jsconfig.json` + `src/QmlTui/Runner/qmltui-runner.d.ts`) provides full `app.*` completion (plain JS only; TypeScript syntax is invalid). See [runner-facade.md](./references/runner-facade.md) for all 61 `app.*` methods.
 
 - **Choose input & locators by intent**: `press()`, `typeText()`, `paste()`, `clickText()`, `hoverText()`, `click()`, `drag()`, `scroll()`, `resize()`. Prefer `app.item("objectName")` or `app.region(x, y, w, h)` over brittle full-frame coordinates or whole-screen substring checks.
 - **Virtual clock first, never blind wall-clock `sleep()`**: Observe async state with `waitForText()`, `waitForRegex()`, `waitForItem()`, or `waitForCondition()`. For QML `Timer`s, animations, `Behavior`, cursor blink, `AnimatedSprite`, and `ToolTip` delays, register `CLOCK VIRTUAL` and step instantly with `advanceTime(ms)` (`sleep(ms)` delegates to `advanceTime()` on the virtual clock; note `QtQml.Timer` consumes one `<= 16 ms` `QUnifiedTimer` start step from idle, so step `+20 ms` across a `Timer` deadline). Any `CLOCK REAL` `sleep()` must name its wall-time source (C++ `QTimer`, worker thread, `PtyView`) in a comment.

@@ -1,3 +1,8 @@
+#include "ChildSession.h"
+#include "Formatters.h"
+#include "SessionCli.h"
+#include "SessionDaemon.h"
+
 #include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDir>
@@ -141,61 +146,16 @@ QString buildSynthesizedEval(const QList<QSize>& sizes, int settleMs, const QStr
     return lines.join('\n');
 }
 
-QString formatRulerFrame(const QString& text, int cols, int rows, bool showRuler) {
-    QString trimmed = text;
-    if (trimmed.endsWith('\n')) trimmed.chop(1);
-    QStringList rawLines = trimmed.isEmpty() ? QStringList{} : trimmed.split('\n');
-    if (!showRuler) return rawLines.join('\n');
-
-    const int displayRows = (std::max)(rows, static_cast<int>(rawLines.size()));
-    while (rawLines.size() < displayRows)
-        rawLines.append(QString());
-
-    const int rowWidth =
-        (std::max)(2, static_cast<int>(QString::number((std::max)(0, displayRows - 1)).size()));
-    const QString gutterPad(rowWidth + 2, ' ');
-    QString tens;
-    QString ones;
-    tens.reserve(cols);
-    ones.reserve(cols);
-    for (int x = 0; x < cols; ++x) {
-        tens.append(x % 10 == 0 ? QChar('0' + ((x / 10) % 10)) : QChar(' '));
-        ones.append(QChar('0' + (x % 10)));
-    }
-
-    QStringList out;
-    out << (gutterPad + tens);
-    out << (gutterPad + ones);
-    out << (QString(rowWidth, ' ') + QStringLiteral(" ┌") + QString(cols, QChar(0x2500)));
-    for (int y = 0; y < displayRows; ++y) {
-        out << QStringLiteral("%1 │%2").arg(y, rowWidth, 10, QChar('0')).arg(rawLines.at(y));
-    }
-    return out.join('\n');
-}
-
-QString extractStylesSection(const QString& styledText) {
-    const QString marker = QStringLiteral("\n--- styles\n");
-    const int idx = styledText.indexOf(marker);
-    if (idx >= 0) return styledText.mid(idx + marker.size()).trimmed();
-    const QString head = QStringLiteral("--- styles\n");
-    if (styledText.startsWith(head)) return styledText.mid(head.size()).trimmed();
-    return {};
-}
+using qmltui::runner_cli::extractStylesSection;
+using qmltui::runner_cli::formatFrameStatsLine;
+using qmltui::runner_cli::formatRulerFrame;
 
 void printProbeOutput(QTextStream& out, const QString& artifacts, const QJsonObject& result,
                       const QList<QSize>& sizes, int defaultCols, int defaultRows, bool showRuler,
                       bool showStyled, bool showScrollback) {
-    const QJsonObject stats = result.value(QStringLiteral("frameStats")).toObject();
-    if (!stats.isEmpty()) {
-        out << "FrameStats: frames=" << stats.value(QStringLiteral("frames")).toInt()
-            << " paintAvg=" << stats.value(QStringLiteral("paintMicrosAvg")).toInt() << "us"
-            << " paintMax=" << stats.value(QStringLiteral("paintMicrosMax")).toInt() << "us"
-            << " diffBytes=" << stats.value(QStringLiteral("diffBytes")).toInt()
-            << " bytesTotal=" << stats.value(QStringLiteral("bytesTotal")).toInteger()
-            << " dirtyDuringPaint=" << stats.value(QStringLiteral("dirtyDuringPaintTotal")).toInt()
-            << " skippedBackpressure="
-            << stats.value(QStringLiteral("skippedForBackpressure")).toInt() << '\n';
-    }
+    const QString statsLine =
+        formatFrameStatsLine(result.value(QStringLiteral("frameStats")).toObject());
+    if (!statsLine.isEmpty()) out << statsLine << '\n';
     const QString message = result.value(QStringLiteral("message")).toString();
     if (!message.isEmpty()) out << "Message: " << message << '\n';
 
@@ -295,8 +255,21 @@ int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("qmltui-runner"));
     app.setApplicationVersion(QStringLiteral(QMLTUI_VERSION));
+
+    const QStringList rawArgs = app.arguments();
+    if (rawArgs.size() >= 2 &&
+        (rawArgs.at(1) == QLatin1String("session") || rawArgs.at(1) == QLatin1String("s"))) {
+        return qmltui::runner_cli::runSessionCli(rawArgs.mid(2));
+    }
+#if QMLTUI_RUNNER_HAS_SESSION_DAEMON
+    if (rawArgs.size() >= 3 && rawArgs.at(1) == QLatin1String("__session-daemon"))
+        return qmltui::runner_cli::runSessionDaemon(rawArgs.at(2));
+#endif
+
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Launch a Runner-linked QmlTui application."));
+    parser.setApplicationDescription(
+        QStringLiteral("Launch or interactively drive a Runner-linked QmlTui application.\n"
+                       "Use `qmltui-runner session --help` for stateful interactive sessions."));
     parser.setOptionsAfterPositionalArgumentsMode(QCommandLineParser::ParseAsPositionalArguments);
     parser.addHelpOption();
     parser.addVersionOption();
@@ -307,6 +280,9 @@ int main(int argc, char** argv) {
                              "path"),
           QCommandLineOption("eval", "Inline Runner JavaScript.", "code"),
           QCommandLineOption("capture-after-ms", "Capture after this delay (0..30000).", "ms"),
+          QCommandLineOption(
+              "interactive",
+              "Run an interactive NDJSON command loop over stdin/stdout without a session daemon."),
           QCommandLineOption(
               "sizes", "Comma-separated <cols>x<rows> viewport sweep (e.g. 60x18,80x24,120x36).",
               "list"),
@@ -355,14 +331,17 @@ int main(int argc, char** argv) {
 
     const bool hasProbeModifiers = parser.isSet("sizes") || parser.isSet("sweep") ||
                                    parser.isSet("idle-ms") || parser.isSet("scrollback");
+    const bool interactive = parser.isSet("interactive");
     const int baseModes = int(parser.isSet("script")) + int(parser.isSet("eval")) +
-                          int(parser.isSet("capture-after-ms"));
+                          int(parser.isSet("capture-after-ms")) + int(interactive);
     if (baseModes > 1 || (baseModes == 0 && !hasProbeModifiers))
-        return error("Specify one of --script, --eval, --capture-after-ms, or probe options "
-                     "(--sizes/--sweep/--idle-ms/--scrollback).");
-    if (parser.isSet("script") && hasProbeModifiers)
-        return error(
-            "--sizes, --sweep, --idle-ms, and --scrollback cannot be combined with --script.");
+        return error("Specify one of --script, --eval, --capture-after-ms, --interactive, or "
+                     "probe options (--sizes/--sweep/--idle-ms/--scrollback).");
+    if ((parser.isSet("script") || interactive) && hasProbeModifiers)
+        return error("--sizes, --sweep, --idle-ms, and --scrollback cannot be combined with "
+                     "--script or --interactive.");
+    if (interactive && (parser.isSet("live") || parser.isSet("print") || parser.isSet("ruler")))
+        return error("--live, --print, and --ruler cannot be combined with --interactive.");
     if (parser.isSet("live") && (parser.isSet("print") || parser.isSet("ruler")))
         return error("--print and --ruler cannot be combined with --live.");
 
@@ -450,6 +429,21 @@ int main(int argc, char** argv) {
         if (!directory.isValid()) return error("Cannot create artifact directory.");
         directory.setAutoRemove(false);
         artifacts = directory.path();
+    }
+    if (interactive) {
+        qmltui::runner_cli::ChildSession::LaunchConfig cfg;
+        cfg.program = positional.first();
+        cfg.arguments = positional.mid(1);
+        cfg.workingDirectory = QDir::currentPath();
+        cfg.clock = parser.value("clock");
+        cfg.columns = numbers["columns"];
+        cfg.rows = numbers["rows"];
+        cfg.operationTimeoutMs = numbers["operation-timeout-ms"];
+        cfg.startupTimeoutMs = numbers["startup-timeout-ms"];
+        cfg.artifactDir = artifacts;
+        cfg.recordPath = parser.isSet("record") ? recording : QString();
+        cfg.environment = QProcessEnvironment::systemEnvironment();
+        return qmltui::runner_cli::runInteractiveStdioMode(cfg);
     }
     QTextStream(stderr) << "qmltui-runner: artifacts: " << artifacts << '\n';
     QTemporaryDir control;

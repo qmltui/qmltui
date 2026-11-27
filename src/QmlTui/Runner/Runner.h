@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <functional>
+#include <QByteArray>
 #include <QElapsedTimer>
 #include <QJSValue>
 #include <QPointer>
@@ -20,13 +21,16 @@
 #include <optional>
 
 class QEventLoop;
+class QJsonObject;
 class QQmlEngine;
 
 namespace qmltui {
 
 class CastRecorder;
+class Item;
 class RunnerBridge;
 class RunnerHardWatchdog;
+class RunnerInteractiveReader;
 class Terminal;
 class TerminalEngine;
 class TextGridBuffer;
@@ -209,6 +213,11 @@ public:
     // hidden, or fully off-screen item fails the scenario.
     Q_INVOKABLE QVariantMap itemRect(const QString& objectName);
 
+    // Returns a recursive snapshot of the QML Item tree rooted at Terminal,
+    // including type name, objectName, absolute cell geometry, viewport
+    // visibility, enabled/focus/activeFocus flags, and short text properties.
+    Q_INVOKABLE QVariantMap itemTree(bool includeHidden = false);
+
     Q_INVOKABLE void waitForItem(const QString& objectName, int timeoutMs = 2000);
     Q_INVOKABLE void expectRegionSnapshot(int x, int y, int width, int height,
                                           const QString& snapshotRelativePath, int timeoutMs = -1);
@@ -266,6 +275,7 @@ private:
     // Promise resolution and rejection in async scenarios, and the structured
     // operation trace.
     friend class RunnerBridge;
+    friend class RunnerInteractiveReader;
     void onPromiseResolved();
     void onPromiseRejected(const QString& error);
     void beginOperation(const QString& name, const QString& stack);
@@ -309,6 +319,7 @@ private:
                                 const QString& description);
     bool ensureScrollbackSession(const char* operation);
     void armRecording();
+    void armRecordingCapabilities();
     bool openCast(const QString& requestedPath, QString* error);
     void closeCast();
     void drainCast();
@@ -319,7 +330,10 @@ private:
     bool parseMouseArguments(const QString& button, const QStringList& modifiers, int* parsedButton,
                              Qt::KeyboardModifiers* parsedModifiers);
     bool locateItem(const QString& objectName, QRect* outRect, QString* error) const;
+    QVariantMap serializeItemNode(const Item* item, const QRect& viewportRect,
+                                  bool includeHidden) const;
     bool ensureRunning(const char* operation);
+    bool hasActiveFailure() const;
     QString currentFrameText(QString* error = nullptr) const;
     QString currentStyledFrameText(QString* error = nullptr) const;
     static QString normalizedText(const TextGridBuffer& frame);
@@ -339,8 +353,18 @@ private:
     void failScenario(const QString& message, bool raiseJsError = true);
     void scheduleExit(int exitCode);
     QString formatJsError(const QJSValue& error) const;
-    void startHardWatchdog();
+    void startHardWatchdog(int timeoutMs = -1);
     bool stopHardWatchdog();
+    void startInteractiveSession();
+    void handleInteractiveLine(const QByteArray& line);
+    void handleInteractiveEof();
+    void drainInteractiveQueue();
+    void processInteractiveLine(const QByteArray& line);
+    void finalizeInteractiveArtifacts();
+    void emitInteractiveMessage(const QJsonObject& message) const;
+    void emitLiveFrameEvent();
+    QByteArray currentAnsiFrameBytes() const;
+    QByteArray currentScrollbackAnsiBytes() const;
 
     QPointer<QQmlEngine> m_qmlEngine;
     QPointer<Terminal> m_terminal;
@@ -360,6 +384,7 @@ private:
     std::unique_ptr<CastRecorder> m_cast;
     qint64 m_castStartMs = 0;
     QStringList m_castPaths;
+    bool m_recordingArmed = false;
     bool m_updateSnapshots = false;
     std::optional<bool> m_updateSnapshotsOverride;
     QVector<OperationRecord> m_operations;
@@ -372,6 +397,18 @@ private:
     QObject* m_bridge = nullptr;
     bool m_evaluating = false;
     bool m_exitScheduled = false;
+    bool m_interactive = false;
+    bool m_liveStream = false;
+    bool m_inCommand = false;
+    bool m_drainingInteractiveQueue = false;
+    bool m_interactiveEofPending = false;
+    bool m_appQuitRequested = false;
+    bool m_interactiveClosing = false;
+    QString m_commandError;
+    QByteArray m_ipcPrefix;
+    QString m_lastSentFrame;
+    QList<QByteArray> m_pendingInteractiveLines;
+    std::unique_ptr<RunnerInteractiveReader> m_interactiveReader;
 
     // m_watchdog is a QTimer, so it cannot fire while a scenario blocks inside
     // synchronous JavaScript. This helper thread interrupts the JS engine

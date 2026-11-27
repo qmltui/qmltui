@@ -238,11 +238,20 @@ jobs:
           rm -rf "dist/${pkg}/Frameworks/QtCore.framework/Headers" \
                  "dist/${pkg}/Frameworks/QtCore.framework/Versions/A/Headers" \
                  "dist/${pkg}/Frameworks/QtCore.framework/Resources/QtCore.prl"
+          if otool -L "dist/${pkg}/qmltui-runner" | grep -q "QtNetwork.framework"; then
+            ditto "${qt_dir}/lib/QtNetwork.framework" "dist/${pkg}/Frameworks/QtNetwork.framework"
+            rm -rf "dist/${pkg}/Frameworks/QtNetwork.framework/Headers" \
+                   "dist/${pkg}/Frameworks/QtNetwork.framework/Versions/A/Headers" \
+                   "dist/${pkg}/Frameworks/QtNetwork.framework/Resources/QtNetwork.prl"
+          fi
           for rpath in $(otool -l "dist/${pkg}/qmltui-runner" | awk '/cmd LC_RPATH/{f=1} f && /path /{print $2; f=0}'); do
             install_name_tool -delete_rpath "$rpath" "dist/${pkg}/qmltui-runner"
           done
           install_name_tool -add_rpath "@executable_path/Frameworks" "dist/${pkg}/qmltui-runner"
           codesign --force --sign - --deep "dist/${pkg}/Frameworks/QtCore.framework"
+          if [ -d "dist/${pkg}/Frameworks/QtNetwork.framework" ]; then
+            codesign --force --sign - --deep "dist/${pkg}/Frameworks/QtNetwork.framework"
+          fi
           codesign --force --sign - "dist/${pkg}/qmltui-runner"
           tar -C dist -czf "dist/${pkg}.tar.gz" "${pkg}"
           smoke=$(mktemp -d)

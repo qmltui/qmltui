@@ -99,6 +99,32 @@ interface QmlTuiRect {
     height: number;
 }
 
+/** One node in the QML Item hierarchy reported by itemTree(). */
+interface QmlTuiItemNode extends QmlTuiRect {
+    type: string;
+    objectName?: string;
+    visible: boolean;
+    enabled: boolean;
+    focus: boolean;
+    activeFocus: boolean;
+    inViewport: boolean;
+    focusPolicy?: string;
+    state?: string;
+    clip?: boolean;
+    text?: string;
+    placeholderText?: string;
+    title?: string;
+    checked?: boolean;
+    currentIndex?: number;
+    value?: string | number | boolean;
+    children?: QmlTuiItemNode[];
+}
+
+interface QmlTuiItemTreeOptions {
+    /** Include hidden subtrees (visible === false). Defaults to false. */
+    includeHidden?: boolean;
+}
+
 interface QmlTuiSize {
     columns: number;
     rows: number;
@@ -309,6 +335,9 @@ interface Runner {
     findText(text: string): QmlTuiTextMatch[];
     /** Rectangle in cells of the first visible item with the objectName. */
     itemRect(objectName: string): QmlTuiRect;
+    /** Recursive QML Item tree rooted at Terminal, with bounds, focus, and text summaries. */
+    itemTree(includeHidden?: boolean): QmlTuiItemNode;
+    itemTree(options?: QmlTuiItemTreeOptions): QmlTuiItemNode;
     /** {columns, rows} of the current test viewport. */
     size(): QmlTuiSize;
     /** A locator scoped to the rectangle. */

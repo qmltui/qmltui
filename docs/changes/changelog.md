@@ -10,17 +10,19 @@ Linux, macOS, Windows Terminal, and WebAssembly (`xterm.js`).
 - **`Text`, `Span`, and `HighlightRange` refinements**: Removed ad-hoc inline Markdown (`**...**`, `` `...` ``, `[label](url)`) from `Text.AutoText`/`Text.RichText` so literal globs and logs are not mangled (full CommonMark/GFM rendering now lives in the [`QmlTui.Markdown`](https://github.com/qmltui/markdown) addon), and added `strikethrough` (SGR 9/29, `<s>`/`<del>`) plus optional OSC 8 `link` support to `Span` and `HighlightRange`.
 - **`Terminal.Inline` dynamic viewport resizing**: `InlineRenderer` and `Runner::resize(columns, rows)` now reflow `Terminal.Inline` sessions cleanly, keeping frame height content-sized up to `rows - 1`.
 - **WebAssembly shell (`qmltui_wasm_app()`)**: Generates a standalone `xterm.js` terminal host page (`<target>.html`) with `@xterm/addon-unicode-graphemes` (`15-graphemes`), OSC 4/10/11 color query replies, and OSC 52 clipboard bridging.
+- **`QmlTui.PtyView` extracted into an official add-on**: Moved the Unix-only `QmlTui.PtyView` module and `libvterm` integration out of the core repository into the standalone BSD-3-Clause [`qmltui/ptyview`](https://github.com/qmltui/ptyview) repository alongside `qmltui/tvision`, `qmltui/markdown`, and `qmltui/charts`.
 - **Python (`PySide6`) integration**: Added [`examples/recipes/pyside6/`](../../examples/recipes/pyside6/) and the [Python (PySide6) Guide](../guides/python-pyside6.md) demonstrating hosting QmlTui QML modules from Python `QAbstractTableModel` and `QSortFilterProxyModel` backends.
 
 ## Migrating from 0.5 to 0.6
 
 | 0.5 API / Target | 0.6 Replacement |
 | :--- | :--- |
-| `qmltui::core`, `qmltui::controls`, `qmltui::image`, `qmltui::ptyview`, `qmltui::runner` | `QmlTui::Core`, `QmlTui::Controls`, `QmlTui::Image`, `QmlTui::PtyView`, `QmlTui::Runner` (plus `QmlTui::qmltui-runner`) |
+| `qmltui::core`, `qmltui::controls`, `qmltui::image`, `qmltui::runner` | `QmlTui::Core`, `QmlTui::Controls`, `QmlTui::Image`, `QmlTui::Runner` (plus `QmlTui::qmltui-runner`) |
+| `qmltui::ptyview` (`QMLTUI_ENABLE_PTYVIEW=ON`) | Consume `QmlTui::PtyView` from the official [`qmltui/ptyview`](https://github.com/qmltui/ptyview) add-on via `FetchContent` |
 | `qmltui::controls::ToolTip` (C++ namespace) | `qmltui::ToolTip` |
 | Direct member layout on `Item`, `Terminal`, `Popup`, `FocusScope` | Encapsulated behind `d_ptr` (`ItemPrivate`, etc.) — recompile all C++ subclasses against 0.6 headers |
-| Versioned QML imports (`import QmlTui 1.0`) | Unversioned QML imports (`import QmlTui`, `import QmlTui.Controls`, `import QmlTui.Image`, `import QmlTui.PtyView`) |
-| `find_package(QmlTui 0.5 REQUIRED)` | `find_package(QmlTui 0.6 REQUIRED)` (per-module `COMPONENTS` export sets isolate optional `Image` / `PtyView` dependencies) |
+| Versioned QML imports (`import QmlTui 1.0`) | Unversioned QML imports (`import QmlTui`, `import QmlTui.Controls`, `import QmlTui.Image`) |
+| `find_package(QmlTui 0.5 REQUIRED)` | `find_package(QmlTui 0.6 REQUIRED)` (per-module `COMPONENTS` export sets isolate optional `Image` dependencies) |
 
 ## Headless Testing (`Runner`) and Agentic Tooling
 

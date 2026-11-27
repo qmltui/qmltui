@@ -49,7 +49,7 @@ the shortcut inactive.
 
 ### Routing and Suppression Rules
 
-- **Text input and paste**: Unmodified printable shortcuts (such as `"Q"` or `"/"`) are suppressed while an editable [TextInput](textinput.md), [TextArea](textarea.md), or running [PtyView](ptyview.md) holds focus, and all shortcuts are suppressed during bracketed paste.
+- **Text input and paste**: Unmodified printable shortcuts (such as `"Q"` or `"/"`) are suppressed while an editable [TextInput](textinput.md), [TextArea](textarea.md), or custom item with `consumesPrintableKeys()` (such as [`PtyView`](https://github.com/qmltui/ptyview)) holds focus, and all shortcuts are suppressed during bracketed paste.
 - **Modal popups**: While a modal [Popup](popup.md) is open, only shortcuts belonging to descendants of that popup can activate.
 - **Consumption**: When a matching enabled shortcut fires, `activated()` is emitted and the key event is consumed before reaching focused items.
 

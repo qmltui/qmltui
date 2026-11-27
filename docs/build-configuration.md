@@ -11,7 +11,6 @@ This reference covers QmlTui module targets, consuming an installed package with
 | `import QmlTui` | `QmlTui::Core` | Always built (`QMLTUI_ENABLE_PRIVATE_QT=ON` auto-enables `Behavior` when `Qt6::QmlPrivate` is present) | `Qt6::Core`, `Qt6::Qml`, `utf8proc` | [Architecture](guides/architecture.md), [Animation & States](guides/animation-and-states.md) |
 | `import QmlTui.Controls` | `QmlTui::Controls` | Always built | `QmlTui::Core` | [QML Types](qml-types/index.md) |
 | `import QmlTui.Image` | `QmlTui::Image` | `-DQMLTUI_ENABLE_IMAGE=ON` (default `OFF`) | `QmlTui::Core`, `Qt6::Gui`, `Qt6::Network` | [Image](qml-types/image.md), [AnimatedSprite](qml-types/animatedsprite.md) |
-| `import QmlTui.PtyView` | `QmlTui::PtyView` | `-DQMLTUI_ENABLE_PTYVIEW=ON` (default `OFF`, Linux/macOS) | `QmlTui::Core`, `libvterm` | [Embedded PTY Shells](guides/pty-view.md), [PtyView](qml-types/ptyview.md) |
 | `Runner` & `qmltui-runner` | `QmlTui::Runner` | `-DQMLTUI_ENABLE_RUNNER=ON` (default `ON` top-level or when `BUILD_TESTING=ON`) | `QmlTui::Core` | [Testing with Runner](guides/testing.md), [Runner](cpp-classes/runner.md) |
 | `qmltui_wasm_app(<target>)` | *(CMake helper)* | Automatic under Emscripten (`EMSCRIPTEN`) | Qt for WebAssembly `wasm_singlethread` | [Qt for WebAssembly](guides/webassembly.md) |
 
@@ -21,11 +20,11 @@ QmlTui requires **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** (tested a
 
 - **Public Qt builds (`-DQMLTUI_ENABLE_PRIVATE_QT=OFF`)**: Link strictly against public `Qt6::Core` and `Qt6::Qml` headers (omitting `Behavior` and direct-assignment `PropertyChanges`). Shared binaries preserve Qt 6 forward binary compatibility across minor versions (`6.8` through `6.12`).
 - **Private Qt builds (`-DQMLTUI_ENABLE_PRIVATE_QT=ON`, default when `Qt6::QmlPrivate` is installed)**: Link `Qt6::QmlPrivate` inside `QmlPrivateBridge` to enable `Behavior` and binding-aware `PropertyChanges`. Because Qt does not guarantee binary compatibility for `*Private` modules across minor releases, shared `QmlTuiCore` binaries built with `QMLTUI_ENABLE_PRIVATE_QT=ON` must run against the same `Qt 6.x` minor series they were compiled against. Rebuild QmlTui when upgrading Qt minor versions, or pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` when distributing shared binaries across multiple system Qt minor versions.
-- **Pre-1.0 versioning (`0.x`) and shared library `SOVERSION`**: During the `0.x` series, `QmlTuiConfigVersion.cmake` enforces `SameMinorVersion` compatibility (`0.6.x` patch releases preserve QML and C++ source compatibility; breaking API refinements or C++ layout changes increment the minor version until `1.0.0`). Shared libraries (`QmlTuiCore`, `QmlTuiControls`, `QmlTuiImage`, `QmlTuiPtyView`) set `VERSION ${PROJECT_VERSION}` and `SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}` (`0.6` for `0.6.x`), switching to `SOVERSION ${PROJECT_VERSION_MAJOR}` at `1.0.0`.
+- **Pre-1.0 versioning (`0.x`) and shared library `SOVERSION`**: During the `0.x` series, `QmlTuiConfigVersion.cmake` enforces `SameMinorVersion` compatibility (`0.6.x` patch releases preserve QML and C++ source compatibility; breaking API refinements or C++ layout changes increment the minor version until `1.0.0`). Shared libraries (`QmlTuiCore`, `QmlTuiControls`, `QmlTuiImage`) set `VERSION ${PROJECT_VERSION}` and `SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}` (`0.6` for `0.6.x`), switching to `SOVERSION ${PROJECT_VERSION_MAJOR}` at `1.0.0`.
 
 ## Using an Installed Build (`find_package(QmlTui)`)
 
-Build and install QmlTui from a source checkout (pass `-DCMAKE_PREFIX_PATH=/path/to/Qt/6.x/<kit>` when Qt 6.8+ is not on `PATH`, and add `-DQMLTUI_ENABLE_IMAGE=ON`, `-DQMLTUI_ENABLE_PTYVIEW=ON`, or `-DQMLTUI_ENABLE_RUNNER=OFF` as needed):
+Build and install QmlTui from a source checkout (pass `-DCMAKE_PREFIX_PATH=/path/to/Qt/6.x/<kit>` when Qt 6.8+ is not on `PATH`, and add `-DQMLTUI_ENABLE_IMAGE=ON` or `-DQMLTUI_ENABLE_RUNNER=OFF` as needed):
 
 ```sh
 cmake -S . -B build -G Ninja \
@@ -80,7 +79,7 @@ QML_IMPORT_PATH=/your/prefix/lib/qml ./build/hello_qmltui
 
 ### In-Tree vs. Installed Builds
 
-- **`DEPENDENCIES TARGET` ordering**: In `FetchContent` and `add_subdirectory` builds, pass `DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls` (plus `TARGET QmlTui::Image` or `TARGET QmlTui::PtyView` when used) to `qt_add_qml_module()` so QmlTui's `.qmltypes` and `qmldir` build before `qmlcachegen` and `qmllint`. Omit `DEPENDENCIES TARGET` in `find_package(QmlTui)` builds because Qt rejects `IMPORTED` targets there; `find_package(QmlTui)` appends `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically. To support both `FetchContent` and `find_package(QmlTui)` in a single `CMakeLists.txt` (for example with `FIND_PACKAGE_ARGS 0.6` on `FetchContent_Declare(QmlTui ...)` in CMake 3.24+, or as shown in [`examples/helloworld/`](../examples/helloworld/)), check `IMPORTED` before adding `DEPENDENCIES`:
+- **`DEPENDENCIES TARGET` ordering**: In `FetchContent` and `add_subdirectory` builds, pass `DEPENDENCIES TARGET QmlTui::Core TARGET QmlTui::Controls` (plus `TARGET QmlTui::Image` when used) to `qt_add_qml_module()` so QmlTui's `.qmltypes` and `qmldir` build before `qmlcachegen` and `qmllint`. Omit `DEPENDENCIES TARGET` in `find_package(QmlTui)` builds because Qt rejects `IMPORTED` targets there; `find_package(QmlTui)` appends `QmlTui_QML_IMPORT_PATH` to `QT_QML_IMPORT_PATH` and `QML_IMPORT_PATH` automatically. To support both `FetchContent` and `find_package(QmlTui)` in a single `CMakeLists.txt` (for example with `FIND_PACKAGE_ARGS 0.6` on `FetchContent_Declare(QmlTui ...)` in CMake 3.24+, or as shown in [`examples/helloworld/`](../examples/helloworld/)), check `IMPORTED` before adding `DEPENDENCIES`:
 
   ```cmake
   set(app_qml_dependencies)
@@ -100,12 +99,12 @@ QML_IMPORT_PATH=/your/prefix/lib/qml ./build/hello_qmltui
   )
   ```
 
-- **Exported targets and `COMPONENTS` isolation**: Both source and installed builds provide `QmlTui::Core`, `QmlTui::Controls`, `QmlTui::Image`, `QmlTui::PtyView`, and `QmlTui::Runner` (plus the `QmlTui::qmltui-runner` CLI target when `Runner` is enabled), with `find_package(QmlTui COMPONENTS Core Controls ...)` matching component names directly. Installed packages split export sets per module (`QmlTuiCoreTargets`, `QmlTuiControlsTargets`, `QmlTuiImageTargets`, `QmlTuiPtyViewTargets`, `QmlTuiRunnerTargets`), so requesting `find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls)` never pulls `Qt6::Gui`, `Qt6::Network`, or `libvterm`—even when `QmlTui.Image` and `QmlTui.PtyView` are installed into the same prefix. Calling `find_package(QmlTui 0.6 REQUIRED)` without `COMPONENTS` loads all installed modules.
+- **Exported targets and `COMPONENTS` isolation**: Both source and installed builds provide `QmlTui::Core`, `QmlTui::Controls`, `QmlTui::Image`, and `QmlTui::Runner` (plus the `QmlTui::qmltui-runner` CLI target when `Runner` is enabled), with `find_package(QmlTui COMPONENTS Core Controls ...)` matching component names directly. Installed packages split export sets per module (`QmlTuiCoreTargets`, `QmlTuiControlsTargets`, `QmlTuiImageTargets`, `QmlTuiRunnerTargets`), so requesting `find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls)` never pulls `Qt6::Gui` or `Qt6::Network`—even when `QmlTui.Image` is installed into the same prefix. Calling `find_package(QmlTui 0.6 REQUIRED)` without `COMPONENTS` loads all installed modules.
 - **Windows DLL lookup**: For `FetchContent` shared builds, set `set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")` before `FetchContent_MakeAvailable(QmlTui)` so `QmlTui*.dll` land next to your `.exe`. For installed `find_package(QmlTui)` shared builds, add `<prefix>\bin` (alongside your Qt kit's `bin` directory) to `PATH` and set `QML_IMPORT_PATH=<prefix>\lib\qml` at runtime, or bundle dependencies with `windeployqt`.
 
 ### Static Builds (`BUILD_SHARED_LIBS=OFF`)
 
-Pass `-DBUILD_SHARED_LIBS=OFF` to build `QmlTuiCore`, `QmlTuiControls`, and optional modules as static libraries and static QML modules (WebAssembly always forces static QML modules automatically). Static QML plugins are linked automatically through `QmlTui::Core` / `QmlTui::Controls` via Qt's `qt_add_qml_module(... STATIC)` integration, so your application links the same `QmlTui::*` targets without manually referencing `*plugin` targets or setting `QML_IMPORT_PATH` at runtime. When installing a static build with `QMLTUI_USE_SYSTEM_UTF8PROC=ON` or `QMLTUI_USE_SYSTEM_LIBVTERM=ON`, ensure the consumer environment can resolve `utf8proc` (via `find_package(utf8proc CONFIG)` or `pkg-config` `libutf8proc`, matching whichever backend was used at build time) and `pkg-config` `vterm >= 0.3` (when requesting `COMPONENTS PtyView`).
+Pass `-DBUILD_SHARED_LIBS=OFF` to build `QmlTuiCore`, `QmlTuiControls`, and optional modules as static libraries and static QML modules (WebAssembly always forces static QML modules automatically). Static QML plugins are linked automatically through `QmlTui::Core` / `QmlTui::Controls` via Qt's `qt_add_qml_module(... STATIC)` integration, so your application links the same `QmlTui::*` targets without manually referencing `*plugin` targets or setting `QML_IMPORT_PATH` at runtime. When installing a static build with `QMLTUI_USE_SYSTEM_UTF8PROC=ON`, ensure the consumer environment can resolve `utf8proc` (via `find_package(utf8proc CONFIG)` or `pkg-config` `libutf8proc`, matching whichever backend was used at build time).
 
 ### Multi-File QML Modules and Singletons
 
@@ -135,7 +134,7 @@ Register additional `.qml` components and singletons on the same `qt_add_qml_mod
 
 ### Offline / Air-Gapped CI and Reproducible Builds
 
-- **System vs. fetched libraries**: By default, CMake downloads SHA-256-verified release tarballs for `utf8proc` (`v2.11.3.tar.gz`) and, when `PtyView` is enabled, `libvterm` (`libvterm-0.3.3.tar.gz`) via `FetchContent`. On offline runners, install system packages (CMake `utf8proc` config or `pkg-config` `libutf8proc`, and `pkg-config` `vterm >= 0.3`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON` / `-DQMLTUI_USE_SYSTEM_LIBVTERM=ON`, or point CMake to pre-staged source trees with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc` and `-DFETCHCONTENT_SOURCE_DIR_LIBVTERM=/path/to/libvterm`.
+- **System vs. fetched libraries**: By default, CMake downloads a SHA-256-verified release tarball for `utf8proc` (`v2.11.3.tar.gz`) via `FetchContent`. On offline runners, install the system package (CMake `utf8proc` config or `pkg-config` `libutf8proc`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON`, or point CMake to a pre-staged source tree with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc`.
 - **Deterministic `Qt6::QmlPrivate`**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` falls back to `OFF` with a warning when private headers are absent, pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` explicitly in CI if unused, or install `qt6-declarative-private-dev` everywhere.
 
 ## Repository Test and Benchmark Builds
@@ -167,12 +166,10 @@ cmake --build build-release
 | `QMLTUI_BUILD_BENCHMARKS` | `ON` (top-level, non-Emscripten) | Build performance benchmark executables (`OFF` under `EMSCRIPTEN` / `FetchContent`) |
 | `QMLTUI_ENABLE_PRIVATE_QT` | `ON` (auto) | Enable `Behavior` and binding-aware `PropertyChanges` via `Qt6::QmlPrivate` (warns if missing unless `OFF`) |
 | `QMLTUI_ENABLE_IMAGE` | `OFF` | Build `QmlTui.Image` (`Qt6::Gui`, `Qt6::Network`) |
-| `QMLTUI_ENABLE_PTYVIEW` | `OFF` | Build Unix `QmlTui.PtyView` (Linux/macOS) |
 | `QMLTUI_ENABLE_RUNNER` | `ON` (top-level or `BUILD_TESTING=ON`) | Build and install `QmlTui::Runner` and `qmltui-runner` (pass `-DQMLTUI_ENABLE_RUNNER=OFF` on top-level release installs if unneeded) |
 | `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument targets for Clang source-based coverage |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install path for QmlTui QML modules |
 | `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` (`find_package(utf8proc CONFIG)` first, then `pkg-config` `libutf8proc`) instead of `FetchContent` |
-| `QMLTUI_USE_SYSTEM_LIBVTERM` | `OFF` | Link system `vterm >= 0.3` via `pkg-config` instead of `FetchContent` (`PtyView`) |
 | `QMLTUI_WASM_INITIAL_MEMORY` | `""` (Emscripten default) | Optional Emscripten `INITIAL_MEMORY` override (for example `67108864`) applied by `qmltui_wasm_app()` |
 | `QMLTUI_BUILD_WIDGETS_REFERENCE` | `ON` (when examples enabled & `Qt6::Widgets` found) | Build `qmltui_standard_item_delegate_widgets` side-by-side Qt Widgets comparison target |
 

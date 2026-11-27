@@ -1,6 +1,6 @@
 # QmlTui Gallery (`qmltui_gallery`)
 
-Interactive catalog of 42 default interactive demos (45 when built with `-DQMLTUI_ENABLE_IMAGE=ON` and `-DQMLTUI_ENABLE_PTYVIEW=ON`, 41 with `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`) covering all 75 built-in types across `QmlTui`, `QmlTui.Controls`, `QmlTui.Image`, and `QmlTui.PtyView`. Press `/` to filter components, `Enter` or `Space` to open a live interactive demo, and `Escape` to return to the grid.
+Interactive catalog of 42 default interactive demos (44 when built with `-DQMLTUI_ENABLE_IMAGE=ON`, 41 with `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`) covering all 74 built-in types across `QmlTui`, `QmlTui.Controls`, and `QmlTui.Image`. Press `/` to filter components, `Enter` or `Space` to open a live interactive demo, and `Escape` to return to the grid.
 
 ## Usage
 

@@ -1,5 +1,5 @@
 # Reusable QML recipes and C++ custom items/models.
-# Built-in QmlTui, QmlTui.Controls, QmlTui.Image, and QmlTui.PtyView types
+# Built-in QmlTui, QmlTui.Controls, and QmlTui.Image types
 # live in examples/gallery/examples/*.qml and run via `qmltui_gallery --example <Name>`.
 add_subdirectory(big_text)
 add_subdirectory(calendar)

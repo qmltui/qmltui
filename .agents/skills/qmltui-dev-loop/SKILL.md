@@ -23,7 +23,7 @@ QmlTui uses two complementary test layers (do not describe all repository tests 
 For detailed references inside this skill, read on demand:
 - [runner-facade.md](./references/runner-facade.md) — Complete `app.*` / `Region` signatures, CLI flags, `qmltui-runner session` verbs, env vars, exit codes, and `result.json` schema.
 - [visual-and-perf-audit.md](./references/visual-and-perf-audit.md) — Cell-padding traps, multi-viewport reflow, focus/monochrome checks, `Inline` scrollback, `frameStats()`, and idle budgets.
-- [cmake-and-subsystems.md](./references/cmake-and-subsystems.md) — Consumer vs. in-tree CMake, `qmltui_add_scenario`, `.cast`/`agg` demo recording, `EMBEDDED` and C++ `Terminal` hooks, `Image`, `PtyView`, Private Qt, and WebAssembly.
+- [cmake-and-subsystems.md](./references/cmake-and-subsystems.md) — Consumer vs. in-tree CMake, `qmltui_add_scenario`, `.cast`/`agg` demo recording, `EMBEDDED` and C++ `Terminal` hooks, `Image`, Private Qt, and WebAssembly.
 
 ## 1. Configure, Build, and Static-Lint
 
@@ -40,7 +40,7 @@ cmake -S . -B build -G Ninja
 cmake --build build --target my_app_qmllint my_app
 ```
 
-Optional QmlTui flags: `-DQMLTUI_ENABLE_IMAGE=ON` (`QmlTui.Image`), `-DQMLTUI_ENABLE_PTYVIEW=ON` (`QmlTui.PtyView`, Linux/macOS only), and `-DQMLTUI_ENABLE_PRIVATE_QT=ON` (default when `Qt6::QmlPrivate` is installed, enabling `Behavior` and binding-aware `PropertyChanges`). In the QmlTui repository, validate both enabled and `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` build trees when touching private-Qt features or gating (`qmltui_independent_states_demo` is omitted when `OFF`), and rebuild the full tree after Core, public API, QML-module, or CMake changes.
+Optional QmlTui flags: `-DQMLTUI_ENABLE_IMAGE=ON` (`QmlTui.Image`) and `-DQMLTUI_ENABLE_PRIVATE_QT=ON` (default when `Qt6::QmlPrivate` is installed, enabling `Behavior` and binding-aware `PropertyChanges`). In the QmlTui repository, validate both enabled and `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` build trees when touching private-Qt features or gating (`qmltui_independent_states_demo` is omitted when `OFF`), and rebuild the full tree after Core, public API, QML-module, or CMake changes.
 
 Locate `qmltui-runner` by project layout:
 - **QmlTui repository**: `./build/tools/qmltui-runner/qmltui-runner`
@@ -137,6 +137,6 @@ Every Runner session writes atomic schema-v1 `result.json` plus `final.txt` (pas
 Before handoff:
 1. Format modified C++/QML files (`./scripts/format.py <files>` in-repo, or `clang-format` / `qmlformat`) and run `git diff --check`.
 2. Preserve unrelated modifications in a dirty worktree.
-3. Report targets built (including `<target>_qmllint`), focused and regression CTests run, committed-frame artifacts and viewports inspected, `frameStats`/idle or `--live` checks performed, and configurations not exercised (such as `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`, `PtyView`, `Image`, WebAssembly, or Windows).
+3. Report targets built (including `<target>_qmllint`), focused and regression CTests run, committed-frame artifacts and viewports inspected, `frameStats`/idle or `--live` checks performed, and configurations not exercised (such as `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`, `Image`, WebAssembly, or Windows).
 
 After editing skills inside the QmlTui repository, run `python3 .agents/skills/qmltui-qml/check-skills.py --build-dir build`.

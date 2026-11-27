@@ -1,6 +1,6 @@
 # Examples and Recipes
 
-Configure QmlTui with `-DQMLTUI_BUILD_EXAMPLES=ON` to build the interactive component gallery and standalone recipe executables (pass `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_BUILD_BENCHMARKS=OFF` if you do not have `Qt6::Test` installed; pass `-DQMLTUI_ENABLE_IMAGE=ON -DQMLTUI_ENABLE_PTYVIEW=ON` to include the optional `Image`, `AnimatedSprite`, and `PtyView` tiles alongside the 42 default demos):
+Configure QmlTui with `-DQMLTUI_BUILD_EXAMPLES=ON` to build the interactive component gallery and standalone recipe executables (pass `-DQMLTUI_BUILD_TESTS=OFF -DQMLTUI_BUILD_BENCHMARKS=OFF` if you do not have `Qt6::Test` installed; pass `-DQMLTUI_ENABLE_IMAGE=ON` to include the optional `Image` and `AnimatedSprite` tiles alongside the 42 default demos):
 
 ```sh
 cmake -S . -B build -G Ninja \
@@ -77,7 +77,6 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | **Sparkline** | [`Sparkline.qml`](../examples/gallery/examples/Sparkline.qml) | `--example Sparkline` | [Sparkline](qml-types/sparkline.md) | [GIF](assets/casts/components/sparkline.gif) |
 | **Image** | [`Image.qml`](../examples/gallery/examples/Image.qml) | `--example Image` | [Image](qml-types/image.md) | [GIF](assets/casts/components/image.gif) |
 | **AnimatedSprite** | [`AnimatedSprite.qml`](../examples/gallery/examples/AnimatedSprite.qml) | `--example AnimatedSprite` | [AnimatedSprite](qml-types/animatedsprite.md) | [GIF](assets/casts/components/animated_sprite.gif) |
-| **PtyView** | [`PtyView.qml`](../examples/gallery/examples/PtyView.qml) | `--example PtyView` | [PtyView](qml-types/ptyview.md) | [GIF](assets/casts/components/pty_view.gif) |
 | **TerminalCapabilities** | [`TerminalCapabilities.qml`](../examples/gallery/examples/TerminalCapabilities.qml) | `--example TerminalCapabilities` | [TerminalCapabilities](qml-types/terminalcapabilities.md) | [GIF](assets/casts/components/terminal_capabilities.gif) |
 
 ## Standalone Recipes and C++ Examples (`examples/recipes/`)
@@ -115,6 +114,7 @@ Opinionated higher-level UI toolkits and third-party parser integrations built o
 | **`QmlTui.TVision`** | [`qmltui/tvision`](https://github.com/qmltui/tvision) (`QmlTui::TVision`) | [`turbo_hex`](https://github.com/qmltui/apps/tree/main/apps/turbo_hex) | Borland Turbo Vision-inspired Multi-Document Interface (`TvDesktop`, draggable/resizable `TvWindow`s, `TvMenuBar` mnemonics, `TvDialog`, 3D beveled `TvButton`, per-file `TvPalette` themes, and glyph-preserving `TvDropShadow`). |
 | **`QmlTui.Markdown`** | [`qmltui/markdown`](https://github.com/qmltui/markdown) (`QmlTui::Markdown`) | [`markdown_viewer`](https://github.com/qmltui/apps/tree/main/apps/markdown_viewer), [`agent_stream`](https://github.com/qmltui/apps/tree/main/apps/agent_stream), [`file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager) | CommonMark/GFM parser and terminal layouter via KDE `md4qt` (`MdDoc`, scrollable `MdView`, content-sized `MdBlock` for `Scrollback`/cards, `MdDocStyle` presets, terminal-safe `MdPalette`, OSC 8 links, and 13-language `SyntaxHighlighter`). |
 | **`QmlTui.Charts`** | [`qmltui/charts`](https://github.com/qmltui/charts) (`QmlTui::Charts`) | [`plotting_dashboard`](https://github.com/qmltui/apps/tree/main/apps/plotting_dashboard), [`industrial_plc_hmi`](https://github.com/qmltui/apps/tree/main/apps/industrial_plc_hmi) | Zero-dependency terminal charting (`ChartView` with Braille/HalfBlock `LineSeries`/`AreaSeries`/`ScatterSeries` and 1/8-cell `BarSeries`/`BarSet`, `BarChart`, dual Y-axes, `ReferenceLine`, `ChartLegend`, opt-in crosshair readout, `TimeSeriesModel`, `Heatmap`, and `Gauge`). |
+| **`QmlTui.PtyView`** | [`qmltui/ptyview`](https://github.com/qmltui/ptyview) (`QmlTui::PtyView`) | [`file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager) | Embedded Unix pseudo-terminal viewport (`PtyView`) backed by POSIX `openpty` and `libvterm` on Linux and macOS, with scrollback, scrollbar, SGR mouse/key forwarding, and opt-in OSC title/clipboard/notification hooks. |
 
 ## Showcase Applications (`qmltui/apps`)
 
@@ -126,7 +126,7 @@ Complete, multi-panel terminal applications built with QmlTui live in the compan
 | **package_manager** | [`apps/package_manager`](https://github.com/qmltui/apps/tree/main/apps/package_manager) | Multi-stage `Terminal.Inline` CLI installer (`qpm`) with `TableView`, `TreeView`, `Sparkline`, and `Scrollback` receipts. |
 | **qtop** | [`apps/qtop`](https://github.com/qmltui/apps/tree/main/apps/qtop) | [`btop++`](https://github.com/aristocratos/btop)-inspired UI layout study in ~770 lines of QML (`Canvas.Braille` CPU history, core meters, sparklines, sortable `TableView`, and `Behavior` animations). |
 | **container_fleet** | [`apps/container_fleet`](https://github.com/qmltui/apps/tree/main/apps/container_fleet) | Fleet dashboard with `TableView` sorting, `TabBar` status filters, live search, and streaming log drawer. |
-| **file_manager** | [`apps/file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager) | Miller-column browser with [`QmlTui.Markdown`](https://github.com/qmltui/markdown) (`MdView` + `SyntaxHighlighter`) previews, `Image` rendering, and an embedded `PtyView` shell drawer. |
+| **file_manager** | [`apps/file_manager`](https://github.com/qmltui/apps/tree/main/apps/file_manager) | Miller-column browser with [`QmlTui.Markdown`](https://github.com/qmltui/markdown) (`MdView` + `SyntaxHighlighter`) previews, `Image` rendering, and an embedded [`QmlTui.PtyView`](https://github.com/qmltui/ptyview) shell drawer. |
 | **markdown_viewer** | [`apps/markdown_viewer`](https://github.com/qmltui/apps/tree/main/apps/markdown_viewer) | Full-document Markdown reader built on [`QmlTui.Markdown`](https://github.com/qmltui/markdown) with Unicode box tables, heading navigation, search highlights, and live style editor. |
 | **turbo_hex** | [`apps/turbo_hex`](https://github.com/qmltui/apps/tree/main/apps/turbo_hex) | Multi-window Hex & Binary Inspector built on [`QmlTui.TVision`](https://github.com/qmltui/tvision) with `BoundedSelfPaint` Hex + ASCII views, Little/Big-Endian Data Inspector, and ELF/PNG/ZIP/WASM header & string span highlighting. |
 | **audio_player** | [`apps/audio_player`](https://github.com/qmltui/apps/tree/main/apps/audio_player) | Terminal audio player with 24-band FFT spectrum analyzer, `Canvas.Braille` stereo oscilloscope, playlist, and ANSI skins. |

@@ -207,7 +207,7 @@ public:
     virtual void keyReleaseEvent(class KeyEvent* event);
     // Returns true when unmodified printable keystrokes should be delivered to
     // this item instead of triggering single-key Shortcuts (e.g. editable
-    // TextInput/TextArea or running PtyView).
+    // TextInput/TextArea or embedded terminal views).
     virtual bool consumesPrintableKeys() const { return false; }
     virtual void mousePressEvent(class MouseEvent* event);
     virtual void mouseReleaseEvent(class MouseEvent* event);

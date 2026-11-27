@@ -13,7 +13,7 @@ for small edits and follow the rule for new files.
 
 The authoritative type list is the module registration in the source tree, not
 this document. Check `src/QmlTui/Core/Items`, `src/QmlTui/Core/Engine`, `src/QmlTui/Controls`,
-`src/QmlTui/Image`, `src/QmlTui/PtyView`, and `docs/qml-types/index.md`
+`src/QmlTui/Image`, and `docs/qml-types/index.md`
 before using a type or property you have not seen in a nearby file (in standalone
 `FetchContent` consumers, inspect `build/_deps/qmltui-src/docs/qml-types/` or the
 generated `build/qml/QmlTui*/*.qmltypes` metadata). For a quick cheat-sheet of
@@ -31,8 +31,7 @@ dependency. `AGENTS.md` forbids it.
 // QmlTui modules
 import QmlTui                 // Terminal, Item, Rectangle, Text, views, layouts, Canvas
 import QmlTui.Controls        // Button, Panel, CheckBox, Slider, Dialog, TabBar, ...
-import QmlTui.Image           // Image, AnimatedSprite
-import QmlTui.PtyView         // PtyView (PTY, Linux/macOS only, optional build)
+import QmlTui.Image           // Image, AnimatedSprite (optional build)
 
 // Qt foundational modules
 import QtQml                // Timer, Component, QtObject, Connections, Binding
@@ -283,9 +282,6 @@ an application via QML bindings and reusable components.
 
 **`import QmlTui.Image`**
 `Image`, `AnimatedSprite`.
-
-**`import QmlTui.PtyView`**
-`PtyView`.
 
 ## 7. Checklist
 

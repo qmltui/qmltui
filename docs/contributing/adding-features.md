@@ -44,9 +44,9 @@ Before writing code, review the architecture boundaries and style rules in [`AGE
 Recipes under `examples/recipes/` are automatically licensed `BSD-3-Clause` via [`REUSE.toml`](../../REUSE.toml) (do not add license headers).
 
 1. Create `examples/recipes/<name>/` with `CMakeLists.txt`, `main.cpp`, `Main.qml` (with a reachable keyboard quit path), and a short `README.md`.
-2. Register `add_subdirectory(<name>)` in `examples/recipes/CMakeLists.txt` (gate optional module recipes behind `if(QMLTUI_ENABLE_IMAGE)`, `if(QMLTUI_ENABLE_PTYVIEW)`, or `if(QMLTUI_ENABLE_PRIVATE_QT)`).
+2. Register `add_subdirectory(<name>)` in `examples/recipes/CMakeLists.txt` (gate optional module recipes behind `if(QMLTUI_ENABLE_IMAGE)` or `if(QMLTUI_ENABLE_PRIVATE_QT)`).
 3. Link `QmlTui::Runner` conditionally under `if(BUILD_TESTING AND TARGET QmlTui::Runner)` and register a `Runner` smoke test via `qmltui_add_scenario(...)` (prefer `CLOCK VIRTUAL`).
-4. Guard WebAssembly packaging with `if(COMMAND qmltui_wasm_app)` (`cmake/QmlTuiWasm.cmake` is included only under `EMSCRIPTEN`) if the recipe has no desktop-only dependencies (`PtyView` / `Qt6::Widgets`):
+4. Guard WebAssembly packaging with `if(COMMAND qmltui_wasm_app)` (`cmake/QmlTuiWasm.cmake` is included only under `EMSCRIPTEN`) if the recipe has no desktop-only dependencies (`Qt6::Widgets`):
    ```cmake
    if(COMMAND qmltui_wasm_app)
        qmltui_wasm_app(qmltui_<name>_demo)
@@ -69,8 +69,7 @@ cmake -S . -B build-asan -G Ninja \
   -DQMLTUI_BUILD_TESTS=ON \
   -DQMLTUI_ENABLE_RUNNER=ON \
   -DQMLTUI_ENABLE_PRIVATE_QT=ON \
-  -DQMLTUI_ENABLE_IMAGE=ON \
-  -DQMLTUI_ENABLE_PTYVIEW=ON
+  -DQMLTUI_ENABLE_IMAGE=ON
 cmake --build build-asan --parallel
 QT_QPA_PLATFORM=offscreen ASAN_OPTIONS=detect_leaks=0 \
   UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
@@ -90,7 +89,6 @@ cmake -S . -B build-coverage -G Ninja \
   -DQMLTUI_ENABLE_RUNNER=ON \
   -DQMLTUI_ENABLE_PRIVATE_QT=ON \
   -DQMLTUI_ENABLE_IMAGE=ON \
-  -DQMLTUI_ENABLE_PTYVIEW=ON \
   -DQMLTUI_ENABLE_COVERAGE=ON
 cmake --build build-coverage --parallel
 QT_QPA_PLATFORM=offscreen cmake --build build-coverage --target coverage

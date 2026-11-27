@@ -16,11 +16,10 @@ These guides cover QmlTui's retained-mode cell architecture, UI subsystems, C++ 
 ## Rendering Modes, C++ Extensibility, and Tooling
 
 9. **[Inline Mode & Scrollback](inline-mode.md)**: Building streaming CLIs and REPLs with `Terminal.Inline` and `Scrollback`.
-10. **[Embedded PTY Shells (`QmlTui.PtyView`)](pty-view.md)**: Hosting interactive Unix child processes inside `PtyView` on Linux and macOS.
-11. **[Custom C++ Items](custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer`, registering QML types with `QML_ELEMENT`, and building C++-only scenes.
-12. **[Testing & Recording with Runner](testing.md)**: Headless testing with a virtual clock, text and style snapshots, Asciinema `.cast` recording, and `qmltui-runner`.
-13. **[Agentic Development Loop with Runner](agentic-development.md)**: Headless closed-loop verification for coding agents using coordinate-ruled multi-viewport sweeps, SGR style inspection, virtual-clock stepping, idle paint budgets, `.cast` recordings, and bundled skills.
-14. **[Editor and IDE Setup](editor-setup.md)**: Configuring `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete across VS Code, Neovim, Zed, CLion, and Qt Creator.
-15. **[QmlTui in the Browser (Qt for WebAssembly)](webassembly.md)**: Compiling QmlTui applications to WebAssembly with `qmltui_wasm_app()` and embedding `WasmTerminalBackend` in `xterm.js`.
+10. **[Custom C++ Items](custom-items.md)**: Subclassing `qmltui::Item` and painting into `TextGridBuffer`, registering QML types with `QML_ELEMENT`, and building C++-only scenes.
+11. **[Testing & Recording with Runner](testing.md)**: Headless testing with a virtual clock, text and style snapshots, Asciinema `.cast` recording, and `qmltui-runner`.
+12. **[Agentic Development Loop with Runner](agentic-development.md)**: Headless closed-loop verification for coding agents using coordinate-ruled multi-viewport sweeps, SGR style inspection, virtual-clock stepping, idle paint budgets, `.cast` recordings, and bundled skills.
+13. **[Editor and IDE Setup](editor-setup.md)**: Configuring `qmlls`, `qmllint`, `qmlformat`, and `Runner` scenario autocomplete across VS Code, Neovim, Zed, CLion, and Qt Creator.
+14. **[QmlTui in the Browser (Qt for WebAssembly)](webassembly.md)**: Compiling QmlTui applications to WebAssembly with `qmltui_wasm_app()` and embedding `WasmTerminalBackend` in `xterm.js`.
 
 For CMake options, `find_package(QmlTui)` installation, and runtime environment variables, see [Build Configuration and Installation](../build-configuration.md). For framework contribution checklists (adding QML types, recipes, sanitizers, and coverage), see [Adding Features](../contributing/adding-features.md).

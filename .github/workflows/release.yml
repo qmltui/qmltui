@@ -118,7 +118,6 @@ jobs:
             -DQMLTUI_BUILD_BENCHMARKS=OFF \
             -DQMLTUI_ENABLE_PRIVATE_QT=OFF \
             -DQMLTUI_ENABLE_IMAGE=OFF \
-            -DQMLTUI_ENABLE_PTYVIEW=OFF \
             -DQMLTUI_ENABLE_RUNNER=ON
           cmake --build build --target qmltui-runner --parallel
 

@@ -22,7 +22,6 @@ ALLOWED_SNIPPET_IMPORTS = {
     "QmlTui",
     "QmlTui.Controls",
     "QmlTui.Image",
-    "QmlTui.PtyView",
     "QtQml",
     "QtQml.Models",
     "Qt.labs.qmlmodels",
@@ -586,7 +585,6 @@ def check_qml_snippets(build_dir: Path, explicit_qmllint: Path | None, errors: l
         return 0
 
     has_image = (qml_import_dir / "QmlTui/Image/qmldir").is_file()
-    has_ptyview = (qml_import_dir / "QmlTui/PtyView/qmldir").is_file()
     has_private_qt = cache_private_qt_enabled(build_dir)
 
     pending: list[tuple[Path, int, str]] = []
@@ -594,8 +592,6 @@ def check_qml_snippets(build_dir: Path, explicit_qmllint: Path | None, errors: l
         for start_line, code in extract_qml_snippets(md_path, errors):
             imports = set(IMPORT_RE.findall(code))
             if "QmlTui.Image" in imports and not has_image:
-                continue
-            if "QmlTui.PtyView" in imports and not has_ptyview:
                 continue
             if not has_private_qt and uses_private_qt_syntax(code):
                 continue

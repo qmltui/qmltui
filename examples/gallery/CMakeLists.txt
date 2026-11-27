@@ -14,9 +14,6 @@ endif()
 if(NOT QMLTUI_ENABLE_IMAGE)
     list(FILTER gallery_example_files EXCLUDE REGEX "/(Image|AnimatedSprite)\\.qml$")
 endif()
-if(NOT QMLTUI_ENABLE_PTYVIEW)
-    list(FILTER gallery_example_files EXCLUDE REGEX "/PtyView\\.qml$")
-endif()
 set(gallery_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 function(gallery_add_executable target uri main_source)
@@ -26,10 +23,6 @@ function(gallery_add_executable target uri main_source)
     if(QMLTUI_ENABLE_IMAGE)
         list(APPEND gallery_dependencies TARGET QmlTui::Image)
         list(APPEND gallery_link_libraries QmlTui::Image)
-    endif()
-    if(QMLTUI_ENABLE_PTYVIEW)
-        list(APPEND gallery_dependencies TARGET QmlTui::PtyView)
-        list(APPEND gallery_link_libraries QmlTui::PtyView)
     endif()
     qt_add_qml_module(${target}
         URI ${uri}
@@ -54,8 +47,8 @@ function(gallery_add_executable target uri main_source)
     endif()
     target_link_libraries(${target} PRIVATE ${gallery_link_libraries})
     foreach(plugin_target IN ITEMS
-            QmlTuiCoreplugin QmlTuiControlsplugin QmlTuiImageplugin QmlTuiPtyViewplugin
-            QmlTui::CorePlugin QmlTui::ControlsPlugin QmlTui::ImagePlugin QmlTui::PtyViewPlugin)
+            QmlTuiCoreplugin QmlTuiControlsplugin QmlTuiImageplugin
+            QmlTui::CorePlugin QmlTui::ControlsPlugin QmlTui::ImagePlugin)
         if(TARGET ${plugin_target})
             add_dependencies(${target} ${plugin_target})
         endif()

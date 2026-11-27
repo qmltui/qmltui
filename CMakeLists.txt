@@ -16,7 +16,6 @@ option(QMLTUI_BUILD_BENCHMARKS "Build performance benchmark executables" ${_qmlt
 unset(_qmltui_desktop_top_level)
 option(QMLTUI_ENABLE_PRIVATE_QT "Enable features requiring private Qt modules (Behavior, advanced states)" ON)
 option(QMLTUI_ENABLE_IMAGE     "Build the optional QmlTui Image module (requires Qt Gui and Network)" OFF)
-option(QMLTUI_ENABLE_PTYVIEW  "Build the optional Unix PTY PtyView module" OFF)
 set(_qmltui_runner_default OFF)
 if((PROJECT_IS_TOP_LEVEL OR BUILD_TESTING) AND NOT EMSCRIPTEN)
     set(_qmltui_runner_default ON)
@@ -50,13 +49,11 @@ if(NOT PROJECT_IS_TOP_LEVEL)
     set(QT_QML_IMPORT_PATH "${QT_QML_IMPORT_PATH}" PARENT_SCOPE)
 endif()
 
-# Third-party code: each option picks a system library or the pinned source
-# fetched via FetchContent; the mechanics live in cmake/QmlTuiUtf8proc.cmake and cmake/QmlTuiLibvterm.cmake.
+# Third-party code: pick a system library or the pinned source fetched via
+# FetchContent; the mechanics live in cmake/QmlTuiUtf8proc.cmake.
 option(QMLTUI_USE_SYSTEM_UTF8PROC "Use system utf8proc library" OFF)
-option(QMLTUI_USE_SYSTEM_LIBVTERM  "Use system libvterm library (PtyView only)" OFF)
 include(cmake/QmlTuiUtf8proc.cmake)
-include(cmake/QmlTuiLibvterm.cmake)
-qmltui_provide_utf8proc()   # QmlTui::Core links it; PtyView provides libvterm itself
+qmltui_provide_utf8proc()   # QmlTui::Core links it
 
 set(qt_required_components Core Qml)
 
@@ -257,13 +254,6 @@ install(EXPORT QmlTuiControlsTargets
 if(QMLTUI_ENABLE_IMAGE)
     install(EXPORT QmlTuiImageTargets
         FILE QmlTuiImageTargets.cmake
-        NAMESPACE QmlTui::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
-    )
-endif()
-if(QMLTUI_ENABLE_PTYVIEW)
-    install(EXPORT QmlTuiPtyViewTargets
-        FILE QmlTuiPtyViewTargets.cmake
         NAMESPACE QmlTui::
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QmlTui"
     )

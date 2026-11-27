@@ -56,7 +56,7 @@ Visual elements inherit from `qmltui::Item`. Each `Item` tracks integer cell geo
 
 ## Module Boundaries
 
-QmlTui separates the core scene graph (`QmlTui::Core`) from interactive controls (`QmlTui::Controls`) and optional OS/GUI integrations (`QmlTui::Image` and `QmlTui::PtyView`; see [Build Configuration and Installation](../build-configuration.md) for CMake targets and flags).
+QmlTui separates the core scene graph (`QmlTui::Core`) from interactive controls (`QmlTui::Controls`) and optional raster graphics (`QmlTui::Image`; see [Build Configuration and Installation](../build-configuration.md) for CMake targets and flags).
 
 ```mermaid
 flowchart LR
@@ -64,8 +64,6 @@ flowchart LR
     Core --> Controls["QmlTui::Controls<br/>import QmlTui.Controls"]
     Core --> Image["QmlTui::Image (optional)<br/>import QmlTui.Image"]
     QtGui["Qt6::Gui + Qt6::Network"] --> Image
-    Core --> Pty["QmlTui::PtyView (optional)<br/>import QmlTui.PtyView · Unix"]
-    VTerm["libvterm"] --> Pty
     Core --> Runner["QmlTui::Runner (test-only)<br/>BUILD_TESTING · qmltui-runner"]
 ```
 

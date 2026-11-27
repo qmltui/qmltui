@@ -15,7 +15,7 @@ find_program(QMLTUI_LLVM_COV NAMES llvm-cov REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 # Instrument everything defined under src/QmlTui and tools/qmltui-runner, while
-# leaving third-party libraries (utf8proc, libvterm) untouched.
+# leaving third-party libraries (utf8proc) untouched.
 function(qmltui_enable_target_coverage target_name)
     if(NOT TARGET "${target_name}")
         return()
@@ -47,7 +47,6 @@ function(qmltui_register_coverage_targets)
         QmlTuiControls
         QmlTuiImage
         QmlTuiRunner
-        QmlTuiPtyView
         qmltui-runner
     )
 

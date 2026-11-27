@@ -2,7 +2,7 @@
 
 This tutorial walks Qt 6 developers through building a standalone QmlTui terminal application with CMake, binding a C++ `QObject` class to QML with `QML_ELEMENT`, and verifying rendered terminal frames in CTest with `Runner`.
 
-For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `QmlTui.PtyView`, `Runner`), CMake cache options, and runtime environment variables, see [Build Configuration and Installation](build-configuration.md).
+For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `Runner`), CMake cache options, and runtime environment variables, see [Build Configuration and Installation](build-configuration.md).
 
 ## Prerequisites
 
@@ -351,7 +351,7 @@ ctest --test-dir build --output-on-failure
 
 ## Explore the Component Gallery (Optional)
 
-Browse 42 default interactive demos (45 when built with `-DQMLTUI_ENABLE_IMAGE=ON` and `-DQMLTUI_ENABLE_PTYVIEW=ON`) covering all 75 built-in types directly in your browser in the [Component Gallery](https://qmltui.github.io/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/playground.html).
+Browse 42 default interactive demos (44 when built with `-DQMLTUI_ENABLE_IMAGE=ON`) covering all 74 built-in types directly in your browser in the [Component Gallery](https://qmltui.github.io/playground.html?mode=gallery) or edit QML live in the [WebAssembly Playground](https://qmltui.github.io/playground.html).
 
 To build and run `qmltui_gallery` locally in your terminal (disabling tests and benchmarks so `Qt6::Test` is not required):
 

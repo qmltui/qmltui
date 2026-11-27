@@ -138,10 +138,10 @@ int main(int argc, char* argv[]) {
 - Headless `TextGridBuffer` captures verify fallback cell rendering and layout geometry; Kitty graphics protocol transmission is covered by unit tests (`test_kitty_graphics` in-repo) and `QMLTUI_KITTY_GRAPHICS`.
 - `AnimatedSprite` frame stepping honors `CLOCK VIRTUAL` (`advanceTime()`), whereas asynchronous `ImageProvider` / network loads run on worker threads and require `CLOCK REAL` + `waitForCondition()` / `waitForText()`.
 
-### `QmlTui.PtyView` (`-DQMLTUI_ENABLE_PTYVIEW=ON`)
+### `QmlTui.PtyView` (official addon [`qmltui/ptyview`](https://github.com/qmltui/ptyview))
 - Supported on **Linux and macOS only** (never add unguarded Unix PTY dependencies to cross-platform targets).
 - Because `PtyView` spawns a real OS pseudo-terminal child process, scenarios exercising `PtyView` must run on `CLOCK REAL` and synchronize on shell output with `app.waitForText(...)`, never `CLOCK VIRTUAL` `advanceTime()` alone.
 
 ### Browser / Qt for WebAssembly (`qmltui_wasm_app`)
 - Configure with Qt 6.8+ **`wasm_singlethread`** (`qt-cmake`) and the exact Emscripten version pinned by that Qt minor release (`4.0.7` for Qt 6.11, `5.0.5` for Qt 6.12). Do not use `wasm_multithread` or pass manual `-sASYNCIFY` / `-sMODULARIZE` flags.
-- Under `EMSCRIPTEN`, `QMLTUI_ENABLE_RUNNER` and `QMLTUI_BUILD_TESTS` default to `OFF`, and `QmlTui.PtyView` is unavailable. Verify core UI logic and cell layout natively with `Runner` first, then build the Wasm target (`cmake --build build-wasm`) and smoke-test `<target>.html` over `python3 -m http.server` (ensuring `@xterm/addon-unicode-graphemes` `15-graphemes` width alignment and clean `Qt.quit()` reset).
+- Under `EMSCRIPTEN`, `QMLTUI_ENABLE_RUNNER` and `QMLTUI_BUILD_TESTS` default to `OFF`, and the Unix `QmlTui.PtyView` addon is unavailable. Verify core UI logic and cell layout natively with `Runner` first, then build the Wasm target (`cmake --build build-wasm`) and smoke-test `<target>.html` over `python3 -m http.server` (ensuring `@xterm/addon-unicode-graphemes` `15-graphemes` width alignment and clean `Qt.quit()` reset).

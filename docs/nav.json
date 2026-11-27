@@ -28,7 +28,6 @@
         { "text": "Python (PySide6)", "link": "/guides/python-pyside6" },
         { "text": "Animation & States", "link": "/guides/animation-and-states" },
         { "text": "Inline Mode & Scrollback", "link": "/guides/inline-mode" },
-        { "text": "Embedded PTY (PtyView)", "link": "/guides/pty-view" },
         { "text": "Custom C++ Items", "link": "/guides/custom-items" },
         { "text": "Testing with Runner", "link": "/guides/testing" },
         { "text": "Agentic Loop with Runner", "link": "/guides/agentic-development" },
@@ -167,13 +166,6 @@
             { "text": "Image", "link": "/qml-types/image" },
             { "text": "AnimatedSprite", "link": "/qml-types/animatedsprite" }
           ]
-        },
-        {
-          "text": "QmlTui.PtyView",
-          "collapsed": true,
-          "items": [
-            { "text": "PtyView", "link": "/qml-types/ptyview" }
-          ]
         }
       ]
     },
@@ -203,7 +195,6 @@
         { "text": "Image, AnimatedSprite & Items", "link": "/cpp-classes/image-items" },
         { "text": "ImageProvider", "link": "/cpp-classes/imageprovider" },
         { "text": "QtMessageRouting", "link": "/cpp-classes/qtmessagerouting" },
-        { "text": "PtyView", "link": "/cpp-classes/ptyview" },
         { "text": "Runner", "link": "/cpp-classes/runner" }
       ]
     },

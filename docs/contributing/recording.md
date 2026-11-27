@@ -22,10 +22,10 @@ cargo install --git https://github.com/asciinema/agg
 
 ## Regenerating casts and GIFs
 
-Configure and build with examples and tests enabled (use a `QMLTUI_ENABLE_PRIVATE_QT=ON`, `QMLTUI_ENABLE_IMAGE=ON`, `QMLTUI_ENABLE_PTYVIEW=ON` tree so all 45 gallery tiles are present):
+Configure and build with examples and tests enabled (use a `QMLTUI_ENABLE_PRIVATE_QT=ON`, `QMLTUI_ENABLE_IMAGE=ON` tree so all 44 gallery tiles are present):
 
 ```sh
-cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_PRIVATE_QT=ON -DQMLTUI_ENABLE_IMAGE=ON -DQMLTUI_ENABLE_PTYVIEW=ON
+cmake -S . -B build -DQMLTUI_BUILD_TESTS=ON -DQMLTUI_BUILD_EXAMPLES=ON -DQMLTUI_ENABLE_PRIVATE_QT=ON -DQMLTUI_ENABLE_IMAGE=ON
 cmake --build build -j$(nproc)
 ```
 

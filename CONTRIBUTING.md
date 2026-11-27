@@ -27,15 +27,14 @@ request.
 
 Build and test instructions, QML conventions, and the test workflow are in
 [AGENTS.md](AGENTS.md), [docs/contributing/adding-features.md](docs/contributing/adding-features.md), and [docs/](docs/). To configure, build, and run tests
-locally (omit `-DQMLTUI_ENABLE_PTYVIEW=ON` on Windows, where `PtyView` is unsupported):
+locally:
 
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DQMLTUI_BUILD_TESTS=ON \
   -DQMLTUI_BUILD_EXAMPLES=ON \
-  -DQMLTUI_ENABLE_IMAGE=ON \
-  -DQMLTUI_ENABLE_PTYVIEW=ON   # Linux and macOS only
+  -DQMLTUI_ENABLE_IMAGE=ON
 cmake --build build --parallel
 # On headless Linux/SSH/WSL with QMLTUI_ENABLE_IMAGE=ON, prefix with QT_QPA_PLATFORM=offscreen:
 QT_QPA_PLATFORM=offscreen ctest --test-dir build -LE Demo --output-on-failure

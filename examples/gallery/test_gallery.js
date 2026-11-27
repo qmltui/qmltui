@@ -6,7 +6,7 @@ function main(app) {
     app.expectText("Text");
     app.expectText("Rectangle");
     app.expectText("/ Search");
-    // The tile count depends on the build (Behavior, QmlTui.Image, QmlTui.PtyView), so read it.
+    // The tile count depends on the build (Behavior, QmlTui.Image), so read it.
     app.waitForRegex("1 / [0-9]+");
     const total = parseInt(/1 \/ ([0-9]+)/.exec(app.frameText())[1], 10);
     const at = n => n + " / " + total;

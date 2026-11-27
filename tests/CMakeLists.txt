@@ -4,7 +4,7 @@ if(QMLTUI_BUILD_TESTS)
 endif()
 
 # One directory per library, mirroring src/QmlTui: Core, Controls, Image,
-# Runner and PtyView each register their own tests. The installed
+# and Runner each register their own tests. The installed
 # consumer below is a separate CMake project built against an install tree.
 
 # A Qt Test executable. Every test links the core libraries so a Core test can
@@ -35,9 +35,6 @@ if(QMLTUI_BUILD_TESTS)
         add_subdirectory(Image)
     endif()
     add_subdirectory(Runner)
-    if(QMLTUI_ENABLE_PTYVIEW)
-        add_subdirectory(PtyView)
-    endif()
 
     # Installs this build into a private prefix, then configures, builds and runs
     # tests/installed_consumer as an independent project against it: find_package,

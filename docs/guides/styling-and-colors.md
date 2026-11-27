@@ -106,7 +106,6 @@ Button {
 | TabBar | `color`, `textColor`, `selectedTextColor`, `selectionColor` |
 | TableView | `textColor`, `selectedTextColor`, `selectionColor`, `headerColor`, `headerBackgroundColor`, `rowBackgroundColor`, `alternatingRowBackgroundColor`, `gridColor` |
 | TreeView | `textColor`, `selectedTextColor`, `selectionColor`, `branchColor` |
-| PtyView | `textColor`, `backgroundColor`, `palette` |
 | ToolTip attached properties | `ToolTip.textColor`, `ToolTip.color`, `ToolTip.border.color` (and `ToolTip.border.style`) |
 
 Focus uses borders or bold text. Disabled text is dimmed using SGR 2, preserving

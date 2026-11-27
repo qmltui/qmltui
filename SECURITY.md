@@ -14,7 +14,6 @@ Security fixes are applied to the latest `0.6.x` release series on `main`.
 Security-relevant areas in QmlTui include:
 
 - **Terminal input and escape-sequence decoding (`InputDecoder`)**: Parsing untrusted VT, CSI, OSC, DCS, and APC byte streams without out-of-bounds access or unbounded memory growth.
-- **Embedded PTY subshells (`QmlTui.PtyView`)**: Process execution boundaries (`openpty()` + `QProcess::start()` without shell interpolation; `PtyView::start()` passes `program` + `arguments` directly and only falls back to `QProcess::splitCommand(program)` when `arguments` is empty and `program` is not an existing executable path—applications must pass explicit `arguments` and never pass untrusted strings in `program`) and escape-sequence handling from child processes via `libvterm`.
 - **Terminal image loading (`QmlTui.Image`)**: Network (`http`/`https`), SVG, and raster image decoding (enforcing a 32 MiB response limit, 15 s transfer timeout, and `QNetworkRequest::NoLessSafeRedirectPolicy`) and Kitty/Sixel payload framing.
 - **Headless scenario execution (`qmltui::Runner`)**: Local artifact path containment within `--artifacts`.
 

@@ -1,13 +1,12 @@
 # QML Types Reference
 
-QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in a QmlTui file; build interfaces from `QtQml` and the modules below:
+QmlTui provides 74 QML types across three QML modules. Never import `QtQuick` in a QmlTui file; build interfaces from `QtQml` and the modules below:
 
 | QML Import | CMake Target | Notes |
 | :--- | :--- | :--- |
 | `import QmlTui` | `QmlTui::Core` | Core session, item tree, layouts, text inputs, virtualized views, input events, states, animations, and sub-cell canvas. |
 | `import QmlTui.Controls` | `QmlTui::Controls` | Interactive buttons, selectors, indicators, panels, dialogs, tooltips, tabs, and page stacks. |
 | `import QmlTui.Image` | `QmlTui::Image` | Raster images and sprite sheets via Kitty, Sixel, or Unicode fallback (`-DQMLTUI_ENABLE_IMAGE=ON`). |
-| `import QmlTui.PtyView` | `QmlTui::PtyView` | Embedded Unix pseudo-terminal on Linux and macOS (`-DQMLTUI_ENABLE_PTYVIEW=ON`). |
 
 ## `QmlTui`: Core and Terminal
 
@@ -109,7 +108,3 @@ QmlTui provides 75 QML types across four QML modules. Never import `QtQuick` in 
 
 - [Image](image.md): Renders raster images (`qrc:/`, file, `http(s)`, or `ImageProvider`) via Kitty, Sixel, `HalfBlock`, `Braille`, or `ASCII`.
 - [AnimatedSprite](animatedsprite.md): Plays frame-grid animations sliced from a sprite sheet image.
-
-## `QmlTui.PtyView`
-
-- [PtyView](ptyview.md): Hosts an interactive child process inside a Unix pseudo-terminal (`openpty` + `libvterm`) on Linux and macOS.

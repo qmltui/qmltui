@@ -11,11 +11,11 @@ texts are in [`LICENSES/`](LICENSES/).
 
 | Path | License (SPDX) |
 | :--- | :--- |
-| `src/` (Core, Controls, Image, PtyView, Runner), `tests/`, and `tools/` | `LGPL-3.0-only` |
+| `src/` (Core, Controls, Image, Runner), `tests/`, and `tools/` | `LGPL-3.0-only` |
 | `examples/` | `BSD-3-Clause` |
 | `cmake/`, `scripts/`, `.github/`, `.agents/`, `.githooks/`, root `CMakeLists.txt` | `BSD-3-Clause` |
 | `docs/`, every `*.md` | `CC-BY-4.0` |
-| Third-party code fetched at build time (utf8proc, libvterm) | `MIT` (plus `Unicode-DFS-2015` data files in `utf8proc`), see [`THIRD-PARTY.md`](THIRD-PARTY.md) |
+| Third-party code fetched at build time (utf8proc) | `MIT` (plus `Unicode-DFS-2015` data files in `utf8proc`), see [`THIRD-PARTY.md`](THIRD-PARTY.md) |
 
 ## LGPL-3.0-only Summary
 

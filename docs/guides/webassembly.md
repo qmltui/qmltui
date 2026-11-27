@@ -151,7 +151,7 @@ try {
 
 ## Browser Constraints
 
-- **Sandbox limits**: Host OS facilities are unavailable inside the browser sandbox: `QProcess`, `/proc`, D-Bus, raw TCP/UDP sockets (use WebSockets or `QNetworkAccessManager` over Fetch/CORS), and `QmlTui.PtyView`. `QFile` reads Emscripten's virtual in-memory filesystem and embedded Qt resources (`qrc:/...`), not the visitor's local disk.
+- **Sandbox limits**: Host OS facilities are unavailable inside the browser sandbox: `QProcess`, `/proc`, D-Bus, raw TCP/UDP sockets (use WebSockets or `QNetworkAccessManager` over Fetch/CORS), and the Unix [`QmlTui.PtyView`](https://github.com/qmltui/ptyview) addon. `QFile` reads Emscripten's virtual in-memory filesystem and embedded Qt resources (`qrc:/...`), not the visitor's local disk.
 - **Clipboard reads (`OSC 52 ?`)**: The generated `qmltui_wasm_app()` host page bridges OSC 52 clipboard *writes* (`Clipboard.copy()`) to `navigator.clipboard.writeText()`, but does not answer OSC 52 clipboard *reads* (`?`). Consequently, `Clipboard.requestText()` and `TextInput`/`TextArea` `Ctrl+V` time out after 2 seconds in the default page; use native browser paste (which `xterm.js` delivers via bracketed paste) or wire an OSC 52 `?` reply in a custom host page.
 - **Graphics protocols & Inline scrollback**: `xterm.js` in the generated page does not enable Kitty or Sixel graphics addons, so `QmlTui.Image` falls back to Unicode `HalfBlock` / `Braille` / `ASCII` rendering. `Terminal.Inline` + `Scrollback` works with the host page's `scrollback: 1000` line buffer.
 

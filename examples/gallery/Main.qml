@@ -56,7 +56,7 @@ Terminal {
 
     readonly property int gridCols: Math.max(1, Math.floor(componentGrid.width / 36))
 
-    // Ordered by module: Core (28) -> Controls (14) -> Optional: Image (2) & PtyView (1),
+    // Ordered by module: Core (28) -> Controls (14) -> Optional: Image (2),
     // and within each module from fundamental/most frequently used items to specialized ones.
     readonly property var allEntries: [
         // 1. Core (28)
@@ -389,7 +389,7 @@ Terminal {
             blurb: "Compact inline data trend chart using block glyphs",
             file: "Sparkline.qml"
         },
-        // 3. Optional Items: Image (2) & PtyView (1)
+        // 3. Optional Items: Image (2)
         {
             name: "Image",
             badge: "Image",
@@ -407,14 +407,6 @@ Terminal {
             file: "AnimatedSprite.qml"
         },
         {
-            name: "PtyView",
-            badge: "PtyView",
-            accent: "#7ee787",
-            preview: "[sh] $ echo hello",
-            blurb: "Embedded Unix pseudo-terminal process viewport",
-            file: "PtyView.qml"
-        },
-        {
             name: "TerminalCapabilities",
             badge: "Core",
             accent: "#58a6ff",
@@ -429,8 +421,6 @@ Terminal {
             return root.brandPrimary;
         if (badge === "Image")
             return "#f2cc60";
-        if (badge === "PtyView")
-            return "#d2a8ff";
         return "#58a6ff";
     }
 

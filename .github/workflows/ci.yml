@@ -59,7 +59,6 @@ jobs:
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=${{ matrix.private_qt }}
           -DQMLTUI_ENABLE_IMAGE=ON
-          -DQMLTUI_ENABLE_PTYVIEW=ON
 
       - name: Build
         run: cmake --build build --parallel 4
@@ -117,7 +116,6 @@ jobs:
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
           -DQMLTUI_ENABLE_IMAGE=ON
-          -DQMLTUI_ENABLE_PTYVIEW=ON
 
       - name: Build
         run: cmake --build build-asan --parallel 4
@@ -168,7 +166,6 @@ jobs:
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
           -DQMLTUI_ENABLE_IMAGE=ON
-          -DQMLTUI_ENABLE_PTYVIEW=ON
           -DQMLTUI_ENABLE_COVERAGE=ON
 
       - name: Build
@@ -303,7 +300,6 @@ jobs:
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_ENABLE_PRIVATE_QT=ON
           -DQMLTUI_ENABLE_IMAGE=ON
-          -DQMLTUI_ENABLE_PTYVIEW=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -459,13 +455,13 @@ jobs:
           test -s build-wasm/hello_qmltui.html
 
   static-packaging:
-    name: static packaging (linux / system utf8proc + libvterm)
+    name: static packaging (linux / system utf8proc)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libutf8proc-dev libvterm-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libutf8proc-dev pkg-config
 
       - name: Install Ninja
         uses: seanmiddleditch/gha-setup-ninja@v5
@@ -491,10 +487,8 @@ jobs:
           -DQMLTUI_BUILD_BENCHMARKS=OFF
           -DQMLTUI_ENABLE_PRIVATE_QT=OFF
           -DQMLTUI_ENABLE_IMAGE=ON
-          -DQMLTUI_ENABLE_PTYVIEW=ON
           -DQMLTUI_ENABLE_RUNNER=ON
           -DQMLTUI_USE_SYSTEM_UTF8PROC=ON
-          -DQMLTUI_USE_SYSTEM_LIBVTERM=ON
 
       - name: Build static libraries, QML plugins, and CLI
         run: cmake --build build-static --parallel 4

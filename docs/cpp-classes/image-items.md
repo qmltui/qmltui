@@ -1,6 +1,6 @@
 # Image, AnimatedSprite, and Core Item Headers
 
-In addition to [`Item`](item.md), [`Rectangle`](rectangle.md), [`Text`](text.md), [`MouseArea`](mousearea.md), and [`PtyView`](ptyview.md), QmlTui installs public C++ headers for the raster image module (`QmlTui::Image`) and all built-in Core visual items (`QmlTui::Core`).
+In addition to [`Item`](item.md), [`Rectangle`](rectangle.md), [`Text`](text.md), and [`MouseArea`](mousearea.md), QmlTui installs public C++ headers for the raster image module (`QmlTui::Image`) and all built-in Core visual items (`QmlTui::Core`).
 
 ## `qmltui::Image` and `qmltui::AnimatedSprite`
 

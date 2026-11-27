@@ -39,9 +39,3 @@ SPDX-FileCopyrightText = [
     "1991-2007 Unicode, Inc."
 ]
 SPDX-License-Identifier = "MIT AND Unicode-DFS-2015"
-
-[[annotations]]
-path = "docs/third-party/libvterm-LICENSE"
-precedence = "override"
-SPDX-FileCopyrightText = "2008 Paul Evans <leonerd@leonerd.org.uk>"
-SPDX-License-Identifier = "MIT"

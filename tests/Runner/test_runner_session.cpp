@@ -691,6 +691,14 @@ private slots:
         const QString exportedPath = temp.filePath(QStringLiteral("connect_flow.js"));
 
         // Start via `s` shorthand alias
+        bool stoppedRepl = false;
+        const auto cleanupRepl = qScopeGuard([&] {
+            if (!stoppedRepl) {
+                (void)runLauncher({QStringLiteral("s"), QStringLiteral("stop"),
+                                   QStringLiteral("--session"), QStringLiteral("repl")},
+                                  sessionDir);
+            }
+        });
         QCOMPARE(
             runLauncher({QStringLiteral("s"), QStringLiteral("start"), QStringLiteral("--name"),
                          QStringLiteral("repl"), QStringLiteral("--clock"),
@@ -743,8 +751,12 @@ private slots:
         QCOMPARE(batchProc.write(scriptInput), scriptInput.size());
         batchProc.closeWriteChannel();
         QVERIFY(batchProc.waitForFinished(10000));
-        QCOMPARE(batchProc.exitCode(), 0);
         const QByteArray batchOut = batchProc.readAllStandardOutput();
+        const QByteArray batchErr = batchProc.readAllStandardError();
+        QVERIFY2(batchProc.exitCode() == 0,
+                 qPrintable(QStringLiteral("batchProc exited %1; stderr:\n%2\nstdout:\n%3")
+                                .arg(batchProc.exitCode())
+                                .arg(QString::fromUtf8(batchErr), QString::fromUtf8(batchOut))));
         QVERIFY(batchOut.contains("INPUT: hi there"));
 
         // Batch stops on first recoverable error with exit code 1, leaving session alive
@@ -756,7 +768,10 @@ private slots:
         failingBatch.write("click-text \"MISSING_ITEM\"\npress q\n");
         failingBatch.closeWriteChannel();
         QVERIFY(failingBatch.waitForFinished(10000));
-        QCOMPARE(failingBatch.exitCode(), 1);
+        QVERIFY2(failingBatch.exitCode() == 1,
+                 qPrintable(QStringLiteral("failingBatch exited %1; stderr:\n%2")
+                                .arg(failingBatch.exitCode())
+                                .arg(QString::fromUtf8(failingBatch.readAllStandardError()))));
 
         // Session is still alive after failed batch -> connect and stop cleanly
         QProcess connectProc;
@@ -767,7 +782,11 @@ private slots:
         connectProc.write("stats\nstop\n");
         connectProc.closeWriteChannel();
         QVERIFY(connectProc.waitForFinished(10000));
-        QCOMPARE(connectProc.exitCode(), 0);
+        stoppedRepl = true;
+        QVERIFY2(connectProc.exitCode() == 0,
+                 qPrintable(QStringLiteral("connectProc exited %1; stderr:\n%2")
+                                .arg(connectProc.exitCode())
+                                .arg(QString::fromUtf8(connectProc.readAllStandardError()))));
 
         // Verify exported script includes click-item as app.item(...).click() and replays cleanly
         QFile exportedFile(exportedPath);

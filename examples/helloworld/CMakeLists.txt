@@ -13,6 +13,11 @@ if(NOT TARGET QmlTui::Core)
     qt_standard_project_setup(REQUIRES 6.8)
     include(CTest)
 
+    # On Windows standalone shared builds, place QmlTui*.dll next to hello_qmltui.exe.
+    if(WIN32 AND PROJECT_IS_TOP_LEVEL AND NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    endif()
+
     # --------------------------------------------------------------------------
     # Option 1: FetchContent (downloads and builds QmlTui from source)
     # --------------------------------------------------------------------------
@@ -21,6 +26,7 @@ if(NOT TARGET QmlTui::Core)
         QmlTui
         GIT_REPOSITORY https://github.com/qmltui/qmltui.git
         GIT_TAG        main # Pin a release tag (e.g. v0.6.0) once published
+        GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(QmlTui)
 

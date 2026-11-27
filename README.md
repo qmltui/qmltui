@@ -136,9 +136,11 @@ Terminal {
 
 ## Quickstart
 
-To build locally, install **CMake 3.21+**, a **C++17** compiler, and **Qt 6.8+** with **`Core` and `Qml`** (tested across Qt 6.8 through 6.12; building tests additionally requires `Qt6::Test`):
+To build the repository examples locally, install **CMake 3.21+**, **Ninja**, a **C++17** compiler, and **Qt 6.8+** with **`Core` and `Qml`** (tested across Qt 6.8 through 6.12; building tests additionally requires `Qt6::Test`):
 
 ```sh
+git clone https://github.com/qmltui/qmltui.git
+cd qmltui
 cmake -S . -B build -G Ninja \
   -DQMLTUI_BUILD_EXAMPLES=ON \
   -DQMLTUI_BUILD_TESTS=OFF \
@@ -147,11 +149,14 @@ cmake --build build --target qmltui_gallery
 ./build/examples/gallery/qmltui_gallery
 ```
 
+Pass `-DCMAKE_PREFIX_PATH=/path/to/Qt/6.x/<kit>` if Qt 6.8+ is not on `PATH` (for example on Ubuntu 24.04 where system `apt` ships Qt 6.4, macOS Homebrew `$(brew --prefix qt)`, or Windows Qt Online Installer — see [Prerequisites](docs/getting-started.md#prerequisites)).
+
 ![QmlTui Interactive Component Gallery](docs/assets/casts/gallery-tour.gif)
 
 ### Start Your Own Project
 
-- **Standalone C++ / CMake (`FetchContent` or `find_package(QmlTui)`)**: Follow the 3-file [Getting Started tutorial](docs/getting-started.md) (includes a 3-minute Qt/QML primer for newcomers) or copy [`examples/helloworld/`](examples/helloworld/). Coming from Qt Quick? See [Migrating from Qt Quick](docs/guides/migrating-from-qt-quick.md).
+- **GitHub Template Repository (Recommended)**: Create a new repository from **[`qmltui/template`](https://github.com/qmltui/template)** ([**Use this template →**](https://github.com/qmltui/template/generate)) for a ready-to-build C++17/QML app with `find_package` + `FetchContent` support, `QmlTui.Controls`, a C++ `QML_ELEMENT` controller, `CMakePresets.json`, `Runner` CTest smoke tests, editor configs (`qmlls` / `clangd` / VS Code), WebAssembly (`qmltui_wasm_app()`), `AGENTS.md`, and cross-platform CI.
+- **Standalone C++ / CMake Walkthrough**: Follow the step-by-step [Getting Started tutorial](docs/getting-started.md) (includes a 3-minute Qt/QML primer for newcomers) or copy the minimal `QmlTui::Core`-only example in [`examples/helloworld/`](examples/helloworld/). Coming from Qt Quick? See [Migrating from Qt Quick](docs/guides/migrating-from-qt-quick.md).
 - **Python (`PySide6`)**: Build the public-Qt C++ QML plugins once and host `QmlTui` and `QmlTui.Controls` directly from Python on `QCoreApplication` without custom C++ bindings—see the [Python (PySide6) guide](docs/guides/python-pyside6.md) and [`examples/recipes/pyside6/`](examples/recipes/pyside6/).
 - **WebAssembly (`xterm.js`)**: Cross-compile with Qt for WebAssembly (`wasm_singlethread`) and `qmltui_wasm_app()`—see the [WebAssembly guide](docs/guides/webassembly.md) or try QmlTui in your browser in the [Live Playground](https://qmltui.github.io/playground.html).
 
@@ -188,7 +193,7 @@ cmake --build build --target qmltui-runner hello_qmltui
   -- ./build/examples/helloworld/hello_qmltui
 ```
 
-See [Testing with Runner](docs/guides/testing.md) and [Agentic Development Loop](docs/guides/agentic-development.md).
+See [Testing with Runner](docs/guides/testing.md) and [Agentic Development Loop](docs/guides/agentic-development.md). Pre-built standalone `qmltui-runner` archives for Linux, macOS, and Windows are also published on [GitHub Releases](https://github.com/qmltui/qmltui/releases).
 
 ## Performance and Memory
 
@@ -213,6 +218,6 @@ See [Testing with Runner](docs/guides/testing.md) and [Agentic Development Loop]
 
 ## License
 
-QmlTui is available under the **GNU Lesser General Public License v3.0 (`LGPL-3.0-only`)**. Examples and the starter template are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
+QmlTui is available under the **GNU Lesser General Public License v3.0 (`LGPL-3.0-only`)**. Examples and the [starter template](https://github.com/qmltui/template) are **BSD-3-Clause**; documentation is **CC-BY-4.0**. See [LICENSE.md](LICENSE.md).
 
 QmlTui is an independent open-source project and not a product of The Qt Company.

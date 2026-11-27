@@ -100,7 +100,7 @@ function main(app) {
 
 ## Run Scenarios with the `qmltui-runner` CLI
 
-The `qmltui-runner` command-line tool (built by default in top-level builds or when `-DQMLTUI_ENABLE_RUNNER=ON` is set) launches any `QmlTui::Runner`-linked executable, manages the activation handshake and timeouts, and verifies the resulting `result.json`.
+The `qmltui-runner` command-line tool (built by default in top-level builds or when `-DQMLTUI_ENABLE_RUNNER=ON` is set, and also distributed as standalone Linux/macOS/Windows archives on [GitHub Releases](https://github.com/qmltui/qmltui/releases)) launches any `QmlTui::Runner`-linked executable, manages the activation handshake and timeouts, and verifies the resulting `result.json`.
 
 > [!TIP]
 > When running from a local build tree instead of an installed `PATH`, invoke `./build/tools/qmltui-runner/qmltui-runner` (in-repo) or `./build/_deps/qmltui-build/tools/qmltui-runner/qmltui-runner` (`FetchContent`; `./build/bin/qmltui-runner` if `CMAKE_RUNTIME_OUTPUT_DIRECTORY` is set).

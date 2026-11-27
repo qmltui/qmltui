@@ -1,7 +1,7 @@
 # Licensing
 
 QmlTui is available under the **GNU Lesser General Public License v3.0 (`LGPL-3.0-only`)**.
-Examples, the starter template, and the build glue are **BSD-3-Clause** so they
+Examples, the [starter template](https://github.com/qmltui/template), and the build glue are **BSD-3-Clause** so they
 can be copied into your own project without conditions. Documentation is
 **CC-BY-4.0**.
 

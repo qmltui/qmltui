@@ -4,11 +4,12 @@ QmlTui uses standard Qt 6 QML tooling (`qmlls`, `qmllint`, `qmlformat`) and Type
 
 ## QML Autocomplete, Linting, and Formatting
 
-### 1. Enable `.qmlls.ini` Generation in CMake
+### 1. Enable `.qmlls.ini` and `compile_commands.json` Generation in CMake
 
-Add `set(QT_QML_GENERATE_QMLLS_INI ON)` before `qt_add_executable()` in `CMakeLists.txt`:
+Add `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)` and `set(QT_QML_GENERATE_QMLLS_INI ON)` before `qt_add_executable()` in `CMakeLists.txt`:
 
 ```cmake
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
 set(app_qml_dependencies)
@@ -25,7 +26,7 @@ qt_add_qml_module(my_app
 )
 ```
 
-Configuring and building your project writes `.qmlls.ini` in the source directory, pointing Qt's QML Language Server (`qmlls`) at `build/qml` (for `FetchContent` / `add_subdirectory` builds) or `QmlTui_QML_IMPORT_PATH` (when consuming an installed package via `find_package(QmlTui)`). Because `.qmlls.ini` contains machine-specific absolute build paths, add `.qmlls.ini` to your project's `.gitignore`.
+Configuring and building your project writes `build/compile_commands.json` (for `clangd` C++ completion on `Qt6` and `QmlTui` headers) and `.qmlls.ini` in the source directory, pointing Qt's QML Language Server (`qmlls`) at `build/qml` (for `FetchContent` / `add_subdirectory` builds) or `QmlTui_QML_IMPORT_PATH` (when consuming an installed package via `find_package(QmlTui)`). Because `.qmlls.ini` contains machine-specific absolute build paths, add `.qmlls.ini` to your project's `.gitignore`.
 
 ### 2. Configure Your Editor or IDE
 
@@ -56,7 +57,7 @@ cmake --build build --target my_app_qmllint
 # Or lint an individual QML file directly against build/qml:
 /path/to/Qt/6.8.x/gcc_64/bin/qmllint -I build/qml Main.qml
 
-# Format QML files in place (4 spaces, no tabs):
+# Format QML files in place (copy .qmlformat.ini from qmltui or qmltui/template for 4 spaces & semicolons):
 /path/to/Qt/6.8.x/gcc_64/bin/qmlformat -i Main.qml
 ```
 
@@ -71,7 +72,7 @@ if(BUILD_TESTING AND TARGET QmlTui::Runner)
 endif()
 ```
 
-At configure time, CMake writes `.qmltui/qmltui-runner.d.ts` in your project directory and generates a `jsconfig.json` referencing it if neither `jsconfig.json` nor `tsconfig.json` already exists (if your project already maintains a custom `tsconfig.json`, add `".qmltui/qmltui-runner.d.ts"` to its `"include"` array).
+At configure time, CMake writes `.qmltui/qmltui-runner.d.ts` (along with `.qmltui/.gitignore` so generated declarations stay untracked) and generates a `jsconfig.json` referencing it if neither `jsconfig.json` nor `tsconfig.json` already exists. Commit `jsconfig.json` to version control so collaborators get `Runner` autocomplete automatically after their first configure (if your project already maintains a custom `tsconfig.json`, add `".qmltui/qmltui-runner.d.ts"` to its `"include"` array).
 
 Annotate scenario entry points with JSDoc so VS Code, Neovim (`ts_ls` / `vtsls`), Zed, WebStorm/CLion, and Qt Creator provide method completion and parameter types on `app`. Use plain `function main(app)` in `.js` scenarios (use `export function main(app)` only in `.mjs` ES modules; `export` is a syntax error in `.js` files):
 

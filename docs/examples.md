@@ -99,11 +99,12 @@ Each file in [`examples/gallery/examples/`](../examples/gallery/examples/) is a 
 | **TableView Model** | [`examples/recipes/table_view/`](../examples/recipes/table_view/) | `qmltui_table_view_demo` | [Models & Views](guides/models.md) | `TableView` backed by C++ `ProcessModel` (`QAbstractTableModel`) and `ProcessProxy` (`QSortFilterProxyModel`) with column sorting and filtering. |
 | **TextArea Highlighting** | [`examples/recipes/text_area_highlighting/`](../examples/recipes/text_area_highlighting/) | `qmltui_text_area_highlighting_demo` | [Styling & Colors](guides/styling-and-colors.md) · [GIF](assets/casts/components/text_area_highlighting.gif) | Custom syntax highlighting on `TextArea` implemented in both QML (`QmlHighlighter.qml`) and C++ (`JsonHighlighter`). |
 
-## Starter Template (`examples/helloworld/`)
+## Starter Template and Hello World
 
-| Project | Directory | CMake Target | Description |
+| Project | Source | CMake Target | Description |
 | :--- | :--- | :--- | :--- |
-| **Standalone Hello World** | [`examples/helloworld/`](../examples/helloworld/) | `hello_qmltui` (`hello_world` Runner scenario) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) starter project supporting `FetchContent`, `find_package(QmlTui)`, and `qmltui_wasm_app()`. |
+| **GitHub Project Template** | [`qmltui/template`](https://github.com/qmltui/template) ([Use this template](https://github.com/qmltui/template/generate)) | `my_app` (`my_app_smoke` Runner scenario) | Full-featured BSD-3-Clause template repo with `find_package` + `FetchContent`, `CMakePresets.json`, `QmlTui.Controls`, a C++ `QML_ELEMENT` controller, `Runner` tests, editor configs, WebAssembly, `AGENTS.md`, and cross-platform CI. |
+| **Standalone Hello World** | [`examples/helloworld/`](../examples/helloworld/) | `hello_qmltui` (`hello_world` Runner scenario) | Minimal 3-file (`CMakeLists.txt`, `main.cpp`, `Main.qml`) `QmlTui::Core`-only starter supporting `FetchContent`, `find_package(QmlTui)`, and `qmltui_wasm_app()`. |
 
 ## Official Add-on Modules
 

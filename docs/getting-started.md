@@ -2,6 +2,9 @@
 
 This tutorial walks Qt 6 developers through building a standalone QmlTui terminal application with CMake, binding a C++ `QObject` class to QML with `QML_ELEMENT`, and verifying rendered terminal frames in CTest with `Runner`.
 
+> [!TIP]
+> **Prefer a ready-to-run starter repo?** Create a project directly from **[`qmltui/template`](https://github.com/qmltui/template)** ([Use this template](https://github.com/qmltui/template/generate)), which comes preconfigured with `find_package` + `FetchContent`, `CMakePresets.json`, `QmlTui.Controls`, a C++ `QML_ELEMENT` controller, `Runner` tests, `qmlls`/`clangd`/VS Code settings, WebAssembly support, `AGENTS.md`, and cross-platform CI.
+
 For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `Runner`), CMake cache options, and runtime environment variables, see [Build Configuration and Installation](build-configuration.md).
 
 ## Prerequisites
@@ -12,9 +15,13 @@ For `find_package(QmlTui)` installation, optional modules (`QmlTui.Image`, `Runn
 
 ### Installing Qt 6.8+
 
-- **Ubuntu 24.04 / Debian**: System `apt` packages on Ubuntu 24.04 ship Qt 6.4, which is too old for QmlTui. Install Qt 6.8+ with [`aqtinstall`](https://github.com/miurahr/aqtinstall) (`pipx install aqtinstall && aqt install-qt -O ~/Qt linux desktop 6.8.3 linux_gcc_64`, or run `pip` inside a Python virtual environment) or the official [Qt Online Installer](https://doc.qt.io/qt-6/gettingstarted.html), then pass `-DCMAKE_PREFIX_PATH=~/Qt/6.8.3/gcc_64` to CMake. On newer distributions shipping Qt 6.8+ (such as Arch Linux, CachyOS, or Fedora), install the system `qt6-base` and `qt6-declarative` development packages (plus `qt6-declarative-private-dev` on Debian/Ubuntu derivatives if enabling `Behavior`, or pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`).
-- **macOS**: `brew install qt cmake ninja`, then pass `-DCMAKE_PREFIX_PATH=$(brew --prefix qt)` to CMake.
-- **Windows**: Install Qt 6.8+ (MSVC 2022 64-bit) via the [Qt Online Installer](https://doc.qt.io/qt-6/gettingstarted.html) or `aqtinstall`, then pass `-DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/msvc2022_64` from a Visual Studio Developer Prompt.
+- **Ubuntu 24.04 / Debian 12**: System `apt` packages ship Qt 6.4, which is too old for QmlTui. Install build tools (`sudo apt install build-essential cmake ninja-build git`) and Qt 6.8+ with [`aqtinstall`](https://github.com/miurahr/aqtinstall) (`pipx install aqtinstall && aqt install-qt -O ~/Qt linux desktop 6.8.3 linux_gcc_64`, or run `pip` inside a Python virtual environment) or the official [Qt Online Installer](https://doc.qt.io/qt-6/gettingstarted.html), then pass `-DCMAKE_PREFIX_PATH=~/Qt/6.8.3/gcc_64` to CMake.
+- **Linux distributions shipping Qt 6.8+**: Install your distribution's base and declarative Qt 6 packages:
+  - **Arch Linux / CachyOS**: `qt6-base qt6-declarative`
+  - **Fedora**: `qt6-qtbase-devel qt6-qtdeclarative-devel`
+  - **Debian 13+ / Ubuntu 24.10+**: `qt6-base-dev qt6-declarative-dev` (plus `qt6-declarative-private-dev` if enabling `Behavior`, or pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF`)
+- **macOS**: Install Xcode Command Line Tools (`xcode-select --install`) and run `brew install qt cmake ninja`, then pass `-DCMAKE_PREFIX_PATH=$(brew --prefix qt)` to CMake.
+- **Windows**: Install Qt 6.8+ (MSVC 2022 64-bit) via the [Qt Online Installer](https://doc.qt.io/qt-6/gettingstarted.html) or `aqtinstall` (`aqt install-qt -O C:/Qt windows desktop 6.8.3 win64_msvc2022_64`). Configure from a Visual Studio Developer Prompt with `-DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/msvc2022_64`, add `C:\Qt\6.8.3\msvc2022_64\bin` to `PATH`, and run in **Windows Terminal** (legacy `conhost.exe` is not targeted).
 
 ## New to Qt/QML? QmlTui in 3 Minutes
 
@@ -42,6 +49,11 @@ project(hello_qmltui LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Place executables and FetchContent shared libraries (QmlTui*.dll on Windows,
+# plus qmltui-runner) in a single bin/ directory.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
@@ -52,6 +64,7 @@ FetchContent_Declare(
     QmlTui
     GIT_REPOSITORY https://github.com/qmltui/qmltui.git
     GIT_TAG        main # Pin a release tag (e.g. v0.6.0) once published
+    GIT_SHALLOW    TRUE
 )
 FetchContent_MakeAvailable(QmlTui)
 
@@ -73,7 +86,7 @@ target_link_libraries(hello_qmltui PRIVATE
 )
 ```
 
-`QT_QML_GENERATE_QMLLS_INI` writes `.qmlls.ini` for editor autocomplete, and `DEPENDENCIES TARGET` orders QmlTui's `.qmltypes` generation before `qmllint` in `FetchContent` builds. When consuming an installed QmlTui package with `find_package(QmlTui 0.6 REQUIRED)`, omit `DEPENDENCIES TARGET` (installed QML metadata is resolved automatically via `QT_QML_IMPORT_PATH`; see [Build Configuration and Installation](build-configuration.md)).
+`QT_QML_GENERATE_QMLLS_INI` writes `.qmlls.ini` for QML editor autocomplete, `CMAKE_EXPORT_COMPILE_COMMANDS` writes `build/compile_commands.json` for C++ (`clangd`), and `DEPENDENCIES TARGET` orders QmlTui's `.qmltypes` generation before `qmllint` in `FetchContent` builds. When consuming an installed QmlTui package with `find_package(QmlTui 0.6 REQUIRED)`, omit `DEPENDENCIES TARGET` (installed QML metadata is resolved automatically via `QT_QML_IMPORT_PATH`; see [Build Configuration and Installation](build-configuration.md)).
 
 ### 2. `main.cpp`
 
@@ -104,6 +117,8 @@ import QmlTui.Controls
 
 Terminal {
     id: root
+    property int clicks: 0
+
     color: "#0d1117"
 
     Keys.onPressed: event => {
@@ -126,12 +141,11 @@ Terminal {
         Button {
             text: "Press Enter, or Q to quit"
             focus: true
-            onClicked: status.text = "Status: Clicked!"
+            onClicked: root.clicks++
         }
 
         Text {
-            id: status
-            text: "Status: ready"
+            text: root.clicks === 0 ? "Status: ready" : "Status: clicked " + root.clicks + " time(s)"
             color: "magenta"
         }
     }
@@ -149,11 +163,11 @@ cmake -S . -B build -G Ninja
 # Or point CMake at a specific Qt 6.8+ kit (Qt Online Installer / macOS / Windows):
 cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH=/path/to/Qt/6.8.x/gcc_64
 
-cmake --build build
-./build/hello_qmltui
+cmake --build build --parallel
+./build/bin/hello_qmltui
 ```
 
-If you configure without `-G Ninja` on a multi-config generator such as Visual Studio, run `.\build\Debug\hello_qmltui.exe`.
+If you configure without `-G Ninja` on a multi-config generator such as Visual Studio, run `.\build\bin\Debug\hello_qmltui.exe`.
 
 The terminal switches to the alternate screen and renders (a focused `Button` draws a double-line border):
 
@@ -167,10 +181,10 @@ Welcome to QmlTui
 Status: ready
 ```
 
-Press **Enter** or **Space** to activate the focused button and update the status text. Press **Q** or **Escape** to exit and restore the normal terminal screen.
+Press **Enter** or **Space** to activate the focused button and update the bound status text. Press **Q** or **Escape** to exit and restore the normal terminal screen.
 
 > [!TIP]
-> **Windows DLL Lookup**: On Windows, `FetchContent` shared builds place `QmlTuiCore.dll` and `QmlTuiControls.dll` in subproject directories unless unified. Set `set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")` before `FetchContent_MakeAvailable(QmlTui)` and add your Qt kit's `bin` directory to `PATH` (or run `windeployqt`).
+> **Windows DLL Lookup & `.gitignore`**: Because `CMAKE_RUNTIME_OUTPUT_DIRECTORY` places `QmlTuiCore.dll`, `QmlTuiControls.dll`, and `hello_qmltui.exe` together in `build/bin/`, only your Qt kit's `bin` directory needs to be on `PATH` (or bundled with `windeployqt`). In version control, ignore `build/`, `.qmlls.ini`, `.qmltui/`, and `*.log` (generated `jsconfig.json` in Step 3 is safe to commit so collaborators get `Runner` autocomplete automatically).
 
 ## Step 2: Bind a C++ `QObject` and Add Reusable QML Components
 
@@ -291,7 +305,7 @@ Terminal {
 }
 ```
 
-Rebuild with `cmake --build build` and run `./build/hello_qmltui`. Pressing **Enter** or **Space** calls `AppController::increment()` and updates the bound `Text` automatically; **Ctrl+R** resets the counter.
+Rebuild with `cmake --build build --parallel` and run `./build/bin/hello_qmltui`. Pressing **Enter** or **Space** calls `AppController::increment()` and updates the bound `Text` automatically; **Ctrl+R** resets the counter.
 
 ### Adding Reusable QML Components
 
@@ -340,14 +354,17 @@ if(BUILD_TESTING AND TARGET QmlTui::Runner)
 endif()
 ```
 
-### 3. Run CTest
+### 3. Run CTest and Visual Probes
 
 ```sh
-cmake --build build
+cmake --build build --parallel
 ctest --test-dir build --output-on-failure
+
+# Optional: sweep 60x18 / 80x24 / 120x36 viewports with 0-based rulers and idle-budget check:
+./build/bin/qmltui-runner --clock virtual --sweep --idle-ms 300 --ruler -- ./build/bin/hello_qmltui
 ```
 
-`Runner` launches `hello_qmltui` against an in-memory terminal backend, asserts each rendered frame, and exits cleanly. Normal `./build/hello_qmltui` startup remains unaffected when launched directly. See [Testing and Recording with Runner](guides/testing.md) for snapshots and Asciinema `.cast` recording.
+`Runner` launches `hello_qmltui` against an in-memory terminal backend, asserts each rendered frame, and exits cleanly. Normal `./build/bin/hello_qmltui` startup remains unaffected when launched directly. See [Testing and Recording with Runner](guides/testing.md) for snapshots and Asciinema `.cast` recording, and [Agentic Development Loop](guides/agentic-development.md) for closed-loop visual auditing.
 
 ## Explore the Component Gallery (Optional)
 
@@ -374,7 +391,7 @@ cmake --build build --target qmltui_gallery
 | Type conflicts or `QQuickItem` errors when loading QML | `QtQuick` was imported. Remove `import QtQuick` and use `import QtQml`, `import QmlTui`, and `import QmlTui.Controls`. |
 | Items clip off-screen (`width: 400`, `height: 300`) | QmlTui coordinates are integer character cells (`80x24` is a typical viewport), not pixels. |
 | `Keys.onPressed` never fires on a custom `Item` or `Rectangle` | Plain `Item` and `Rectangle` default to `Qt.NoFocus`. Set `focusPolicy: Qt.StrongFocus` and `focus: true` (`Button` and `TextInput` enable strong focus by default). |
-| `console.log()` output appears only after quitting | While `Terminal.AltScreen` owns a TTY `stderr`, QmlTui buffers logs until exit so they never corrupt rendered frames. Run `./build/hello_qmltui 2> debug.log` or set `QMLTUI_LOG_FILE=debug.log` and `tail -f debug.log` in another terminal. |
+| `console.log()` output appears only after quitting | While `Terminal.AltScreen` owns a TTY `stderr`, QmlTui buffers logs until exit so they never corrupt rendered frames. Set `QMLTUI_LOG_FILE=debug.log` (cross-platform; PowerShell: `$env:QMLTUI_LOG_FILE="debug.log"`) or redirect `./build/bin/hello_qmltui 2> debug.log` and inspect `debug.log` in another terminal. |
 
 ## Next Steps
 

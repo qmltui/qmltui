@@ -36,7 +36,7 @@ cmake --build build
 cmake --install build --prefix /your/prefix
 ```
 
-Reuse `main.cpp` and `Main.qml` from [Getting Started](getting-started.md) and consume the package with `find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls)`:
+Reuse `main.cpp` and `Main.qml` from [Getting Started](getting-started.md) and consume the package with `find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls OPTIONAL_COMPONENTS Runner)`:
 
 ```cmake
 cmake_minimum_required(VERSION 3.21)
@@ -47,7 +47,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml)
 qt_standard_project_setup(REQUIRES 6.8)
-find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls)
+find_package(QmlTui 0.6 REQUIRED COMPONENTS Core Controls OPTIONAL_COMPONENTS Runner)
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
 
@@ -135,7 +135,7 @@ Register additional `.qml` components and singletons on the same `qt_add_qml_mod
 ### Offline / Air-Gapped CI and Reproducible Builds
 
 - **System vs. fetched libraries**: By default, CMake downloads a SHA-256-verified release tarball for `utf8proc` (`v2.11.3.tar.gz`) via `FetchContent`. On offline runners, install the system package (CMake `utf8proc` config or `pkg-config` `libutf8proc`) and pass `-DQMLTUI_USE_SYSTEM_UTF8PROC=ON`, or point CMake to a pre-staged source tree with `-DFETCHCONTENT_SOURCE_DIR_UTF8PROC=/path/to/utf8proc`.
-- **Deterministic `Qt6::QmlPrivate`**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` falls back to `OFF` with a warning when private headers are absent, pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` explicitly in CI if unused, or install `qt6-declarative-private-dev` everywhere.
+- **Deterministic `Qt6::QmlPrivate`**: Because `QMLTUI_ENABLE_PRIVATE_QT=ON` falls back to `OFF` with a warning when private headers are absent, pass `-DQMLTUI_ENABLE_PRIVATE_QT=OFF` explicitly in CI if unused, or install the Qt 6 QML private headers everywhere (for example `qt6-declarative-private-dev` on Debian/Ubuntu, or Qt Online Installer / `aqtinstall` kits).
 
 ## Repository Test and Benchmark Builds
 
@@ -170,7 +170,7 @@ cmake --build build-release
 | `QMLTUI_ENABLE_COVERAGE` | `OFF` | Instrument targets for Clang source-based coverage |
 | `QMLTUI_INSTALL_QMLDIR` | `${CMAKE_INSTALL_LIBDIR}/qml` | Install path for QmlTui QML modules |
 | `QMLTUI_USE_SYSTEM_UTF8PROC` | `OFF` | Link system `utf8proc` (`find_package(utf8proc CONFIG)` first, then `pkg-config` `libutf8proc`) instead of `FetchContent` |
-| `QMLTUI_WASM_INITIAL_MEMORY` | `""` (Emscripten default) | Optional Emscripten `INITIAL_MEMORY` override (for example `67108864`) applied by `qmltui_wasm_app()` |
+| `QMLTUI_WASM_INITIAL_MEMORY` | `""` (Qt default: `50MB`) | Optional Emscripten `INITIAL_MEMORY` override (for example `96MB`) applied by `qmltui_wasm_app()` |
 | `QMLTUI_BUILD_WIDGETS_REFERENCE` | `ON` (when examples enabled & `Qt6::Widgets` found) | Build `qmltui_standard_item_delegate_widgets` side-by-side Qt Widgets comparison target |
 
 ### Runtime Environment Variables

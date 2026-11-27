@@ -1,6 +1,6 @@
-# Hello QmlTui Starter Template
+# Hello QmlTui Starter Example
 
-Minimal 3-file QmlTui application (`CMakeLists.txt`, `main.cpp`, `Main.qml`) plus a headless `Runner` scenario (`test_helloworld.js`). You can copy this directory out of the repository and use it directly as a new standalone project.
+Minimal 3-file `QmlTui::Core`-only application (`CMakeLists.txt`, `main.cpp`, `Main.qml`) plus a headless `Runner` scenario (`test_helloworld.js`). You can copy this directory out of the repository and use it directly as a standalone project, or start a full project repository with `QmlTui.Controls`, a C++ `QML_ELEMENT` controller, `CMakePresets.json`, editor configs, `AGENTS.md`, and CI from **[`qmltui/template`](https://github.com/qmltui/template)** ([Use this template](https://github.com/qmltui/template/generate)).
 
 ## Build and Run Standalone (`FetchContent`)
 

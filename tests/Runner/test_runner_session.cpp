@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QScopeGuard>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QThread>
@@ -1057,25 +1058,65 @@ private slots:
         // inherited stdout, `catProc` would hang for the daemon's lifetime.
         QProcess startProc;
         QProcess catProc;
+        bool stoppedDaemon = false;
+        const auto cleanup = qScopeGuard([&] {
+            if (startProc.state() != QProcess::NotRunning) {
+                startProc.kill();
+                startProc.waitForFinished(2000);
+            }
+            if (catProc.state() != QProcess::NotRunning) {
+                catProc.kill();
+                catProc.waitForFinished(2000);
+            }
+            if (!stoppedDaemon) {
+                (void)runLauncher({QStringLiteral("s"), QStringLiteral("stop"),
+                                   QStringLiteral("--session"), QStringLiteral("pipeeof")},
+                                  sessionDir);
+            }
+        });
+
         startProc.setProcessEnvironment(baseEnv(sessionDir));
         startProc.setStandardOutputProcess(&catProc);
-        catProc.start(QStringLiteral(QMLTUI_CMAKE_COMMAND),
-                      {QStringLiteral("-E"), QStringLiteral("cat"), QStringLiteral("-")});
-        QVERIFY2(catProc.waitForStarted(5000), qPrintable(catProc.errorString()));
 
+        QByteArray pipedOut;
+        QObject::connect(&catProc, &QProcess::readyReadStandardOutput, &catProc,
+                         [&] { pipedOut.append(catProc.readAllStandardOutput()); });
+
+        // Start the upstream writer before the downstream reader so Qt closes
+        // the parent's copy of the pipe write end before spawning `catProc`
+        // (on Windows, starting the sink first lets `catProc` inherit its own
+        // stdin write end).
         startProc.start(launcherBinary(),
                         {QStringLiteral("s"), QStringLiteral("start"), QStringLiteral("--name"),
                          QStringLiteral("pipeeof"), QStringLiteral("--clock"),
                          QStringLiteral("virtual"), QStringLiteral("--"), fixtureBinary()});
         QVERIFY2(startProc.waitForStarted(5000), qPrintable(startProc.errorString()));
-        QVERIFY2(startProc.waitForFinished(10000), qPrintable(startProc.errorString()));
+
+        catProc.start(QStringLiteral(QMLTUI_CMAKE_COMMAND),
+                      {QStringLiteral("-E"), QStringLiteral("cat"), QStringLiteral("-")});
+        QVERIFY2(catProc.waitForStarted(5000), qPrintable(catProc.errorString()));
+
+        QElapsedTimer startTimer;
+        startTimer.start();
+        while (startProc.state() != QProcess::NotRunning && startTimer.elapsed() < 10000) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+            QThread::msleep(10);
+        }
+        QVERIFY2(startProc.state() == QProcess::NotRunning, qPrintable(startProc.errorString()));
+        QCOMPARE(startProc.exitStatus(), QProcess::NormalExit);
         QCOMPARE(startProc.exitCode(), 0);
-        QVERIFY2(catProc.waitForFinished(3000),
-                 "Detached session daemon kept caller stdout pipe open after session start exited");
-        const QByteArray pipedOut = catProc.readAllStandardOutput();
+        if (catProc.state() != QProcess::NotRunning) {
+            QVERIFY2(
+                catProc.waitForFinished(3000),
+                "Detached session daemon kept caller stdout pipe open after session start exited");
+        }
+        QCOMPARE(catProc.exitStatus(), QProcess::NormalExit);
+        QCOMPARE(catProc.exitCode(), 0);
+        pipedOut.append(catProc.readAllStandardOutput());
         QVERIFY2(pipedOut.contains("Session: pipeeof"), qPrintable(QString::fromUtf8(pipedOut)));
         QVERIFY(pipedOut.contains("TESTRUNNER FIXTURE"));
 
+        stoppedDaemon = true;
         QCOMPARE(runLauncher({QStringLiteral("s"), QStringLiteral("stop"),
                               QStringLiteral("--session"), QStringLiteral("pipeeof")},
                              sessionDir)

@@ -362,9 +362,13 @@ private slots:
                               "--artifacts", failSweepDir, "--eval",
                               "app.expectText('NEVER_MATCHES_SENTINEL');", "--", fixtureBinary()});
         QCOMPARE(failSweep.code, 1);
-        QVERIFY(failSweep.out.contains("=== Failure Frame (failure.txt) ==="));
-        QVERIFY(failSweep.out.contains("012345678901234567890123456789012345678901234\n"));
-        QVERIFY(!failSweep.out.contains("01234567890123456789012345678901234567890123456789"));
+        const QString failSweepOut =
+            QString::fromUtf8(failSweep.out).replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+        QVERIFY(failSweepOut.contains(QStringLiteral("=== Failure Frame (failure.txt) ===")));
+        QVERIFY(failSweepOut.contains(
+            QStringLiteral("012345678901234567890123456789012345678901234\n")));
+        QVERIFY(!failSweepOut.contains(
+            QStringLiteral("01234567890123456789012345678901234567890123456789")));
 
         // Inline mode --record suppresses CSI 6 n while keeping item/region clickText() working.
         const QString inlineRecDir = temporary.filePath("inline-rec");

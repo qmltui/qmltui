@@ -1,4 +1,5 @@
 #include "SessionCli.h"
+#include "DetachedProcess.h"
 #include "Formatters.h"
 #include "SessionCommand.h"
 #include "SessionConnect.h"
@@ -14,7 +15,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QProcess>
 #include <QTemporaryDir>
 #include <QTextStream>
 #include <QThread>
@@ -370,16 +370,11 @@ int runSessionStart(const QStringList& args) {
     }
 
     qint64 daemonPid = 0;
-    QProcess daemonProc;
-    daemonProc.setProgram(QCoreApplication::applicationFilePath());
-    daemonProc.setArguments({QStringLiteral("__session-daemon"), launchSpecPath});
-    daemonProc.setWorkingDirectory(QDir::currentPath());
-    // Detach standard streams so the background daemon never keeps a piped
-    // caller's stdout/stderr open after `session start` exits.
-    daemonProc.setStandardInputFile(QProcess::nullDevice());
-    daemonProc.setStandardOutputFile(QProcess::nullDevice());
-    daemonProc.setStandardErrorFile(QProcess::nullDevice());
-    const bool launched = daemonProc.startDetached(&daemonPid);
+    // Detach standard streams and prevent caller handle inheritance so the
+    // background daemon never keeps a piped caller's stdout/stderr open.
+    const bool launched = startDetachedDaemon(QCoreApplication::applicationFilePath(),
+                                              {QStringLiteral("__session-daemon"), launchSpecPath},
+                                              QDir::currentPath(), &daemonPid);
     if (!launched)
         return cliError(QStringLiteral("Failed to spawn background session daemon."), jsonOut);
 

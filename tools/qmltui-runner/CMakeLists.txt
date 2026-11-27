@@ -18,12 +18,13 @@ qt_add_executable(qmltui-runner
     SessionDaemon.cpp
     SessionCli.h
     SessionCli.cpp
+    DetachedProcess.h
     TerminalSize.h
 )
 if(WIN32)
-    target_sources(qmltui-runner PRIVATE TerminalSizeWin32.cpp)
+    target_sources(qmltui-runner PRIVATE DetachedProcessWin32.cpp TerminalSizeWin32.cpp)
 else()
-    target_sources(qmltui-runner PRIVATE TerminalSizePosix.cpp)
+    target_sources(qmltui-runner PRIVATE DetachedProcessPosix.cpp TerminalSizePosix.cpp)
 endif()
 target_link_libraries(qmltui-runner PRIVATE Qt6::Core)
 if(TARGET Qt6::Network)

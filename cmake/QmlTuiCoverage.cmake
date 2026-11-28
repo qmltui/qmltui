@@ -54,9 +54,20 @@ function(qmltui_register_coverage_targets)
     foreach(tgt IN LISTS instrumented_targets)
         if(TARGET "${tgt}")
             qmltui_enable_target_coverage("${tgt}")
-            list(APPEND cov_object_args "$<TARGET_FILE:${tgt}>")
+            get_target_property(tgt_type "${tgt}" TYPE)
+            if(NOT tgt_type STREQUAL "STATIC_LIBRARY")
+                list(APPEND cov_object_args "$<TARGET_FILE:${tgt}>")
+            endif()
         endif()
     endforeach()
+
+    # QmlTuiRunner is always built as a static archive (for whole-archive
+    # auto-hook registration), and llvm-cov requires linked binaries rather
+    # than .a archives. qmltui_runner_fixture force-loads all of QmlTuiRunner,
+    # while QMLTUI_COVERAGE_IGNORE_REGEX excludes tests/ from the report.
+    if(TARGET QmlTuiRunner AND TARGET qmltui_runner_fixture)
+        list(APPEND cov_object_args "$<TARGET_FILE:qmltui_runner_fixture>")
+    endif()
 
     set(coverage_dir "${CMAKE_BINARY_DIR}/coverage")
     set(profdata_file "${coverage_dir}/qmltui.profdata")

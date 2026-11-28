@@ -210,11 +210,6 @@ if(TARGET QmlTui::Runner AND NOT EMSCRIPTEN)
     add_subdirectory(tools/qmltui-runner)
 endif()
 
-if(QMLTUI_ENABLE_COVERAGE)
-    include(cmake/QmlTuiCoverage.cmake)
-    qmltui_register_coverage_targets()
-endif()
-
 # Example executable to test the library
 if(QMLTUI_BUILD_EXAMPLES)
     add_subdirectory(examples)
@@ -222,6 +217,11 @@ endif()
 
 if(QMLTUI_BUILD_TESTS OR QMLTUI_BUILD_BENCHMARKS)
     add_subdirectory(tests)
+endif()
+
+if(QMLTUI_ENABLE_COVERAGE)
+    include(cmake/QmlTuiCoverage.cmake)
+    qmltui_register_coverage_targets()
 endif()
 
 configure_package_config_file(

@@ -813,6 +813,14 @@ private slots:
         QTemporaryDir temp;
         QVERIFY(temp.isValid());
         const QString sessionDir = temp.filePath(QStringLiteral("sessions"));
+        bool stoppedAll = false;
+        const auto cleanupConc = qScopeGuard([&] {
+            if (!stoppedAll) {
+                (void)runLauncher(
+                    {QStringLiteral("s"), QStringLiteral("stop"), QStringLiteral("--all")},
+                    sessionDir);
+            }
+        });
 
         // 1. Start with --idle-timeout-ms 0 and --plain (no ruler)
         const auto started =
@@ -860,7 +868,11 @@ private slots:
             {QStringLiteral("s"), QStringLiteral("eval"), QStringLiteral("app.finish()"),
              QStringLiteral("--no-frame"), QStringLiteral("--json")},
             sessionDir);
-        QCOMPARE(finishEval.code, 1);
+        QVERIFY2(finishEval.code == 1,
+                 qPrintable(QStringLiteral("finishEval exited %1; stdout:\n%2\nstderr:\n%3")
+                                .arg(finishEval.code)
+                                .arg(QString::fromUtf8(finishEval.out),
+                                     QString::fromUtf8(finishEval.err))));
         const QJsonObject finishObj = parseLastJsonLine(finishEval.out);
         QVERIFY(!finishObj.value(QStringLiteral("ok")).toBool());
         QVERIFY(finishObj.value(QStringLiteral("error"))
@@ -871,7 +883,11 @@ private slots:
         const auto afterFinish = runLauncher(
             {QStringLiteral("s"), QStringLiteral("frame"), QStringLiteral("--no-ruler")},
             sessionDir);
-        QCOMPARE(afterFinish.code, 0);
+        QVERIFY2(afterFinish.code == 0,
+                 qPrintable(QStringLiteral("afterFinish exited %1; stdout:\n%2\nstderr:\n%3")
+                                .arg(afterFinish.code)
+                                .arg(QString::fromUtf8(afterFinish.out),
+                                     QString::fromUtf8(afterFinish.err))));
         QVERIFY(afterFinish.out.contains("STATUS: KEY K"));
 
         // 4. Failing `--diff` falls back to full frame instead of "(no visual changes)"
@@ -1061,6 +1077,7 @@ private slots:
                              sessionDir)
                      .code,
                  0);
+        stoppedAll = true;
         QCOMPARE(runLauncher({QStringLiteral("s"), QStringLiteral("stop"), QStringLiteral("--all")},
                              sessionDir)
                      .code,

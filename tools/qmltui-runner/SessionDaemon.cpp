@@ -13,6 +13,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QMetaObject>
 #include <QPointer>
 #include <QRegularExpression>
 #include <QSaveFile>
@@ -114,32 +115,36 @@ bool isValidSessionName(const QString& name) {
 
 namespace {
 
-bool connectLocalSocket(QLocalSocket& socket, const QString& socketName, int timeoutMs,
-                        QString* error) {
+bool connectLocalSocket(std::unique_ptr<QLocalSocket>* outSocket, const QString& socketName,
+                        int timeoutMs, QString* error) {
     // On Windows, QLocalServer uses Named Pipes and rapid back-to-back clients
     // (such as `session batch`) can briefly hit ERROR_PIPE_BUSY before the
-    // daemon creates the next listening pipe instance. Retry transient connect
-    // failures briefly while failing fast when no server exists.
+    // daemon creates the next listening pipe instance. Use a fresh QLocalSocket
+    // per retry so we never call abort() before the first connect attempt, and
+    // fail fast when no server exists.
     const int budgetMs = (std::max)(100, (std::min)(timeoutMs, 2000));
     QDeadlineTimer deadline(budgetMs);
     constexpr int kMaxAttempts = 6;
+    QString lastError;
     for (int attempt = 0; attempt < kMaxAttempts; ++attempt) {
-        socket.abort();
-        socket.connectToServer(socketName, QIODevice::ReadWrite);
+        auto candidate = std::make_unique<QLocalSocket>();
+        candidate->connectToServer(socketName, QIODevice::ReadWrite);
         const int remaining = static_cast<int>((std::max<qint64>)(1, deadline.remainingTime()));
-        if (socket.state() == QLocalSocket::ConnectedState ||
-            socket.waitForConnected((std::min)(remaining, 500))) {
+        if (candidate->state() == QLocalSocket::ConnectedState ||
+            candidate->waitForConnected((std::min)(remaining, 500))) {
+            *outSocket = std::move(candidate);
             return true;
         }
-        const QLocalSocket::LocalSocketError errCode = socket.error();
+        lastError = candidate->errorString();
+        const QLocalSocket::LocalSocketError errCode = candidate->error();
         if (errCode == QLocalSocket::ServerNotFoundError || deadline.hasExpired() ||
             attempt + 1 >= kMaxAttempts) {
-            if (error) *error = socket.errorString();
+            if (error) *error = lastError;
             return false;
         }
         QThread::msleep(15);
     }
-    if (error) *error = socket.errorString();
+    if (error) *error = lastError;
     return false;
 }
 
@@ -173,8 +178,9 @@ bool writeAllToLocalSocket(QLocalSocket& socket, const QByteArray& payload, int 
 
 bool sendSessionRequest(const QString& socketName, const QJsonObject& request,
                         QJsonObject* response, QString* error, int timeoutMs) {
-    QLocalSocket socket;
-    if (!connectLocalSocket(socket, socketName, timeoutMs, error)) return false;
+    std::unique_ptr<QLocalSocket> socketPtr;
+    if (!connectLocalSocket(&socketPtr, socketName, timeoutMs, error)) return false;
+    QLocalSocket& socket = *socketPtr;
 
     const QByteArray payload = QJsonDocument(request).toJson(QJsonDocument::Compact) + '\n';
     QString writeErr;
@@ -485,7 +491,11 @@ int runSessionDaemonCore(const QJsonObject& spec, bool foregroundLive) {
 
     const auto sendReply = [](QLocalSocket* client, const QJsonObject& reply,
                               bool waitForClientClose = false) {
-        if (!client || client->state() != QLocalSocket::ConnectedState) return;
+        if (!client) return;
+        if (client->state() != QLocalSocket::ConnectedState) {
+            client->deleteLater();
+            return;
+        }
         const QByteArray out = QJsonDocument(reply).toJson(QJsonDocument::Compact) + '\n';
         (void)writeAllToLocalSocket(*client, out, 2000, nullptr);
         if (waitForClientClose) {
@@ -585,7 +595,22 @@ int runSessionDaemonCore(const QJsonObject& spec, bool foregroundLive) {
 
     // Serializes all child-process IPC commands one at a time so concurrent
     // CLI invocations never re-enter ChildSession::executeCommand()'s event loop.
+    // Always dispatch via a queued invocation on `loop` so no QLocalSocket
+    // readyRead/newConnection frame is on the call stack when a nested
+    // QEventLoop runs and deletes a disconnected peer socket.
+    bool queueScheduled = false;
     std::function<void()> processQueue;
+    const auto scheduleProcessQueue = [&] {
+        if (handlingRequest || shuttingDown || queueScheduled) return;
+        queueScheduled = true;
+        QMetaObject::invokeMethod(
+            &loop,
+            [&] {
+                queueScheduled = false;
+                if (processQueue) processQueue();
+            },
+            Qt::QueuedConnection);
+    };
     processQueue = [&] {
         if (handlingRequest || shuttingDown) return;
         handlingRequest = true;
@@ -626,7 +651,11 @@ int runSessionDaemonCore(const QJsonObject& spec, bool foregroundLive) {
 
             if (pendingRequests.isEmpty()) break;
             PendingRequest item = pendingRequests.takeFirst();
-            if (!item.client || item.client->state() != QLocalSocket::ConnectedState) continue;
+            if (!item.client) continue;
+            if (item.client->state() != QLocalSocket::ConnectedState) {
+                item.client->deleteLater();
+                continue;
+            }
 
             const QJsonObject& req = item.request;
             const QString cmd = req.value(QStringLiteral("cmd")).toString();
@@ -709,7 +738,7 @@ int runSessionDaemonCore(const QJsonObject& spec, bool foregroundLive) {
                                        explicitRows ? lastHostSize.height() : host.height());
                     if (target != lastHostSize && target != pendingHostResize) {
                         pendingHostResize = target;
-                        if (!handlingRequest) processQueue();
+                        scheduleProcessQueue();
                     }
                 }
             }
@@ -759,7 +788,7 @@ int runSessionDaemonCore(const QJsonObject& spec, bool foregroundLive) {
                 client->deleteLater();
                 if (watchers.isEmpty() && !foregroundLive && child.isRunning() && !shuttingDown) {
                     desiredLiveStream = false;
-                    if (!handlingRequest) processQueue();
+                    scheduleProcessQueue();
                 }
             });
             const QJsonObject initial = child.lastLiveFrameEvent();
@@ -771,13 +800,13 @@ int runSessionDaemonCore(const QJsonObject& spec, bool foregroundLive) {
             }
             if (!childLiveStreamEnabled) {
                 desiredLiveStream = true;
-                if (!handlingRequest) processQueue();
+                scheduleProcessQueue();
             }
             return;
         }
 
         pendingRequests.append(PendingRequest{QPointer<QLocalSocket>(client), req});
-        if (!handlingRequest) processQueue();
+        scheduleProcessQueue();
     };
 
     QObject::connect(&server, &QLocalServer::newConnection, &loop, [&] {
@@ -841,13 +870,14 @@ int runLiveSessionDaemon(const QJsonObject& launchSpec) {
 }
 
 int runSessionWatch(const SessionInfo& session) {
-    QLocalSocket socket;
+    std::unique_ptr<QLocalSocket> socketPtr;
     QString connErr;
-    if (!connectLocalSocket(socket, session.socketName, 2000, &connErr)) {
+    if (!connectLocalSocket(&socketPtr, session.socketName, 2000, &connErr)) {
         QTextStream(stderr) << "qmltui-runner session: cannot attach to \"" << session.id
                             << "\": " << connErr << '\n';
         return 2;
     }
+    QLocalSocket& socket = *socketPtr;
     const QByteArray req = QByteArrayLiteral("{\"cmd\":\"watch\"}\n");
     QString writeErr;
     if (!writeAllToLocalSocket(socket, req, 2000, &writeErr)) {
